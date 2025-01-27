@@ -17,6 +17,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 22.13.1
+          cache-dependency-path: webapp/package-lock.json
       - name: Install Dependencies
         run: npm install
       - name: Setup Gradle
