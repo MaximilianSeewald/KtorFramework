@@ -18,7 +18,8 @@ jobs:
         with:
           node-version: 22.13.1
       - name: Install Dependencies
-        run: cd webapp 
+        run: |
+          cd webapp 
           npm install
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
