@@ -1,6 +1,5 @@
 plugins {
     kotlin("jvm") version "1.9.23"
-    id("io.ktor.plugin") version "3.0.3"
 }
 
 
@@ -17,11 +16,15 @@ tasks.register("buildFrontend",Exec::class){
 }
 
 tasks.register("deploy") {
-    dependsOn("build")
     dependsOn("buildFrontend")
     dependsOn("backend:buildFatJar")
     doLast {
         file("backend/build/libs/fat.jar").copyTo(file("deploy/ktor.jar"), overwrite = true)
+    }
+}
+
+tasks.build {
+    doLast {
         file("build").deleteRecursively()
     }
 }
