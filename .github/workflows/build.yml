@@ -40,6 +40,6 @@ jobs:
           host: "92.205.163.207"
           username: ${{secrets.username}}
           password: ${{secrets.password}}
-          localDir: "deploy"
+          localDir: "./deploy"
           remoteDir: "/var/www/html/test/"
 
