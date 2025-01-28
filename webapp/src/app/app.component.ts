@@ -5,7 +5,7 @@ import {MatIcon} from '@angular/material/icon';
 import {MatIconButton} from '@angular/material/button';
 import {MatToolbar} from '@angular/material/toolbar';
 import {HttpClient, HttpHeaders} from '@angular/common/http';
-import {environment} from '../enviroments/enviroment';
+import {environment} from '../environments/environment';
 
 @Component({
   selector: 'app-root',
