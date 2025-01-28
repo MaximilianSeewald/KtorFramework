@@ -35,9 +35,9 @@ jobs:
           host: "92.205.163.207"
           username: ${{ secrets.username }}
           password: ${{ secrets.password }}
-          forceUpload: true # Optional, Force uploading all files, Default to false(upload only newer files).
-          localDir: "D:\a\KtorFramework\KtorFramework\deploy" # Required, Absolute or relative to cwd.
-          remoteDir: "/var/www/html/test" # Required, Absolute path only.
+          forceUpload: true
+          localDir: "D:/a/KtorFramework/KtorFramework/deploy"
+          remoteDir: "/var/www/html/test"
 
 
 
