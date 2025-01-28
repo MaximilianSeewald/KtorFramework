@@ -4,7 +4,7 @@ on: [ push ]
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -34,12 +34,12 @@ jobs:
         with:
           path: deploy
           if-no-files-found: warn
-      - name: Copy to webserver
-        uses: Creepios/sftp-action@v1.0.3
+      - name: copy file via ssh password
+        uses: appleboy/scp-action@master
         with:
           host: '92.205.163.207'
           username: ${{ secrets.username }}
           password: ${{ secrets.password }}
           port: '21'
-          localPath: './deploy/'
-          remotePath: './var/www/html/test'
+          source: './deploy/'
+          target: './var/www/html/test'
