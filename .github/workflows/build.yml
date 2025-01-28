@@ -29,6 +29,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
       - name: Deploy with Gradle
         run: ./gradlew deployGithub
+      - name: List files
+        run: dir
       - name: SFTP upload
         uses: Dylan700/sftp-upload-action@latest
         with:
@@ -37,4 +39,4 @@ jobs:
          password: ${{secrets.password}}
          port: 22
          uploads: |
-          ./deploy => ./var/www/html
+          deploy => ./var/www/html
