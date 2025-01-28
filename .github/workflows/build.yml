@@ -38,5 +38,6 @@ jobs:
          username: ${{secrets.username}}
          password: ${{secrets.password}}
          port: 22
+         delete: true
          uploads: |
-          deploy => ./var/www/html
+          deploy => ./var/www/html/test
