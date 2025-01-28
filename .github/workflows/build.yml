@@ -34,12 +34,12 @@ jobs:
         with:
           path: deploy
           if-no-files-found: warn
-      - name: SFTP upload
-        uses: wangyucode/sftp-upload-action@v2.0.4
+      - name: Copy to webserver
+        uses: appleboy/scp-action@v0.1.7
         with:
-          host: "92.205.163.207"
-          username: ${{secrets.username}}
-          password: ${{secrets.password}}
-          localDir: "./deploy"
-          remoteDir: "/var/www/html/test/"
-
+          host: 92.205.163.207
+          username: ${{ secrets.username }}
+          password: ${{ secrets.password }}
+          port: 21
+          source: "deploy"
+          target: "./var/www/html/test"
