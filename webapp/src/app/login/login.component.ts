@@ -5,6 +5,7 @@ import {FormsModule} from '@angular/forms';
 import {MatInput} from '@angular/material/input';
 import {MatButton} from '@angular/material/button';
 import {HttpClient, HttpHeaders} from '@angular/common/http';
+import {environment} from '../../enviroments/enviroment';
 
 @Component({
   selector: 'app-login',
@@ -24,6 +25,7 @@ import {HttpClient, HttpHeaders} from '@angular/common/http';
 export class LoginComponent {
   username = '';
   password = '';
+  apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
@@ -35,7 +37,7 @@ export class LoginComponent {
 
     const headers = new HttpHeaders().set('Content-Type', 'application/x-www-form-urlencoded');
 
-    this.http.post('http://localhost:8080/login', body.toString(), { headers }).subscribe(
+    this.http.post(`${this.apiUrl}/login`, body.toString(), { headers }).subscribe(
       (response: any) => {
         // If login is successful, redirect to dashboard or protected page
         localStorage.setItem('token', response.token);
