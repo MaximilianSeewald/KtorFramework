@@ -23,6 +23,14 @@ tasks.register("deploy") {
     }
 }
 
+tasks.register("deployGithub") {
+    dependsOn("backend:buildFatJar")
+    doLast {
+        file("backend/build/libs/fat.jar").copyTo(file("deploy/ktor.jar"), overwrite = true)
+    }
+}
+
+
 tasks.build {
     doLast {
         file("build").deleteRecursively()

@@ -21,10 +21,14 @@ jobs:
         run: |
           cd webapp 
           npm install
+      - name: Build FrontEnd
+        run: |
+          cd webapp
+          npm run build
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
       - name: Deploy with Gradle
-        run: ./gradlew deploy
+        run: ./gradlew deployGithub
       - name: SFTP upload
         uses: Dylan700/sftp-upload-action@latest
         with:
