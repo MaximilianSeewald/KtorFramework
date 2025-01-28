@@ -34,13 +34,13 @@ jobs:
         with:
           path: deploy
           if-no-files-found: warn
-      - name: Deploy to Server
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.5
+      - name: SFTP upload
+        uses: Dylan700/sftp-upload-action@latest
         with:
-          username: ${{ secrets.username }}
-          password: ${{ secrets.password }}
-          server: '92.205.163.207'
-          local_path: 'deploy/*'
-          remote_path: '/var/www/html/test'
-
+          server: 92.205.163.207
+          username: ${{secrets.username}}
+          password: ${{secrets.password}}
+          port: 22
+          uploads: |
+            deploy/ => ./var/www/html/test
 
