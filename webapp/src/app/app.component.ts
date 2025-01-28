@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import {Component} from '@angular/core';
 import {RouterLink, RouterOutlet} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {MatIcon} from '@angular/material/icon';
 import {MatIconButton} from '@angular/material/button';
 import {MatToolbar} from '@angular/material/toolbar';
+import {HttpClient, HttpHeaders} from '@angular/common/http';
 
 @Component({
   selector: 'app-root',
@@ -14,10 +15,20 @@ import {MatToolbar} from '@angular/material/toolbar';
 })
 
 export class AppComponent {
-  title = 'webapp';
+
+  constructor(private http: HttpClient) {}
 
   toShare() {
-    //todo
+    const token = localStorage.getItem('token');
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    this.http.get('http://localhost:8080/user', { headers }).subscribe((response: any) => {
+        console.log(response)
+        localStorage.setItem('token', "invalid");
+      },
+      (error) => {
+        console.log(error);
+      });
   }
 }
 
