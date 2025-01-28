@@ -46,6 +46,7 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: 22
           script: screen -X -S "ktor-backend" quit
+          continue-on-error: true
       - name: start ktor backend
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -53,6 +54,7 @@ jobs:
           username: ${{secrets.username}}
           password: ${{ secrets.PASSWORD }}
           port: 22
+          continue-on-error: true
           script: |
             cd ../var/www/html
             screen -S "ktor-backend" java -jar ktor.jar
