@@ -35,12 +35,11 @@ jobs:
           path: deploy
           if-no-files-found: warn
       - name: SFTP upload
-        uses: Dylan700/sftp-upload-action@latest
+        uses: wangyucode/sftp-upload-action@v2.0.4
         with:
-          server: 92.205.163.207
+          host: "92.205.163.207"
           username: ${{secrets.username}}
           password: ${{secrets.password}}
-          port: 22
-          uploads: |
-            deploy/ => ./var/www/html/test/
+          localDir: "deploy"
+          remoteDir: "/var/www/html/test/"
 
