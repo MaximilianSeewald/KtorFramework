@@ -29,16 +29,15 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
       - name: Deploy with Gradle
         run: ./gradlew deployGithub
-      - name: SFTP Upload
-        uses: milanmk/actions-file-deployer@master
+      - name: 📂 SFTP uploader # Upload to SFTP
+        uses: wangyucode/sftp-upload-action@v2.0.4
         with:
-          remote-protocol: "sftp"
-          remote-host: "92.205.163.207"
-          remote-user: ${{secrets.username}}
-          remote-password: ${{secrets.password}}
-          remote-port: 22
-          sync: full
-          local-path: "/deploy"
-          remote-path: "./var/www/html/test"
+          host: "92.205.163.207"
+          username: ${{ secrets.username }}
+          password: ${{ secrets.password }}
+          forceUpload: true # Optional, Force uploading all files, Default to false(upload only newer files).
+          localDir: "/deploy" # Required, Absolute or relative to cwd.
+          remoteDir: "/var/www/html/test" # Required, Absolute path only.
+
 
 
