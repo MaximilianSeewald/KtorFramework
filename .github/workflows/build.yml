@@ -37,6 +37,7 @@ jobs:
           remote-user: ${{secrets.username}}
           remote-password: ${{secrets.password}}
           remote-port: 22
+          sync: full
           local-path: "/deploy"
           remote-path: "./var/www/html/test"
 
