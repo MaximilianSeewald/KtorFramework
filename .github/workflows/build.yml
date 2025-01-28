@@ -37,9 +37,9 @@ jobs:
       - name: Copy to webserver
         uses: Creepios/sftp-action@v1.0.3
         with:
-          host: 92.205.163.207
+          host: '92.205.163.207'
           username: ${{ secrets.username }}
           password: ${{ secrets.password }}
-          port: 21
-          localPath: 'deploy/'
+          port: '21'
+          localPath: './deploy/'
           remotePath: './var/www/html/test'
