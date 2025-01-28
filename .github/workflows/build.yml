@@ -42,5 +42,5 @@ jobs:
           password: ${{secrets.password}}
           port: 22
           uploads: |
-            deploy/ => ./var/www/html/test
+            deploy/ => ./var/www/html/test/
 
