@@ -1,4 +1,12 @@
-<h1>Test Header</h1>
-
+<mat-toolbar>
+  <span>Maximilian Seewald</span>
+  <span class="spacer"></span>
+  <button mat-icon-button class="icon" aria-label="Login" routerLink="/login">
+    <mat-icon>key</mat-icon>
+  </button>
+  <button mat-icon-button class="icon" aria-label="Share" (click)="toShare()">
+    <mat-icon>share</mat-icon>
+  </button>
+</mat-toolbar>
 
 <router-outlet />
