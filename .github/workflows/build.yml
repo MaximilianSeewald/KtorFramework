@@ -57,4 +57,5 @@ jobs:
           port: 22
           script: |
             cd ../var/www/html
+            ls
             screen -m -d -S "ktor-backend" java -jar ktor.jar
