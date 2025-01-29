@@ -17,8 +17,10 @@ import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
 
 suspend fun main() {
+    val validityInMs = 10000
     DatabaseManager.init()
     val secretKey = System.getenv("JWT_SECRET_KEY") ?: throw IllegalStateException("JWT_SECRET_KEY not set")
     embeddedServer(Netty, port = 8080) {
@@ -73,6 +75,7 @@ suspend fun main() {
                         .withAudience("ktor-app")
                         .withIssuer("ktor-auth")
                         .withClaim("username", username)
+                        .withExpiresAt(Date(System.currentTimeMillis() + validityInMs))
                         .sign(Algorithm.HMAC256(secretKey))
                     call.respond(HttpStatusCode.OK, mapOf("token" to token))
                 } else {
@@ -81,11 +84,11 @@ suspend fun main() {
             }
 
             authenticate("auth-jwt") {
-                route("/user") {
-                    get {
-                        val principal = call.principal<JWTPrincipal>()
-                        call.respond(mapOf("username" to principal?.payload?.getClaim("username")?.asString()))
-                    }
+                get("/users") {
+                    call.respond(UserService.getAllUsers())
+                }
+                get("/verify") {
+                    call.respond(mapOf("valid" to true))
                 }
             }
         }

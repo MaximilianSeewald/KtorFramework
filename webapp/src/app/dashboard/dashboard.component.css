@@ -1,0 +1,19 @@
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 600px;
+  margin: auto;
+  padding: 20px;
+}
+
+.dashboard-card, .stats-card {
+  padding: 16px;
+  border-radius: 10px;
+}
+
+mat-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

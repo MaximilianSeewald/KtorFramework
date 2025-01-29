@@ -38,16 +38,7 @@ jobs:
           port: 22
           uploads: |
             deploy/ => ../var/www/html
-      - name: stop ktor backend
-        uses: appleboy/ssh-action@v1.2.0
-        continue-on-error: true
-        with:
-          host: 92.205.163.207
-          username: ${{secrets.username}}
-          password: ${{ secrets.PASSWORD }}
-          port: 22
-          script: screen -X -S "ktor-backend" quit
-      - name: start ktor backend
+      - name: stop and start ktor backend
         uses: appleboy/ssh-action@v1.2.0
         continue-on-error: true
         with:
@@ -56,6 +47,7 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: 22
           script: |
+            screen -X -S "ktor-backend" quit
+            wait
             cd ../var/www/html
-            ls
-            screen -m -d -S "ktor-backend" java -jar ktor.jar
+            screen -mdS "ktor-backend" java -jar ktor.jar
