@@ -48,7 +48,7 @@ jobs:
           port: 22
           script: |
             kill $(cat ktor.pid)
-            cd /var/www/html
+            cd ../var/www/html
             chmod +x ktor.jar
             nohup java -jar ktor.jar > ktor.log 2>&1 &
             echo $! > ktor.pid
