@@ -47,10 +47,8 @@ jobs:
           password: ${{ secrets.password }}
           port: 22
           script: |
-            # Stop any existing Ktor process
-            screen -X -S ktor-backend quit || true
-            pkill -f "ktor.jar" || true
-
-            # Start a new Ktor process
-            cd ../var/www/html
-             screen -dmS ktor-backend java -jar ktor.jar
+            kill $(cat ktor.pid)
+            cd /var/www/html
+            chmod +x ktor.jar
+            nohup java -jar ktor.jar > ktor.log 2>&1 &
+            echo $! > ktor.pid
