@@ -44,10 +44,13 @@ jobs:
         with:
           host: 92.205.163.207
           username: ${{secrets.username}}
-          password: ${{ secrets.PASSWORD }}
+          password: ${{ secrets.password }}
           port: 22
           script: |
-            screen -X -S "ktor-backend" quit
-            wait
+            # Stop any existing Ktor process
+            screen -X -S ktor-backend quit || true
+            pkill -f "ktor.jar" || true
+
+            # Start a new Ktor process
             cd ../var/www/html
-            screen -mdS "ktor-backend" java -jar ktor.jar
+             screen -dmS ktor-backend java -jar ktor.jar
