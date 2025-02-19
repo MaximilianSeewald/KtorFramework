@@ -1,12 +1,26 @@
-<mat-toolbar>
-  <span>Maximilian Seewald</span>
-  <span class="spacer"></span>
-  <button mat-icon-button class="icon" aria-label="Login" routerLink="/login">
-    <mat-icon>key</mat-icon>
-  </button>
-  <button mat-icon-button class="icon" aria-label="Share" (click)="toShare()">
-    <mat-icon>share</mat-icon>
-  </button>
-</mat-toolbar>
+<div class="bg-gray-100 min-h-screen flex flex-col">
+  <!-- Navbar -->
+  <nav class="bg-white shadow-md py-4">
+    <div class="container mx-auto flex justify-between items-center px-6">
+      <a href="#" class="text-2xl font-bold text-indigo-600">Maximilian Seewald</a>
+      <div>
+        <button (click)="toShare()" class="text-gray-700 px-4">Users</button>
+        <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg ml-4" routerLink="/login">
+          Sign Up
+        </button>
+      </div>
+    </div>
+  </nav>
+  <div class="flex-grow">
+    <router-outlet></router-outlet>
+  </div>
 
-<router-outlet />
+  <!-- Footer -->
+  <footer class="bg-indigo-600 text-white py-6 text-center">
+    <p>&copy; 2025 Maximilian Seewald. All rights reserved.</p>
+    <div class="mt-2">
+      <a href="#" class="px-3">Imprint</a>
+    </div>
+  </footer>
+</div>
+
