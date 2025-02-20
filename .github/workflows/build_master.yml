@@ -29,11 +29,11 @@ jobs:
           cd webapp
           npm run build
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@ac2d340dc04d9e1113182899e983b5400c17cda1
       - name: Deploy with Gradle
         run: ./gradlew deployGithub
       - name: SFTP upload
-        uses: Dylan700/sftp-upload-action@latest
+        uses: Dylan700/sftp-upload-action@50ed7273493353a60dace713957c36b02dd87bec
         with:
           server: 92.205.163.207
           username: ${{secrets.username}}
@@ -42,7 +42,7 @@ jobs:
           uploads: |
             deploy/ => ../var/www/html
       - name: stop and start ktor backend
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17
         continue-on-error: true
         with:
           host: 92.205.163.207
