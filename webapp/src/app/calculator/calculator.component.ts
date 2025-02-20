@@ -45,10 +45,10 @@ export class CalculatorComponent {
 
       this.http.post(`${this.apiUrl}/upload`, formData, { responseType: 'blob'}).subscribe(
         (response) => {
-          const blob = new Blob([response], { type: 'text/csv' });
+          const blob = new Blob([response], { type: 'application/zip' });
           const link = document.createElement('a');
           link.href = window.URL.createObjectURL(blob);
-          link.download = 'processed.csv';
+          link.download = 'grades.zip';
           link.click();
         },
         (error) => {
