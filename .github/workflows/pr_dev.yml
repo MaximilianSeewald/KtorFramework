@@ -3,7 +3,6 @@ name: Build_Dev
 on:
   pull_request:
     branches:
-      - dev
       - master
 
 jobs:
