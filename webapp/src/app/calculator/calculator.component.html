@@ -1,0 +1,36 @@
+<div class="flex items-start justify-center h-1/2 bg-gray-100">
+  <div class="max-w-lg w-full p-6 bg-white shadow-lg rounded-lg mt-[calc(100vh/6)]">
+    <h2 class="text-xl font-bold mb-4 text-center">Upload .csv File</h2>
+
+    <!-- Max Points Input & File Input in One Row -->
+    <div class="flex items-center space-x-4 mb-4">
+      <!-- Max Points Label + Input -->
+      <div class="flex items-center w-2/3">
+        <label class="text-gray-700 font-medium mr-2">Points:</label>
+        <input type="number" [(ngModel)]="points"
+               class="border p-2 w-full bg-gray-100 rounded">
+      </div>
+
+      <!-- File Input -->
+      <div class="w-1/3">
+        <label for="fileUpload"
+               class="block bg-blue-500 text-white text-center py-2 px-4 rounded-lg cursor-pointer hover:bg-blue-600 transition">
+          Choose File
+        </label>
+        <input id="fileUpload" type="file" (change)="onFileSelected($event)" class="hidden" accept=".csv">
+      </div>
+    </div>
+
+    <!-- File Name Display -->
+    <p *ngIf="fileName" class="mt-2 text-center text-gray-700 font-medium">
+      Selected File: {{ fileName }}
+    </p>
+
+    <!-- Upload Button -->
+    <button (click)="onUpload()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg w-full hover:bg-green-700 transition">
+      Generate Grades
+    </button>
+
+    <p class="mt-4 text-red-600 text-center">{{ message }}</p>
+  </div>
+</div>

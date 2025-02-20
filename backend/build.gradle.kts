@@ -48,6 +48,7 @@ dependencies {
     implementation("com.zaxxer:HikariCP:$hikariVersion")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("com.jsoizo:kotlin-csv-jvm:1.10.0")
     implementation("at.favre.lib:bcrypt:0.10.2")
 }
 
