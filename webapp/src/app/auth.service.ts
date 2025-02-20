@@ -17,7 +17,6 @@ export class AuthService {
     const token = localStorage.getItem('token');
 
     if(!token) {
-      console.log(token)
       return of(false)
     }
 
