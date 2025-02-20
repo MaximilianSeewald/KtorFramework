@@ -29,6 +29,6 @@ jobs:
           cd webapp
           npm run build
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b
       - name: Deploy with Gradle
         run: ./gradlew deployGithub
