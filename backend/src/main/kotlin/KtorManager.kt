@@ -10,6 +10,8 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.plugins.forwardedheaders.*
+import io.ktor.server.plugins.httpsredirect.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -97,6 +99,24 @@ class KtorManager {
                 allowHeader(HttpHeaders.ContentType)
                 allowHeader(HttpHeaders.Authorization)
                 allowHeader(HttpHeaders.Accept) // Allow Content-Type header
+                allowNonSimpleContentTypes = true  // Allow non-simple content types (like JSON)
+                maxAgeInSeconds = 3600  // Allow the browser to cache the preflight response for an hour
+                allowCredentials = true  // Allow cookies or authentication information
+
+            }
+        } else {
+            application.install(CORS) {
+                allowHost("https://maximilian-seewald.de")
+                allowHost("https://nrg-esport.de")
+                allowHost("https://powerful-salt.de")
+
+                allowMethod(HttpMethod.Get)  // Allow GET method
+                allowMethod(HttpMethod.Post)  // Allow POST method
+                allowMethod(HttpMethod.Options)  // Make sure OPTIONS method is allowed
+                allowHeader(HttpHeaders.ContentType)
+                allowHeader(HttpHeaders.Authorization)
+                allowHeader(HttpHeaders.Accept) // Allow Content-Type header
+
                 allowNonSimpleContentTypes = true  // Allow non-simple content types (like JSON)
                 maxAgeInSeconds = 3600  // Allow the browser to cache the preflight response for an hour
                 allowCredentials = true  // Allow cookies or authentication information
