@@ -17,7 +17,7 @@ export class AuthGuard implements CanActivate {
         if (isValid) {
           return true;
         } else {
-          this.router.navigate(['/login']);
+          this.router.navigate(['login']);
           return false;
         }
       })
@@ -36,7 +36,7 @@ export class NoAuthGuard implements CanActivate {
     return this.authService.verifyToken().pipe(
       map((isValid) => {
         if (isValid) {
-          this.router.navigate(['/dashboard']);
+          this.router.navigate(['dashboard']);
           return false;
         }
         return true;

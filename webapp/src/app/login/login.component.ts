@@ -42,7 +42,7 @@ export class LoginComponent {
     this.http.post(`${this.apiUrl}/login`, body.toString(), { headers }).subscribe(
       (response: any) => {
         localStorage.setItem('token', response.token);
-        this.router.navigate(['/dashboard']);
+        this.router.navigate(['dashboard']);
       },
       () => {
         console.log('Invalid login credentials');
