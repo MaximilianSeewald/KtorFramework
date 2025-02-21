@@ -22,7 +22,7 @@ import java.util.*
 class KtorManager {
 
     private val secretKey = System.getenv("JWT_SECRET_KEY") ?: throw IllegalStateException("JWT_SECRET_KEY not set")
-    private val validityInMs = 10000
+    private val validityInMs = 1000000000
 
     fun initRouting(routing: Routing) {
         routing.uploadGrade()
