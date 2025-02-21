@@ -10,5 +10,5 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
   { path: 'landing', component: LandingComponent },
   { path: 'calculator', component: CalculatorComponent},
-  { path: '**', redirectTo: '/landing'}
+  { path: '**', redirectTo: 'landing'}
 ];
