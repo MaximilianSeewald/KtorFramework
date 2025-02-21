@@ -22,6 +22,7 @@ import java.util.*
 class KtorManager {
 
     private val secretKey = System.getenv("JWT_SECRET_KEY") ?: throw IllegalStateException("JWT_SECRET_KEY not set")
+    private val env = System.getenv("KTOR_ENV") ?: "production"
     private val validityInMs = 10000
 
     fun initRouting(routing: Routing) {
@@ -87,18 +88,20 @@ class KtorManager {
         application.install(ContentNegotiation) {
             json()
         }
-        application.install(CORS) {
-            anyHost()  // Allow requests from any origin (use with caution in production)
-            allowMethod(HttpMethod.Get)  // Allow GET method
-            allowMethod(HttpMethod.Post)  // Allow POST method
-            allowMethod(HttpMethod.Options)  // Make sure OPTIONS method is allowed
-            allowHeader(HttpHeaders.ContentType)
-            allowHeader(HttpHeaders.Authorization)
-            allowHeader(HttpHeaders.Accept) // Allow Content-Type header
-            allowNonSimpleContentTypes = true  // Allow non-simple content types (like JSON)
-            maxAgeInSeconds = 3600  // Allow the browser to cache the preflight response for an hour
-            allowCredentials = true  // Allow cookies or authentication information
+        if(env != "production") {
+            application.install(CORS) {
+                anyHost()  // Allow requests from any origin (use with caution in production)
+                allowMethod(HttpMethod.Get)  // Allow GET method
+                allowMethod(HttpMethod.Post)  // Allow POST method
+                allowMethod(HttpMethod.Options)  // Make sure OPTIONS method is allowed
+                allowHeader(HttpHeaders.ContentType)
+                allowHeader(HttpHeaders.Authorization)
+                allowHeader(HttpHeaders.Accept) // Allow Content-Type header
+                allowNonSimpleContentTypes = true  // Allow non-simple content types (like JSON)
+                maxAgeInSeconds = 3600  // Allow the browser to cache the preflight response for an hour
+                allowCredentials = true  // Allow cookies or authentication information
 
+            }
         }
         application.install(Authentication) {
             jwt("auth-jwt") {
