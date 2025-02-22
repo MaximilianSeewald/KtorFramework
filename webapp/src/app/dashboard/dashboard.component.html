@@ -1,9 +1,36 @@
-<div class="dashboard-container">
-  <mat-card class="dashboard-card">
-    <mat-card-header>
-      <mat-icon>dashboard</mat-icon>
-      <h2>Dashboard</h2>
-    </mat-card-header>
-  </mat-card>
+<!-- Hero Section -->
+<section class="text-center py-20 bg-indigo-600 text-white">
+  <h1 class="text-5xl font-bold">Shopping List</h1>
+</section>
 
+<div class="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6">
+  <h2 class="text-xl font-semibold text-gray-700 text-center">Shopping List</h2>
+
+  <!-- Add / Edit Item Form -->
+  <div class="mt-4 flex gap-2">
+    <input
+      type="text"
+      [(ngModel)]="newItemName"
+      placeholder="Item name"
+      class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-300"
+    />
+    <button
+      (click)="addItem()"
+      class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+    >
+      Add
+    </button>
+  </div>
+
+  <!-- Shopping List Items -->
+  <ul class="mt-6 space-y-2">
+    <li *ngFor="let item of shoppingList" class="flex justify-between items-center bg-gray-100 p-3 rounded-lg">
+      <span class="text-gray-800">{{ item.name}}</span>
+      <div class="space-x-2">
+        <button (click)="deleteItem(item.id)" class="px-3 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600">
+          Delete
+        </button>
+      </div>
+    </li>
+  </ul>
 </div>
