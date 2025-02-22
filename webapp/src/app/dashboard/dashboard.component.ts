@@ -31,7 +31,7 @@ export class DashboardComponent implements OnInit {
   addItem() {
     const newItem: ShoppingListItem = { id: uuid(), name: this.newItemName };
     this.http.put(`${this.apiUrl}/shoppingList`, newItem).subscribe(
-      (response) => {
+      () => {
         this.getShoppingItems()
       }
     );
@@ -43,14 +43,14 @@ export class DashboardComponent implements OnInit {
         this.shoppingList = response
       },
       () => {
-
+        console.log("Error retrieving Shopping List Items")
       }
     );
   }
 
   deleteItem(id: string) {
     this.http.delete(`${this.apiUrl}/shoppingList`, { params: { id: id } }).subscribe(
-      (response) => {
+      () => {
         this.getShoppingItems()
       }
     );
