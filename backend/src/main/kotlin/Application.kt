@@ -25,6 +25,7 @@ suspend fun main() {
                 }
                 ShoppingListManager().apply { getShoppingList() }
                 ShoppingListManager().apply { putShoppingList() }
+                ShoppingListManager().apply { postShoppingList() }
                 ShoppingListManager().apply { deleteShoppingList() }
             }
         }

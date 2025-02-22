@@ -91,20 +91,55 @@ class ShoppingListManager {
                         it[amount] = updateData.amount
                     }
                     "inserted"
-                } else if (item.size == 1) {
+                }  else {
+                    "error"
+                }
+            }
+            when (updateResult) {
+                "inserted" -> call.respond(HttpStatusCode.OK, )
+                "error" -> call.respond(HttpStatusCode.BadRequest, "Item id already exists")
+            }
+        }
+    }
+
+    fun Route.postShoppingList() {
+        post("/shoppingList") {
+            val groups = getUserGroups(call)
+            if (groups.isEmpty()) {
+                call.respond(HttpStatusCode.BadRequest, "No user found with this username")
+                return@post
+            }
+            if (groups.size > 1) {
+                call.respond(HttpStatusCode.BadRequest, "Too many users found")
+                return@post
+            }
+            val userGroup = groups[0]
+            val shoppingListTable = DatabaseManager.shoppingListMap[userGroup]
+            if (shoppingListTable == null) {
+                call.respond(HttpStatusCode.BadRequest, "No shopping list found for this user")
+                return@post
+            }
+            val updateData = call.receive<ShoppingListItem>()
+
+            val updateResult = transaction {
+                val item = shoppingListTable
+                    .selectAll()
+                    .where { shoppingListTable.id eq UUID.fromString(updateData.id) }
+                    .map { it[shoppingListTable.id] }
+
+               if (item.size == 1) {
                     shoppingListTable.update({ shoppingListTable.id eq UUID.fromString(updateData.id) }) {
                         it[name] = updateData.name
                         it[amount] = updateData.amount
                     }
                     "updated"
                 } else {
-                    "too many items"
+                    "error"
                 }
             }
             when (updateResult) {
-                "inserted" -> call.respond(HttpStatusCode.OK, )
                 "updated" -> call.respond(HttpStatusCode.OK, )
-                "too many items" -> call.respond(HttpStatusCode.BadRequest, "Item id is not unique")
+                "error" -> call.respond(HttpStatusCode.BadRequest, "Item id does not exist")
             }
         }
     }
