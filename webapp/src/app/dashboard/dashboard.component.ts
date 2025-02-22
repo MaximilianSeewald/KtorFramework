@@ -30,7 +30,7 @@ export class DashboardComponent implements OnInit {
   }
 
   addItem() {
-    const newItem: ShoppingListItem = { id: uuid(), name: this.newItemName };
+    const newItem: ShoppingListItem = { id: uuid(), name: this.newItemName, retrieved: false };
     this.http.post(`${this.apiUrl}/shoppingList`, newItem).subscribe(
       () => {
         this.getShoppingItems()
@@ -42,7 +42,7 @@ export class DashboardComponent implements OnInit {
     this.http.get<ShoppingListItem[]>(`${this.apiUrl}/shoppingList`).subscribe(
       (response) => {
         this.shoppingList = response.map((value) => {
-            return { id: value.id, name: value.name, isEditing: false }
+            return { id: value.id, name: value.name, retrieved: value.retrieved, isEditing: false }
           }
         );
       },
@@ -62,7 +62,7 @@ export class DashboardComponent implements OnInit {
 
   toggleEdit(item: ShoppingListItemExtended) {
     if (item.isEditing) {
-      const shoppingListItem: ShoppingListItem = { id: item.id, name: item.name}
+      const shoppingListItem: ShoppingListItem = { id: item.id, name: item.name, retrieved: item.retrieved}
       this.http.put(`${this.apiUrl}/shoppingList`,shoppingListItem).subscribe(
         () => {
           this.getShoppingItems()
@@ -70,5 +70,17 @@ export class DashboardComponent implements OnInit {
       );
     }
     item.isEditing = !item.isEditing
+  }
+
+  toggleRetrieved(item: ShoppingListItem) {
+    const shoppingListItem: ShoppingListItem = {id: item.id, name: item.name, retrieved: item.retrieved};
+    this.http.put(`${this.apiUrl}/shoppingList`, shoppingListItem).subscribe(
+      () => {
+        this.getShoppingItems();
+      },
+      () => {
+        console.log("Error updating Shopping List Item");
+      }
+    );
   }
 }

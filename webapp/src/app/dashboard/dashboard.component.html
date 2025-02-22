@@ -23,13 +23,20 @@
   <!-- Shopping List Items -->
   <ul class="mt-6 space-y-2">
     <li *ngFor="let item of shoppingList" class="flex justify-between items-center bg-gray-100 p-3 rounded-lg">
+      <!-- Inline Retrieved Input -->
+      <input
+        type="checkbox"
+        [(ngModel)]="item.retrieved"
+        (change)="toggleRetrieved(item)"
+        class="mr-2"
+      />
       <!-- Inline Edit Input -->
       <input
         *ngIf="item.isEditing"
         [(ngModel)]="item.name"
         class="p-1 border rounded-lg focus:ring focus:ring-blue-300"
       />
-      <span *ngIf="!item.isEditing" class="text-gray-800">{{ item.name }}</span>
+      <span *ngIf="!item.isEditing" [class.line-through]="item.retrieved" class="text-gray-800">{{ item.name }}</span>
 
       <div class="space-x-2">
         <button
