@@ -54,9 +54,11 @@ export class DashboardComponent implements OnInit {
     );
   }
 
-
-
   deleteItem(id: string) {
-
+    this.http.delete(`${this.apiUrl}/shoppingList`, { params: { id: id } }).subscribe(
+      (response) => {
+        this.getShoppingItems()
+      }
+    );
   }
 }
