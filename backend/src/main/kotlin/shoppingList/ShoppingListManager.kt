@@ -41,10 +41,10 @@ class ShoppingListManager {
         }
     }
 
-    private fun Route.putShoppingList() {
-        put("/shoppingList") {
+    private fun Route.postShoppingList() {
+        post("/shoppingList") {
             val groups = retrieveUserGroupsAndHandleErrors(call)
-            if (groups.isEmpty()) return@put
+            if (groups.isEmpty()) return@post
             when (ShoppingListService.addItem(call, groups[0])) {
                 true -> call.respond(HttpStatusCode.OK)
                 false -> call.respond(HttpStatusCode.BadRequest, "Couldn't add shopping list item")
@@ -52,10 +52,10 @@ class ShoppingListManager {
         }
     }
 
-    private fun Route.postShoppingList() {
-        post("/shoppingList") {
+    private fun Route.putShoppingList() {
+        put("/shoppingList") {
             val groups = retrieveUserGroupsAndHandleErrors(call)
-            if (groups.isEmpty()) return@post
+            if (groups.isEmpty()) return@put
             when (ShoppingListService.editItem(call, groups[0])) {
                 true -> call.respond(HttpStatusCode.OK)
                 false -> call.respond(HttpStatusCode.BadRequest, "Item id does not exist")

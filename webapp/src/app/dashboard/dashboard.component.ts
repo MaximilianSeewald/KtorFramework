@@ -31,7 +31,7 @@ export class DashboardComponent implements OnInit {
 
   addItem() {
     const newItem: ShoppingListItem = { id: uuid(), name: this.newItemName };
-    this.http.put(`${this.apiUrl}/shoppingList`, newItem).subscribe(
+    this.http.post(`${this.apiUrl}/shoppingList`, newItem).subscribe(
       () => {
         this.getShoppingItems()
       }
@@ -63,7 +63,7 @@ export class DashboardComponent implements OnInit {
   toggleEdit(item: ShoppingListItemExtended) {
     if (item.isEditing) {
       const shoppingListItem: ShoppingListItem = { id: item.id, name: item.name}
-      this.http.post(`${this.apiUrl}/shoppingList`,shoppingListItem).subscribe(
+      this.http.put(`${this.apiUrl}/shoppingList`,shoppingListItem).subscribe(
         () => {
           this.getShoppingItems()
         }
