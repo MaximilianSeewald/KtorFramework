@@ -90,6 +90,7 @@ class KtorManager {
         application.install(CORS) {
             anyHost()  // Allow requests from any origin (use with caution in production)
             allowMethod(HttpMethod.Get)  // Allow GET method
+            allowMethod(HttpMethod.Put)  // Allow PUT method
             allowMethod(HttpMethod.Post)  // Allow POST method
             allowMethod(HttpMethod.Options)  // Make sure OPTIONS method is allowed
             allowHeader(HttpHeaders.ContentType)
