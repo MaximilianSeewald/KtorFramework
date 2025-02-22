@@ -92,6 +92,7 @@ class KtorManager {
             allowMethod(HttpMethod.Get)  // Allow GET method
             allowMethod(HttpMethod.Put)  // Allow PUT method
             allowMethod(HttpMethod.Post)  // Allow POST method
+            allowMethod(HttpMethod.Delete)  // Allow DELETE method
             allowMethod(HttpMethod.Options)  // Make sure OPTIONS method is allowed
             allowHeader(HttpHeaders.ContentType)
             allowHeader(HttpHeaders.Authorization)

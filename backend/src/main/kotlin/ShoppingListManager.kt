@@ -9,8 +9,10 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import java.util.*
@@ -50,7 +52,10 @@ class ShoppingListManager {
                     )
                 } ?: mutableListOf(ShoppingListItem("Hallo", "Super", "1234"))
             }
-            call.respondText(text = Json.encodeToString(shoppingListDataMap), contentType = ContentType.Application.Json)
+            call.respondText(
+                text = Json.encodeToString(shoppingListDataMap),
+                contentType = ContentType.Application.Json
+            )
         }
     }
 
@@ -97,8 +102,52 @@ class ShoppingListManager {
                 }
             }
             when (updateResult) {
-                "inserted" -> call.respond(HttpStatusCode.OK, "Shopping list item inserted successfully")
-                "updated" -> call.respond(HttpStatusCode.OK, "Shopping list item updated successfully")
+                "inserted" -> call.respond(HttpStatusCode.OK, "Shopping list item successfully inserted")
+                "updated" -> call.respond(HttpStatusCode.OK, "Shopping list item successfully updated")
+                "too many items" -> call.respond(HttpStatusCode.BadRequest, "Item id is not unique")
+            }
+        }
+    }
+
+    fun Route.deleteShoppingList() {
+        delete("/shoppingList") {
+            val groups = getUserGroups(call)
+            if (groups.isEmpty()) {
+                call.respond(HttpStatusCode.BadRequest, "No user found with this username")
+                return@delete
+            }
+            if (groups.size > 1) {
+                call.respond(HttpStatusCode.BadRequest, "Too many users found")
+                return@delete
+            }
+            val userGroup = groups[0]
+            val shoppingListTable = DatabaseManager.shoppingListMap[userGroup]
+            if (shoppingListTable == null) {
+                call.respond(HttpStatusCode.BadRequest, "No shopping list found for this user")
+                return@delete
+            }
+            val id = call.request.queryParameters["id"]
+
+            val deleteResult = transaction {
+                val item = shoppingListTable
+                    .selectAll()
+                    .where { shoppingListTable.id eq UUID.fromString(id) }
+                    .map { it[shoppingListTable.id] }
+
+                if (item.isEmpty()) {
+                    "empty"
+                } else if (item.size == 1) {
+                    shoppingListTable.deleteWhere {
+                        shoppingListTable.id eq UUID.fromString(id)
+                    }
+                    "deleted"
+                } else {
+                    "too many items"
+                }
+            }
+            when (deleteResult) {
+                "empty" -> call.respond(HttpStatusCode.OK, "Shopping list item already deleted")
+                "deleted" -> call.respond(HttpStatusCode.OK, "Shopping list item successfully deleted")
                 "too many items" -> call.respond(HttpStatusCode.BadRequest, "Item id is not unique")
             }
         }
