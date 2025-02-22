@@ -31,18 +31,12 @@ object DatabaseManager {
     fun init(){
         Database.connect(hikari())
         transaction {
-            if (!SchemaUtils.listDatabases().contains(Users.tableName)) {
-                SchemaUtils.create(Users)
-            }
-            if (!SchemaUtils.listDatabases().contains(UserGroups.tableName)) {
-                SchemaUtils.create(UserGroups)
-            }
+            SchemaUtils.create(Users)
+            SchemaUtils.create(UserGroups)
             UserGroups.selectAll().map { it[UserGroups.name] }.forEach {
-                if (SchemaUtils.listDatabases().contains(it)) {
-                    val shoppingList = ShoppingList(it)
-                    SchemaUtils.create(shoppingList)
-                    shoppingListMap[it] = shoppingList
-                }
+                val shoppingList = ShoppingList(it)
+                SchemaUtils.create(shoppingList)
+                shoppingListMap[it] = shoppingList
             }
         }
     }
