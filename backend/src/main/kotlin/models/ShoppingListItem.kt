@@ -1,4 +1,4 @@
-package com.loudless
+package com.loudless.models
 
 import kotlinx.serialization.Serializable
 

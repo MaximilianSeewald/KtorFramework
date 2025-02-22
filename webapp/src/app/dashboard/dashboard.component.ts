@@ -1,8 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import {MatCard, MatCardHeader} from '@angular/material/card';
-import {MatIcon} from '@angular/material/icon';
 import {FormsModule} from '@angular/forms';
-import {NgForOf, NgIf} from '@angular/common';
+import {NgForOf} from '@angular/common';
 import {ShoppingListItem} from '../shoppingList/shoppingList.model';
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../../environments/environment';
@@ -11,11 +9,7 @@ import { v4 as uuid } from 'uuid';
 @Component({
   selector: 'app-dashboard',
   imports: [
-    MatCard,
-    MatCardHeader,
-    MatIcon,
     FormsModule,
-    NgIf,
     NgForOf
   ],
   templateUrl: './dashboard.component.html',

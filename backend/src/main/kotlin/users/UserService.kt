@@ -1,32 +1,31 @@
-package com.loudless
+package com.loudless.users
 
 import at.favre.lib.crypto.bcrypt.BCrypt
-import com.loudless.DatabaseManager.ShoppingList
-import com.loudless.DatabaseManager.UserGroups
-import com.loudless.DatabaseManager.Users
-import com.loudless.DatabaseManager.shoppingListMap
-import org.jetbrains.exposed.sql.ResultRow
+import com.loudless.database.DatabaseManager.shoppingListMap
+import com.loudless.database.ShoppingList
+import com.loudless.database.UserGroups
+import com.loudless.database.Users
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object UserService {
 
-    suspend fun getAllUsers() :List<User> = newSuspendedTransaction{
-        Users.selectAll().map { toUsers(it) }
+    fun getUserGroups(call: ApplicationCall): List<String> {
+        val principal = call.principal<JWTPrincipal>()
+        val username = principal?.getClaim("username", String::class) ?: ""
+        val groups = transaction {
+            Users.selectAll().where { Users.name eq username }
+                .map { it[Users.group] }
+        }
+        return groups
     }
 
-    private fun toUsers(row: ResultRow) : User {
-        return User(
-            id = row[Users.id],
-            name = row[Users.name],
-            hashedPassword = row[Users.hashedPassword]
-        )
-    }
-
-    fun hashPassword(plainPassword: String): String {
+    private fun hashPassword(plainPassword: String): String {
         return BCrypt.withDefaults().hashToString(12, plainPassword.toCharArray())
     }
 
