@@ -23,7 +23,8 @@ object ShoppingListService {
                 ShoppingListItem(
                     name = it[shoppingListTable.name],
                     amount = it[shoppingListTable.amount],
-                    id = it[shoppingListTable.id].toString()
+                    id = it[shoppingListTable.id].toString(),
+                    retrieved = it[shoppingListTable.retrieved]
                 )
             } ?: mutableListOf(ShoppingListItem("Hallo", "Super", "1234"))
         }
@@ -48,6 +49,7 @@ object ShoppingListService {
                     it[id] = UUID.fromString(updateData.id)
                     it[name] = updateData.name
                     it[amount] = updateData.amount
+                    it[retrieved] = false
                 }
                 return@transaction true
             }  else {
@@ -73,6 +75,7 @@ object ShoppingListService {
                 shoppingListTable.update({ shoppingListTable.id eq UUID.fromString(updateData.id) }) {
                     it[name] = updateData.name
                     it[amount] = updateData.amount
+                    it[retrieved] = updateData.retrieved
                 }
                 return@transaction true
             } else {
