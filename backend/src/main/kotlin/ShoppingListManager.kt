@@ -102,8 +102,8 @@ class ShoppingListManager {
                 }
             }
             when (updateResult) {
-                "inserted" -> call.respond(HttpStatusCode.OK, "Shopping list item successfully inserted")
-                "updated" -> call.respond(HttpStatusCode.OK, "Shopping list item successfully updated")
+                "inserted" -> call.respond(HttpStatusCode.OK, )
+                "updated" -> call.respond(HttpStatusCode.OK, )
                 "too many items" -> call.respond(HttpStatusCode.BadRequest, "Item id is not unique")
             }
         }
@@ -146,8 +146,8 @@ class ShoppingListManager {
                 }
             }
             when (deleteResult) {
-                "empty" -> call.respond(HttpStatusCode.OK, "Shopping list item already deleted")
-                "deleted" -> call.respond(HttpStatusCode.OK, "Shopping list item successfully deleted")
+                "empty" -> call.respond(HttpStatusCode.OK, )
+                "deleted" -> call.respond(HttpStatusCode.OK, )
                 "too many items" -> call.respond(HttpStatusCode.BadRequest, "Item id is not unique")
             }
         }
