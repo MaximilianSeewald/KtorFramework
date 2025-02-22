@@ -3,9 +3,7 @@
   <h1 class="text-5xl font-bold">Shopping List</h1>
 </section>
 
-<div class="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6">
-  <h2 class="text-xl font-semibold text-gray-700 text-center">Shopping List</h2>
-
+<div class="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6 mt-10">
   <!-- Add / Edit Item Form -->
   <div class="mt-4 flex gap-2">
     <input
@@ -25,9 +23,25 @@
   <!-- Shopping List Items -->
   <ul class="mt-6 space-y-2">
     <li *ngFor="let item of shoppingList" class="flex justify-between items-center bg-gray-100 p-3 rounded-lg">
-      <span class="text-gray-800">{{ item.name}}</span>
+      <!-- Inline Edit Input -->
+      <input
+        *ngIf="item.isEditing"
+        [(ngModel)]="item.name"
+        class="p-1 border rounded-lg focus:ring focus:ring-blue-300"
+      />
+      <span *ngIf="!item.isEditing" class="text-gray-800">{{ item.name }}</span>
+
       <div class="space-x-2">
-        <button (click)="deleteItem(item.id)" class="px-3 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600">
+        <button
+          (click)="toggleEdit(item)"
+          class="px-3 py-1 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
+        >
+          {{ item.isEditing ? 'Save' : 'Edit' }}
+        </button>
+        <button
+          (click)="deleteItem(item.id)"
+          class="px-3 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600"
+        >
           Delete
         </button>
       </div>

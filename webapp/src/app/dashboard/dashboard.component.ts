@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {NgForOf} from '@angular/common';
-import {ShoppingListItem} from '../shoppingList/shoppingList.model';
+import {NgForOf, NgIf} from '@angular/common';
+import {ShoppingListItem, ShoppingListItemExtended} from '../shoppingList/shoppingList.model';
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../../environments/environment';
 import { v4 as uuid } from 'uuid';
@@ -10,7 +10,8 @@ import { v4 as uuid } from 'uuid';
   selector: 'app-dashboard',
   imports: [
     FormsModule,
-    NgForOf
+    NgForOf,
+    NgIf
   ],
   templateUrl: './dashboard.component.html',
   standalone: true,
@@ -19,7 +20,7 @@ import { v4 as uuid } from 'uuid';
 export class DashboardComponent implements OnInit {
 
   apiUrl = environment.apiUrl;
-  shoppingList: ShoppingListItem[] = [];
+  shoppingList: ShoppingListItemExtended[] = [];
   newItemName = '';
 
   constructor(private http: HttpClient) {}
@@ -40,7 +41,10 @@ export class DashboardComponent implements OnInit {
   public getShoppingItems() {
     this.http.get<ShoppingListItem[]>(`${this.apiUrl}/shoppingList`).subscribe(
       (response) => {
-        this.shoppingList = response
+        this.shoppingList = response.map((value) => {
+            return { id: value.id, name: value.name, isEditing: false }
+          }
+        );
       },
       () => {
         console.log("Error retrieving Shopping List Items")
@@ -54,5 +58,17 @@ export class DashboardComponent implements OnInit {
         this.getShoppingItems()
       }
     );
+  }
+
+  toggleEdit(item: ShoppingListItemExtended) {
+    if (item.isEditing) {
+      const shoppingListItem: ShoppingListItem = { id: item.id, name: item.name}
+      this.http.post(`${this.apiUrl}/shoppingList`,shoppingListItem).subscribe(
+        () => {
+          this.getShoppingItems()
+        }
+      );
+    }
+    item.isEditing = !item.isEditing
   }
 }
