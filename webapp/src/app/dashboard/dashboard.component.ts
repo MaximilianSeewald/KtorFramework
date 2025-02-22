@@ -6,6 +6,7 @@ import {NgForOf, NgIf} from '@angular/common';
 import {ShoppingListItem} from '../shoppingList/shoppingList.model';
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../../environments/environment';
+import { v4 as uuid } from 'uuid';
 
 @Component({
   selector: 'app-dashboard',
@@ -34,7 +35,7 @@ export class DashboardComponent implements OnInit {
   }
 
   addItem() {
-    const newItem: ShoppingListItem = { id: "0", name: this.newItemName };
+    const newItem: ShoppingListItem = { id: uuid(), name: this.newItemName };
     this.http.put(`${this.apiUrl}/shoppingList`, newItem).subscribe(
       (response) => {
         this.getShoppingItems()
