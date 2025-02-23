@@ -19,7 +19,7 @@ import kotlinx.serialization.json.Json
 
 class ShoppingListManager {
 
-    private val shoppingListFlow = MutableSharedFlow<List<ShoppingListItem>>(replay = 1)
+    private val observerList: MutableMap<String,MutableSharedFlow<List<ShoppingListItem>>> = mutableMapOf()
 
     fun initRoutes(route: Route) {
         route.getShoppingList()
@@ -65,12 +65,17 @@ class ShoppingListManager {
             }
             val groups = getUserGroupsByQuery(decodedJWT)
             if(groups.isEmpty()) return@webSocket
+            val flow = MutableSharedFlow<List<ShoppingListItem>>(replay = 1)
+            observerList[groups.first()] = flow
             try {
-                shoppingListFlow.collect { shoppingList ->
+                flow.collect { shoppingList ->
                     send(Json.encodeToString(shoppingList))
                 }
             } catch (e: Exception) {
-                println("Error during WebSocket communication: ${e.message}")
+                observerList.remove(groups.first())
+                close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, e.message ?: ""))
+            } finally {
+                observerList.remove(groups.first())
             }
         }
     }
@@ -94,7 +99,9 @@ class ShoppingListManager {
                 true -> call.respond(HttpStatusCode.OK)
                 false -> call.respond(HttpStatusCode.BadRequest, "Couldn't add shopping list item")
             }
-            shoppingListFlow.tryEmit(ShoppingListService.retrieveItems(groups[0]))
+            if(observerList[groups.first()] != null) {
+                observerList[groups.first()]!!.tryEmit(ShoppingListService.retrieveItems(groups[0]))
+            }
         }
     }
 
@@ -106,7 +113,9 @@ class ShoppingListManager {
                 true -> call.respond(HttpStatusCode.OK)
                 false -> call.respond(HttpStatusCode.BadRequest, "Item id does not exist")
             }
-            shoppingListFlow.tryEmit(ShoppingListService.retrieveItems(groups[0]))
+            if(observerList[groups.first()] != null) {
+                observerList[groups.first()]!!.tryEmit(ShoppingListService.retrieveItems(groups[0]))
+            }
         }
     }
 
@@ -118,7 +127,9 @@ class ShoppingListManager {
                 true -> call.respond(HttpStatusCode.OK)
                 false -> call.respond(HttpStatusCode.BadRequest, "Item id is not unique")
             }
-            shoppingListFlow.tryEmit(ShoppingListService.retrieveItems(groups[0]))
+            if(observerList[groups.first()] != null) {
+                observerList[groups.first()]!!.tryEmit(ShoppingListService.retrieveItems(groups[0]))
+            }
         }
     }
 }
