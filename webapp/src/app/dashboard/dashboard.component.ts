@@ -41,10 +41,12 @@ export class DashboardComponent implements OnInit {
   public getShoppingItems() {
     this.http.get<ShoppingListItem[]>(`${this.apiUrl}/shoppingList`).subscribe(
       (response) => {
-        this.shoppingList = response.map((value) => {
+        this.shoppingList = response
+          .map((value) => {
             return { id: value.id, name: value.name, retrieved: value.retrieved, isEditing: false }
-          }
-        );
+          })
+          .sort((a, b) => Number(a.retrieved) - Number(b.retrieved));
+        console.log(this.shoppingList); // Log the sorted list to verify the order
       },
       () => {
         console.log("Error retrieving Shopping List Items")
