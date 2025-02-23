@@ -18,6 +18,8 @@ class UserManager {
 
     fun initRouting(routing: Routing) {
         routing.login()
+        routing.logout()
+
     }
 
     fun initSafeRoutes(routing: Route) {
@@ -59,6 +61,25 @@ class UserManager {
                     .withExpiresAt(Date(System.currentTimeMillis() + validityInMs))
                     .sign(Algorithm.HMAC256(secretJWTKey))
                 call.respond(HttpStatusCode.OK, mapOf("token" to token))
+            } else {
+                call.respond(HttpStatusCode.Unauthorized)
+            }
+        }
+    }
+
+    private fun Routing.logout() {
+        post("/logout") {
+            val parameters = call.receiveParameters()
+            val username: String = parameters["username"] ?: ""
+            val user = transaction {
+                Users
+                    .selectAll().where { Users.name eq username }
+                    .map { it[Users.hashedPassword] to it[Users.name] }
+                    .firstOrNull()
+            }
+
+            if (user != null ) {
+                call.respond(HttpStatusCode.OK)
             } else {
                 call.respond(HttpStatusCode.Unauthorized)
             }
