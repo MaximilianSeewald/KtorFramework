@@ -10,9 +10,9 @@ import com.loudless.models.User
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
+import io.ktor.server.request.*
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object UserService {
@@ -52,21 +52,46 @@ object UserService {
         return result.verified
     }
 
+    suspend fun editUser(call: ApplicationCall) {
+        val updateData = call.receive<User>()
+        transaction {
+            checkAndAdduserGroup(updateData.userGroup, updateData.name)
+            val oldGroup = Users.selectAll().where { Users.id eq updateData.id }.map { it[Users.group] }.first() ?: ""
+            Users.update({ Users.id eq updateData.id }) {
+                it[group] = updateData.userGroup
+            }
+            checkAndRemoveUserGroup(oldGroup)
+        }
+    }
+
     fun addUser(name: String, password: String, group: String) {
         transaction {
-            if(UserGroups.selectAll().none { it[UserGroups.name] == group }) {
-                UserGroups.insert {
-                    it[UserGroups.name] = group
-                }
-                val shoppingList = ShoppingList(group)
-                transaction { SchemaUtils.create(shoppingList) }
-                shoppingListMap[group] = shoppingList
-            }
+            checkAndAdduserGroup(group, name)
             Users.insert {
                 it[Users.name] = name
                 it[Users.group] = group
-                it[Users.hashedPassword] = hashPassword(password)
+                it[hashedPassword] = hashPassword(password)
             }
+        }
+    }
+
+    private fun checkAndRemoveUserGroup(oldGroup: String) {
+        if(Users.selectAll().where { Users.group eq oldGroup }.count() <= 1) {
+            UserGroups.deleteWhere { name eq oldGroup }
+            SchemaUtils.drop(ShoppingList(oldGroup))
+            shoppingListMap.remove(oldGroup)
+        }
+    }
+
+    private fun checkAndAdduserGroup(group: String, name: String) {
+        if (UserGroups.selectAll().none { it[UserGroups.name] == group }) {
+            UserGroups.insert {
+                it[UserGroups.name] = group
+                it[adminName] = name
+            }
+            val shoppingList = ShoppingList(group)
+            transaction { SchemaUtils.create(shoppingList) }
+            shoppingListMap[group] = shoppingList
         }
     }
 }

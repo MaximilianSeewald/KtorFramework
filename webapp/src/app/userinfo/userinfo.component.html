@@ -6,6 +6,21 @@
 <div *ngIf="user" class="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6 mt-10">
   <div class="mt-4">
     <div class="mb-2"><strong>Name:</strong> {{ user.name }}</div>
-    <div class="mb-2"><strong>Group:</strong> {{ user.userGroup }}</div>
+
+    <!-- User Group Display & Edit -->
+    <div class="mb-2 flex items-center">
+      <strong>Group:</strong>
+      <span *ngIf="!isEditingGroup" class="ml-2">{{ user.userGroup }}</span>
+
+      <!-- Edit Mode -->
+      <input *ngIf="isEditingGroup" [(ngModel)]="user.userGroup"
+             class="ml-2 border rounded-lg p-1 focus:ring focus:ring-blue-300"/>
+
+      <!-- Edit & Save Button -->
+      <button (click)="toggleEditGroup()"
+              class="ml-4 px-3 py-1 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">
+        {{ isEditingGroup ? 'Save' : 'Edit' }}
+      </button>
+    </div>
   </div>
 </div>

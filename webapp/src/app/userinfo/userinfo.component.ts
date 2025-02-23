@@ -3,11 +3,13 @@ import {NgIf} from '@angular/common';
 import {User} from '../models/user.model';
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../../environments/environment';
+import {FormsModule} from '@angular/forms';
 
 @Component({
   selector: 'app-userinfo',
   imports: [
-    NgIf
+    NgIf,
+    FormsModule
   ],
   templateUrl: './userinfo.component.html',
   standalone: true,
@@ -17,6 +19,7 @@ export class UserinfoComponent implements OnInit {
 
   user: User | null = null
   apiUrl = environment.apiUrl;
+  isEditingGroup = false;
 
   constructor(private http: HttpClient) {}
 
@@ -27,6 +30,11 @@ export class UserinfoComponent implements OnInit {
       })
   }
 
-
+  toggleEditGroup() {
+    if (this.isEditingGroup) {
+      this.http.put<User>(`${this.apiUrl}/user`, this.user).subscribe()
+    }
+    this.isEditingGroup = !this.isEditingGroup;
+  }
 
 }

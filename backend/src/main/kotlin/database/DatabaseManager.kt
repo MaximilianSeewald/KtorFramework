@@ -12,6 +12,7 @@ object DatabaseManager {
     fun init(){
         Database.connect(hikari())
         transaction {
+            migrateTablesIfMissing()
             SchemaUtils.create(Users)
             SchemaUtils.create(UserGroups)
             UserGroups.selectAll().map { it[UserGroups.name] }.forEach {
@@ -19,7 +20,6 @@ object DatabaseManager {
                 SchemaUtils.create(shoppingList)
                 shoppingListMap[it] = shoppingList
             }
-            migrateTablesIfMissing()
         }
     }
 
