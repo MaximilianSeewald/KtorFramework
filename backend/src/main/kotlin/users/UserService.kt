@@ -21,7 +21,7 @@ object UserService {
         val username = principal?.getClaim("username", String::class) ?: ""
         val groups = transaction {
             Users.selectAll().where { Users.name eq username }
-                .map { it[Users.group] }
+                .map { it[Users.group] ?: "" }
         }
         return groups
     }
@@ -30,7 +30,7 @@ object UserService {
         val username = decodedJWT.getClaim("username").asString()
         val groups = transaction {
             Users.selectAll().where { Users.name eq username }
-                .map { it[Users.group] }
+                .map { it[Users.group] ?: "" }
         }
         return groups
     }
