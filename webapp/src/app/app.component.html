@@ -4,16 +4,16 @@
     <div class="container mx-auto flex justify-between items-center px-6">
       <a href="#" class="text-2xl font-bold text-indigo-600">Maximilian Seewald</a>
       <div>
-        <button *ngIf="isLoggedIn()" class="text-indigo-600 px-4 py-2 rounded-lg ml-4" routerLink="/user">
+        <button *ngIf="isLoggedIn$ | async" class="text-indigo-600 px-4 py-2 rounded-lg ml-4" routerLink="/user">
           User
         </button>
-        <button *ngIf="isLoggedIn()" class="text-indigo-600 px-4 py-2 rounded-lg ml-4" routerLink="/dashboard">
+        <button *ngIf="isLoggedIn$ | async" class="text-indigo-600 px-4 py-2 rounded-lg ml-4" routerLink="/dashboard">
           DashBoard
         </button>
-        <button *ngIf="isLoggedIn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg ml-4" (click)="logout()">
+        <button *ngIf="isLoggedIn$ | async" class="bg-indigo-600 text-white px-4 py-2 rounded-lg ml-4" (click)="logout()">
           Sign Out
         </button>
-        <button *ngIf="!(isLoggedIn)" class="bg-indigo-600 text-white px-4 py-2 rounded-lg ml-4" routerLink="/login">
+        <button *ngIf="!(isLoggedIn$ | async)" class="bg-indigo-600 text-white px-4 py-2 rounded-lg ml-4" routerLink="/login">
           Sign Up
         </button>
       </div>

@@ -1,28 +1,26 @@
-import {Component} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {Router, RouterLink, RouterOutlet} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {AuthService} from './auth.service';
-import {map} from 'rxjs/operators';
 import {Observable} from 'rxjs';
-import {NgIf} from '@angular/common';
+import {AsyncPipe, NgIf} from '@angular/common';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, FormsModule, RouterLink, NgIf],
+  imports: [RouterOutlet, FormsModule, RouterLink, NgIf, AsyncPipe],
   templateUrl: './app.component.html',
   standalone: true,
   styleUrl: './app.component.css',
 })
+export class AppComponent implements OnInit {
+  isLoggedIn$!: Observable<boolean>;
 
-export class AppComponent {
+  constructor(public authService: AuthService, private router: Router) {}
 
-  constructor(public authService: AuthService, public router: Router) {}
-
-  isLoggedIn(): Observable<boolean> {
-    return this.authService.verifyToken().pipe( map((isValid) => {
-      return isValid;
-    }))
+  ngOnInit() {
+    this.isLoggedIn$ = this.authService.verifyToken();
   }
+
 
   logout() {
     this.authService.logout();

@@ -23,9 +23,8 @@ export class AuthService {
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
     return this.http.get<{ valid: boolean }>(`${this.apiUrl}/verify`, { headers }).pipe(
-      map((response) => {
-        return response.valid
-      }),
+      map(response => response.valid
+      ),
       catchError(() => {
         return of(false)
       })
