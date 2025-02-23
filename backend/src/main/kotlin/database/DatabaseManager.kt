@@ -19,18 +19,16 @@ object DatabaseManager {
                 SchemaUtils.create(shoppingList)
                 shoppingListMap[it] = shoppingList
             }
-            // Add missing columns via migration
-            shoppingListMap.forEach { (_, shoppingList) ->
-                SchemaUtils.addMissingColumnsStatements(shoppingList).forEach { statement ->
-                    exec(statement)
-                }
-            }
-            shoppingListMap.forEach { (_, shoppingList) ->
-                shoppingList.update() {
-                    it[retrieved] = false
-                }
-            }
+            migrateTablesIfMissing()
         }
+    }
+
+    private fun Transaction.migrateTablesIfMissing() {
+        shoppingListMap.forEach { (_, shoppingList) ->
+            SchemaUtils.addMissingColumnsStatements(shoppingList).forEach { exec(it) }
+        }
+        SchemaUtils.addMissingColumnsStatements(Users).forEach { exec(it) }
+        SchemaUtils.addMissingColumnsStatements(UserGroups).forEach { exec(it) }
     }
 
     private fun hikari(): HikariDataSource {
