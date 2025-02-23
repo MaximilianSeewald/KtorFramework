@@ -46,7 +46,6 @@ export class DashboardComponent implements OnInit {
             return { id: value.id, name: value.name, retrieved: value.retrieved, isEditing: false }
           })
           .sort((a, b) => Number(a.retrieved) - Number(b.retrieved));
-        console.log(this.shoppingList); // Log the sorted list to verify the order
       },
       () => {
         console.log("Error retrieving Shopping List Items")
