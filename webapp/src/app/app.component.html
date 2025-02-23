@@ -10,7 +10,10 @@
         <button *ngIf="isLoggedIn()" class="text-indigo-600 px-4 py-2 rounded-lg ml-4" routerLink="/dashboard">
           DashBoard
         </button>
-        <button *ngIf="!isLoggedIn()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg ml-4" routerLink="/login">
+        <button *ngIf="isLoggedIn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg ml-4" (click)="logout()">
+          Sign Out
+        </button>
+        <button *ngIf="!(isLoggedIn)" class="bg-indigo-600 text-white px-4 py-2 rounded-lg ml-4" routerLink="/login">
           Sign Up
         </button>
       </div>
