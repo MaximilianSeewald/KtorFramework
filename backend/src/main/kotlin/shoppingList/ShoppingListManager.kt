@@ -6,12 +6,16 @@ import com.loudless.SessionManager.secretJWTKey
 import com.loudless.models.ShoppingListItem
 import com.loudless.users.UserService.getUserGroupsByPrincipal
 import com.loudless.users.UserService.getUserGroupsByQuery
+import com.loudless.users.UserService.getUserNameByQuery
+import com.loudless.users.UserService.getUsernameByPrincipal
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -65,17 +69,23 @@ class ShoppingListManager {
             }
             val groups = getUserGroupsByQuery(decodedJWT)
             if(groups.isEmpty()) return@webSocket
+            val userName = getUserNameByQuery(decodedJWT)
             val flow = MutableSharedFlow<List<ShoppingListItem>>(replay = 1)
-            observerList[groups.first()] = flow
-            try {
+            observerList[userName ] = flow
+            val job = launch {
                 flow.collect { shoppingList ->
                     send(Json.encodeToString(shoppingList))
                 }
-            } catch (e: Exception) {
-                observerList.remove(groups.first())
-                close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, e.message ?: ""))
-            } finally {
-                observerList.remove(groups.first())
+            }
+            runCatching {
+                incoming.consumeEach {  }
+            }.onFailure {
+                observerList.remove(userName)
+                close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, it.message ?: ""))
+                job.cancel()
+            }.also {
+                observerList.remove(userName)
+                job.cancel()
             }
         }
     }
@@ -94,13 +104,14 @@ class ShoppingListManager {
     private fun Route.postShoppingList() {
         post("/shoppingList") {
             val groups = retrieveUserGroupsAndHandleErrors(call)
+            val userName = getUsernameByPrincipal(call)
             if (groups.isEmpty()) return@post
             when (ShoppingListService.addItem(call, groups[0])) {
                 true -> call.respond(HttpStatusCode.OK)
                 false -> call.respond(HttpStatusCode.BadRequest, "Couldn't add shopping list item")
             }
-            if(observerList[groups.first()] != null) {
-                observerList[groups.first()]!!.tryEmit(ShoppingListService.retrieveItems(groups[0]))
+            if(observerList[userName] != null) {
+                observerList[userName]!!.tryEmit(ShoppingListService.retrieveItems(groups[0]))
             }
         }
     }
@@ -108,13 +119,14 @@ class ShoppingListManager {
     private fun Route.putShoppingList() {
         put("/shoppingList") {
             val groups = retrieveUserGroupsAndHandleErrors(call)
+            val userName = getUsernameByPrincipal(call)
             if (groups.isEmpty()) return@put
             when (ShoppingListService.editItem(call, groups[0])) {
                 true -> call.respond(HttpStatusCode.OK)
                 false -> call.respond(HttpStatusCode.BadRequest, "Item id does not exist")
             }
-            if(observerList[groups.first()] != null) {
-                observerList[groups.first()]!!.tryEmit(ShoppingListService.retrieveItems(groups[0]))
+            if(observerList[userName] != null) {
+                observerList[userName]!!.tryEmit(ShoppingListService.retrieveItems(groups[0]))
             }
         }
     }
@@ -122,13 +134,14 @@ class ShoppingListManager {
     private fun Route.deleteShoppingList() {
         delete("/shoppingList") {
             val groups = retrieveUserGroupsAndHandleErrors(call)
+            val userName = getUsernameByPrincipal(call)
             if (groups.isEmpty()) return@delete
             when (ShoppingListService.deleteItem(call, groups[0])) {
                 true -> call.respond(HttpStatusCode.OK)
                 false -> call.respond(HttpStatusCode.BadRequest, "Item id is not unique")
             }
-            if(observerList[groups.first()] != null) {
-                observerList[groups.first()]!!.tryEmit(ShoppingListService.retrieveItems(groups[0]))
+            if(observerList[userName] != null) {
+                observerList[userName]!!.tryEmit(ShoppingListService.retrieveItems(groups[0]))
             }
         }
     }

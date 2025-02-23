@@ -26,6 +26,16 @@ object UserService {
         return groups
     }
 
+    fun getUsernameByPrincipal(call: ApplicationCall): String {
+        val principal = call.principal<JWTPrincipal>()
+        val username = principal?.getClaim("username", String::class) ?: ""
+        return username
+    }
+
+    fun getUserNameByQuery(decodedJWT: DecodedJWT): String {
+        return decodedJWT.getClaim("username").asString()
+    }
+
     fun getUserGroupsByQuery(decodedJWT: DecodedJWT): List<String> {
         val username = decodedJWT.getClaim("username").asString()
         val groups = transaction {
