@@ -1,42 +1,63 @@
 import { Injectable } from '@angular/core';
 import {HttpClient, HttpHeaders} from '@angular/common/http';
-import {BehaviorSubject, Observable, of, tap} from 'rxjs';
 import {environment} from '../environments/environment';
-import {catchError, map} from 'rxjs/operators';
+import {Router} from '@angular/router';
+import {firstValueFrom} from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
   apiUrl = environment.apiUrl;
-  private loggedInSubject = new BehaviorSubject<boolean>(false);
-  isLoggedIn$ = this.loggedInSubject.asObservable();
+  isLoggedIn: boolean = false;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private router: Router) {}
 
 
-  verifyToken(): Observable<boolean> {
-    const token = localStorage.getItem('token');
+  async verifyToken(): Promise<boolean> {
+      const token = localStorage.getItem('token');
 
-    if(!token) {
-      this.loggedInSubject.next(false)
-      return of(false)
-    }
+      if(!token) {
+        this.isLoggedIn = false
+        return false
+      }
+      const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
-    return this.http.get<{ valid: boolean }>(`${this.apiUrl}/verify`, { headers }).pipe(
-      map(response => response.valid),
-      tap(valid => this.loggedInSubject.next(valid)),
-      catchError(() => {
-        this.loggedInSubject.next(false);
-        return of(false)
-      })
-    );
+      try {
+        const response = await firstValueFrom(this.http.get<{ valid: boolean }>(`${this.apiUrl}/verify`, { headers }))
+        this.isLoggedIn = response.valid
+        return response.valid
+      } catch (error) {
+        this.isLoggedIn = false
+        return false
+      }
   }
 
   logout() {
     localStorage.removeItem('token');
-    this.loggedInSubject.next(false);
+    this.isLoggedIn = false
+    this.router.navigate(['landing']);
   }
+
+  login(username: string, password: string) {
+
+    const body = new URLSearchParams();
+    body.set('username', username);
+    body.set('password', password);
+
+    const headers = new HttpHeaders().set('Content-Type', 'application/x-www-form-urlencoded');
+
+    this.http.post(`${this.apiUrl}/login`, body.toString(), { headers }).subscribe(
+      (response: any) => {
+        localStorage.setItem('token', response.token);
+        this.isLoggedIn = true
+        this.router.navigate(['dashboard']);
+      },
+      () => {
+        this.isLoggedIn = false
+      }
+    );
+  }
+
+
 }
