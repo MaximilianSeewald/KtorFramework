@@ -55,7 +55,7 @@ object UserService {
     suspend fun editUser(call: ApplicationCall) {
         val updateData = call.receive<User>()
         transaction {
-            checkAndAdduserGroup(updateData.userGroup, updateData.name)
+            checkAndAdduserGroup(updateData.userGroup)
             val oldGroup = Users.selectAll().where { Users.id eq updateData.id }.map { it[Users.group] }.first() ?: ""
             Users.update({ Users.id eq updateData.id }) {
                 it[group] = updateData.userGroup
@@ -66,7 +66,7 @@ object UserService {
 
     fun addUser(name: String, password: String, group: String) {
         transaction {
-            checkAndAdduserGroup(group, name)
+            checkAndAdduserGroup(group)
             Users.insert {
                 it[Users.name] = name
                 it[Users.group] = group
@@ -83,11 +83,10 @@ object UserService {
         }
     }
 
-    private fun checkAndAdduserGroup(group: String, name: String) {
+    private fun checkAndAdduserGroup(group: String) {
         if (UserGroups.selectAll().none { it[UserGroups.name] == group }) {
             UserGroups.insert {
-                it[UserGroups.name] = group
-                it[adminName] = name
+                it[name] = group
             }
             val shoppingList = ShoppingList(group)
             transaction { SchemaUtils.create(shoppingList) }
