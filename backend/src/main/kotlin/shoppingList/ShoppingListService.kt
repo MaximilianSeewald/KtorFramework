@@ -26,7 +26,7 @@ object ShoppingListService {
                     id = it[shoppingListTable.id].toString(),
                     retrieved = it[shoppingListTable.retrieved]
                 )
-            } ?: mutableListOf(ShoppingListItem("Hallo", "Super", "1234", false))
+            } ?: mutableListOf()
         }
         return shoppingListDataMap
     }
