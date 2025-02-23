@@ -1,6 +1,7 @@
 package com.loudless.users
 
 import at.favre.lib.crypto.bcrypt.BCrypt
+import com.auth0.jwt.interfaces.DecodedJWT
 import com.loudless.database.DatabaseManager.shoppingListMap
 import com.loudless.database.ShoppingList
 import com.loudless.database.UserGroups
@@ -15,9 +16,18 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 object UserService {
 
-    fun getUserGroups(call: ApplicationCall): List<String> {
+    fun getUserGroupsByPrincipal(call: ApplicationCall): List<String> {
         val principal = call.principal<JWTPrincipal>()
         val username = principal?.getClaim("username", String::class) ?: ""
+        val groups = transaction {
+            Users.selectAll().where { Users.name eq username }
+                .map { it[Users.group] }
+        }
+        return groups
+    }
+
+    fun getUserGroupsByQuery(decodedJWT: DecodedJWT): List<String> {
+        val username = decodedJWT.getClaim("username").asString()
         val groups = transaction {
             Users.selectAll().where { Users.name eq username }
                 .map { it[Users.group] }

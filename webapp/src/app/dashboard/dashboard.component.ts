@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {NgForOf, NgIf} from '@angular/common';
 import {ShoppingListItem, ShoppingListItemExtended} from '../shoppingList/shoppingList.model';
@@ -17,28 +17,41 @@ import { v4 as uuid } from 'uuid';
   standalone: true,
   styleUrl: './dashboard.component.css'
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
 
   apiUrl = environment.apiUrl;
+  wsUrl = environment.wsUrl
   shoppingList: ShoppingListItemExtended[] = [];
   newItemName = '';
+  socket: WebSocket | null = null
 
   constructor(private http: HttpClient) {}
 
+  ngOnDestroy(): void {
+    this.socket?.close()
+  }
+
+
   ngOnInit() {
     this.getShoppingItems()
+    this.subscribeSSE()
+  }
+
+
+  subscribeSSE() {
+    const token = localStorage.getItem('token');
+    this.socket = new WebSocket(`${this.wsUrl}/shoppingListWS?token=${token}`)
+    this.socket.onmessage = (event) => this.shoppingList = JSON.parse(event.data)
+    this.socket.onerror = (err) => console.log(err)
+    this.socket.onclose = (close) => console.log(close.reason)
   }
 
   addItem() {
     const newItem: ShoppingListItem = { id: uuid(), name: this.newItemName, retrieved: false };
-    this.http.post(`${this.apiUrl}/shoppingList`, newItem).subscribe(
-      () => {
-        this.getShoppingItems()
-      }
-    );
+    this.http.post(`${this.apiUrl}/shoppingList`, newItem).subscribe()
   }
 
-  public getShoppingItems() {
+  getShoppingItems() {
     this.http.get<ShoppingListItem[]>(`${this.apiUrl}/shoppingList`).subscribe(
       (response) => {
         this.shoppingList = response
@@ -54,34 +67,19 @@ export class DashboardComponent implements OnInit {
   }
 
   deleteItem(id: string) {
-    this.http.delete(`${this.apiUrl}/shoppingList`, { params: { id: id } }).subscribe(
-      () => {
-        this.getShoppingItems()
-      }
-    );
+    this.http.delete(`${this.apiUrl}/shoppingList`, { params: { id: id } }).subscribe()
   }
 
   toggleEdit(item: ShoppingListItemExtended) {
     if (item.isEditing) {
       const shoppingListItem: ShoppingListItem = { id: item.id, name: item.name, retrieved: item.retrieved}
-      this.http.put(`${this.apiUrl}/shoppingList`,shoppingListItem).subscribe(
-        () => {
-          this.getShoppingItems()
-        }
-      );
+      this.http.put(`${this.apiUrl}/shoppingList`,shoppingListItem).subscribe()
     }
     item.isEditing = !item.isEditing
   }
 
   toggleRetrieved(item: ShoppingListItem) {
     const shoppingListItem: ShoppingListItem = {id: item.id, name: item.name, retrieved: item.retrieved};
-    this.http.put(`${this.apiUrl}/shoppingList`, shoppingListItem).subscribe(
-      () => {
-        this.getShoppingItems();
-      },
-      () => {
-        console.log("Error updating Shopping List Item");
-      }
-    );
+    this.http.put(`${this.apiUrl}/shoppingList`, shoppingListItem).subscribe()
   }
 }

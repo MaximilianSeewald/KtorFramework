@@ -18,6 +18,7 @@ object SessionManager {
     fun initRouting(routing: Routing) {
         gradeManager.initRouting(routing)
         userManager.initRouting(routing)
+        shoppingListManager.initQueryRoutes(routing)
     }
 
     fun initSafeRoutes(route: Route) {

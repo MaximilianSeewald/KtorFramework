@@ -10,10 +10,18 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.websocket.*
+import kotlin.time.Duration.Companion.seconds
 
 class KtorManager {
 
     fun installComponents(application: Application) {
+        application.install(WebSockets) {
+            pingPeriod = 15.seconds
+            timeout = 30.seconds
+            maxFrameSize = Long.MAX_VALUE
+            masking = false
+        }
         application.install(ContentNegotiation) {
             json()
         }
