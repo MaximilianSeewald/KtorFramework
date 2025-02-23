@@ -17,3 +17,7 @@ mat-card-header {
   align-items: center;
   gap: 10px;
 }
+
+.line-through {
+  text-decoration: line-through;
+}
