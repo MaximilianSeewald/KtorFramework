@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {NgForOf, NgIf} from '@angular/common';
-import {ShoppingListItem, ShoppingListItemExtended} from '../shoppingList/shoppingList.model';
+import {ShoppingListItem, ShoppingListItemExtended} from '../models/shoppingList.model';
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../../environments/environment';
 import { v4 as uuid } from 'uuid';

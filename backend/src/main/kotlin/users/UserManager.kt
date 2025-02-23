@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.loudless.SessionManager.secretJWTKey
 import com.loudless.database.Users
+import com.loudless.users.UserService.getUserInformationByPrincipal
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -17,6 +18,25 @@ class UserManager {
 
     fun initRouting(routing: Routing) {
         routing.login()
+    }
+
+    fun initSafeRoutes(routing: Route) {
+        routing.getInformation()
+    }
+
+    private fun Route.getInformation() {
+        get("/user") {
+            val userList = getUserInformationByPrincipal(call)
+            if(userList.isEmpty()) {
+                call.respond(HttpStatusCode.BadRequest, "No User Found")
+                return@get
+            }
+            if(userList.size > 1) {
+                call.respond(HttpStatusCode.BadRequest, "Multiple User Found for this name")
+                return@get
+            }
+            call.respond(userList[0])
+        }
     }
 
     private fun Routing.login() {

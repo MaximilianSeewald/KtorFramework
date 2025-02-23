@@ -1,0 +1,11 @@
+<!-- Hero Section -->
+<section class="text-center py-20 bg-indigo-600 text-white">
+  <h1 class="text-5xl font-bold">User Information</h1>
+</section>
+
+<div *ngIf="user" class="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6 mt-10">
+  <div class="mt-4">
+    <div class="mb-2"><strong>Name:</strong> {{ user.name }}</div>
+    <div class="mb-2"><strong>Group:</strong> {{ user.userGroup }}</div>
+  </div>
+</div>

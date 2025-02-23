@@ -6,6 +6,7 @@ import com.loudless.database.DatabaseManager.shoppingListMap
 import com.loudless.database.ShoppingList
 import com.loudless.database.UserGroups
 import com.loudless.database.Users
+import com.loudless.models.User
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
@@ -19,20 +20,27 @@ object UserService {
     fun getUserGroupsByPrincipal(call: ApplicationCall): List<String> {
         val principal = call.principal<JWTPrincipal>()
         val username = principal?.getClaim("username", String::class) ?: ""
-        val groups = transaction {
+        return transaction {
             Users.selectAll().where { Users.name eq username }
                 .map { it[Users.group] ?: "" }
         }
-        return groups
     }
 
     fun getUserGroupsByQuery(decodedJWT: DecodedJWT): List<String> {
         val username = decodedJWT.getClaim("username").asString()
-        val groups = transaction {
+        return transaction {
             Users.selectAll().where { Users.name eq username }
                 .map { it[Users.group] ?: "" }
         }
-        return groups
+    }
+
+    fun getUserInformationByPrincipal(call: ApplicationCall): List<User> {
+        val principal = call.principal<JWTPrincipal>()
+        val username = principal?.getClaim("username", String::class) ?: ""
+        return transaction {
+            Users.selectAll().where { Users.name eq username }
+                .map { User(it[Users.id], it[Users.name], it[Users.group] ?: "") }
+        }
     }
 
     private fun hashPassword(plainPassword: String): String {

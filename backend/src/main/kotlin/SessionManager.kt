@@ -23,6 +23,7 @@ object SessionManager {
 
     fun initSafeRoutes(route: Route) {
         shoppingListManager.initRoutes(route)
+        userManager.initSafeRoutes(route)
     }
 
     fun installComponents(application: Application) {
