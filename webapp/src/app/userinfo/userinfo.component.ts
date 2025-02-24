@@ -36,7 +36,7 @@ export class UserinfoComponent implements OnInit {
   }
 
   createGroup(): void {
-    /*TODO*/
+    this.http.post(`${this.apiUrl}/usergroups`, {name: this.newGroupName, password: this.newGroupPassword}).subscribe()
   }
 
   joinGroup(): void {
@@ -44,7 +44,8 @@ export class UserinfoComponent implements OnInit {
   }
 
   deleteGroup(): void {
-    /*TODO*/
+    const userGroupName = this.user?.userGroup ?? ""
+    this.http.delete(`${this.apiUrl}/usergroups`, { params: { name: userGroupName } }).subscribe()
   }
 
   leaveGroup(): void {
