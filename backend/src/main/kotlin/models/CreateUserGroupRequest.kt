@@ -1,4 +1,4 @@
-package com.loudless.userGroups
+package com.loudless.models
 
 import kotlinx.serialization.Serializable
 

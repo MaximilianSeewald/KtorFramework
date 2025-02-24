@@ -26,7 +26,7 @@ object SessionManager {
     fun initSafeRoutes(route: Route) {
         shoppingListManager.initRoutes(route)
         userManager.initSafeRoutes(route)
-        userGroupManager.initRoutes(route)
+        userGroupManager.initSafeRoutes(route)
     }
 
     fun installComponents(application: Application) {

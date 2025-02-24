@@ -2,6 +2,7 @@ package com.loudless.userGroups
 
 import com.loudless.database.DatabaseManager
 import com.loudless.database.UserGroups
+import com.loudless.models.CreateUserGroupRequest
 import com.loudless.shoppingList.ShoppingListService
 import com.loudless.users.UserService
 import io.ktor.http.*
@@ -9,10 +10,11 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.transaction
 
 class UserGroupManager {
 
-    fun initRoutes(route: Route) {
+    fun initSafeRoutes(route: Route) {
         route.postUserGroup()
         route.deleteUserGroup()
         route.getUserGroupAdmin()
@@ -62,13 +64,14 @@ class UserGroupManager {
 
     private fun Route.getUserGroupAdmin() {
         get("/usergroups/admin") {
-            val userGroup = call.request.queryParameters["name"]!!
-            val userId = UserService.retrieveAndHandleUsers(call)[0].id
-            val isAdmin = UserGroups
-                .selectAll()
-                .where { UserGroups.name eq userGroup }
-                .map { it[UserGroups.adminUserId] }
-                .firstOrNull() == userId
+            val user = UserService.retrieveAndHandleUsers(call)[0]
+            val isAdmin = transaction {
+                UserGroups
+                    .selectAll()
+                    .where { UserGroups.name eq user.userGroup}
+                    .map { it[UserGroups.adminUserId] }
+                    .firstOrNull() == user.id
+            }
             call.respond(isAdmin)
         }
     }

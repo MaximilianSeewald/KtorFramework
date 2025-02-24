@@ -8,7 +8,6 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
-import io.ktor.server.request.*
 import io.ktor.server.response.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -54,21 +53,10 @@ object UserService {
         return userList
     }
 
-    suspend fun editUser(call: ApplicationCall) {
-        val updateData = call.receive<User>()
-        transaction {
-            val oldGroup = Users.selectAll().where { Users.id eq updateData.id }.map { it[Users.group] }.first() ?: ""
-            Users.update({ Users.id eq updateData.id }) {
-                it[group] = updateData.userGroup
-            }
-        }
-    }
-
-    fun addUser(name: String, password: String, group: String) {
+    fun addUser(name: String, password: String) {
         transaction {
             Users.insert {
                 it[Users.name] = name
-                it[Users.group] = group
                 it[hashedPassword] = DatabaseManager.hashPassword(password)
             }
         }

@@ -35,7 +35,7 @@
       </button>
     </div>
     <div *ngIf="user.userGroup">
-      <div *ngIf="isAdmin()" class="mt-4 flex gap-2">
+      <div *ngIf="isAdmin" class="mt-4 flex gap-2">
         <input
           type="password"
           [(ngModel)]="newGroupPassword"
@@ -48,14 +48,14 @@
           Change Password
         </button>
       </div>
-      <div *ngIf="isAdmin()" class="text-center mt-4">
+      <div *ngIf="isAdmin" class="text-center mt-4">
         <button (click)="deleteGroup()"
           class="px-3 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600"
         >
           Delete Group
         </button>
       </div>
-      <div *ngIf="!isAdmin()" class="text-center mt-2">
+      <div *ngIf="!isAdmin" class="text-center mt-2">
         <button (click)="leaveGroup()"
           class="px-3 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600"
         >

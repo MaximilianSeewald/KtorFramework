@@ -22,20 +22,12 @@ class UserManager {
 
     fun initSafeRoutes(routing: Route) {
         routing.getUserInformation()
-        routing.updateUserInformation()
     }
 
 
     private fun Route.getUserInformation() {
         get("/user") {
             call.respond(UserService.retrieveAndHandleUsers(call)[0])
-        }
-    }
-
-    private fun Route.updateUserInformation() {
-        put("/user") {
-            UserService.retrieveAndHandleUsers(call)
-            UserService.editUser(call)
         }
     }
 
