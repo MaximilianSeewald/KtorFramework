@@ -19,7 +19,8 @@ export class UserinfoComponent implements OnInit {
 
   user: User | null = null
   apiUrl = environment.apiUrl;
-  isEditingGroup = false;
+  newGroupName: String = ""
+  newGroupPassword: String = ""
 
   constructor(private http: HttpClient) {}
 
@@ -30,11 +31,27 @@ export class UserinfoComponent implements OnInit {
       })
   }
 
-  toggleEditGroup() {
-    if (this.isEditingGroup) {
-      this.http.put<User>(`${this.apiUrl}/user`, this.user).subscribe()
-    }
-    this.isEditingGroup = !this.isEditingGroup;
+  isAdmin(): boolean {
+   return true;
   }
 
+  createGroup(): void {
+    /*TODO*/
+  }
+
+  joinGroup(): void {
+    /*TODO*/
+  }
+
+  deleteGroup(): void {
+    /*TODO*/
+  }
+
+  leaveGroup(): void {
+    /*TODO*/
+  }
+
+  changeGroupPassword(): void{
+    /*TODO*/
+  }
 }
