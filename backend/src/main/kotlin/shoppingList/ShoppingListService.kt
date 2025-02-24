@@ -1,6 +1,7 @@
 package com.loudless.shoppingList
 
 import com.loudless.database.DatabaseManager
+import com.loudless.database.ShoppingList
 import com.loudless.models.ShoppingListItem
 import io.ktor.http.*
 import io.ktor.server.request.*
@@ -110,19 +111,17 @@ object ShoppingListService {
 
     fun addShoppingList(userGroup: String) {
         transaction {
-            DatabaseManager.shoppingListMap[userGroup]?.let {
-                SchemaUtils.create(it)
-                DatabaseManager.shoppingListMap[userGroup] = it
-            }
+            val shoppingList = ShoppingList(userGroup)
+            SchemaUtils.create(shoppingList)
+            DatabaseManager.shoppingListMap[userGroup] = shoppingList
         }
     }
 
     fun deleteShoppingList(userGroup: String) {
         transaction {
-            DatabaseManager.shoppingListMap[userGroup]?.let {
-                SchemaUtils.drop(it)
-                DatabaseManager.shoppingListMap.remove(userGroup)
-            }
+            val shoppingList = DatabaseManager.shoppingListMap[userGroup]
+            SchemaUtils.drop(shoppingList!!)
+            DatabaseManager.shoppingListMap.remove(userGroup)
         }
     }
 }
