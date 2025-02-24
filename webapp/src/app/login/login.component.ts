@@ -4,9 +4,7 @@ import {MatError, MatFormField} from '@angular/material/form-field';
 import {FormsModule} from '@angular/forms';
 import {MatInput} from '@angular/material/input';
 import {MatButton} from '@angular/material/button';
-import {HttpClient, HttpHeaders} from '@angular/common/http';
-import {environment} from '../../environments/environment';
-import {Router} from '@angular/router';
+import {AuthService} from '../auth.service';
 
 @Component({
   selector: 'app-login',
@@ -27,27 +25,12 @@ export class LoginComponent {
 
   username = '';
   password = '';
-  apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private authService: AuthService) {}
 
   public onSubmit(form: any): void {
     const { username, password } = form.value;
-    const body = new URLSearchParams();
-    body.set('username', username);
-    body.set('password', password);
-
-    const headers = new HttpHeaders().set('Content-Type', 'application/x-www-form-urlencoded');
-
-    this.http.post(`${this.apiUrl}/login`, body.toString(), { headers }).subscribe(
-      (response: any) => {
-        localStorage.setItem('token', response.token);
-        this.router.navigate(['dashboard']);
-      },
-      () => {
-        console.log('Invalid login credentials');
-      }
-    );
+    this.authService.login(username,password)
 
   }
 }
