@@ -1,16 +1,18 @@
 package com.loudless.users
 
-import at.favre.lib.crypto.bcrypt.BCrypt
 import com.auth0.jwt.interfaces.DecodedJWT
+import com.loudless.database.DatabaseManager
 import com.loudless.database.DatabaseManager.shoppingListMap
 import com.loudless.database.ShoppingList
 import com.loudless.database.UserGroups
 import com.loudless.database.Users
 import com.loudless.models.User
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
+import io.ktor.server.response.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -43,14 +45,19 @@ object UserService {
         }
     }
 
-    private fun hashPassword(plainPassword: String): String {
-        return BCrypt.withDefaults().hashToString(12, plainPassword.toCharArray())
+    suspend fun retrieveAndHandleUsers(call: ApplicationCall): List<User> {
+        val userList = getUserInformationByPrincipal(call)
+        if(userList.isEmpty()) {
+            call.respond(HttpStatusCode.BadRequest, "No User Found")
+            return emptyList()
+        }
+        if(userList.size > 1) {
+            call.respond(HttpStatusCode.BadRequest, "Multiple User Found for this name")
+            return emptyList()
+        }
+        return userList
     }
 
-    fun verifyPassword(plainPassword: String, hashedPassword: String): Boolean {
-        val result = BCrypt.verifyer().verify(plainPassword.toCharArray(), hashedPassword)
-        return result.verified
-    }
 
     suspend fun editUser(call: ApplicationCall) {
         val updateData = call.receive<User>()
@@ -70,7 +77,7 @@ object UserService {
             Users.insert {
                 it[Users.name] = name
                 it[Users.group] = group
-                it[hashedPassword] = hashPassword(password)
+                it[hashedPassword] = DatabaseManager.hashPassword(password)
             }
         }
     }
