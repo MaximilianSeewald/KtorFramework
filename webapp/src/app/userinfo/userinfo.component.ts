@@ -4,6 +4,7 @@ import {User} from '../models/user.model';
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../../environments/environment';
 import {FormsModule} from '@angular/forms';
+import {CreateUserGroupRequestModel} from "../models/createUserGroupRequest.model";
 
 @Component({
   selector: 'app-userinfo',
@@ -19,8 +20,8 @@ export class UserinfoComponent implements OnInit {
 
   user: User | null = null
   apiUrl = environment.apiUrl;
-  newGroupName: String = ""
-  newGroupPassword: String = ""
+  newGroupName: string = ""
+  newGroupPassword: string = ""
 
   constructor(private http: HttpClient) {}
 
@@ -36,7 +37,8 @@ export class UserinfoComponent implements OnInit {
   }
 
   createGroup(): void {
-    this.http.post(`${this.apiUrl}/usergroups`, {name: this.newGroupName, password: this.newGroupPassword}).subscribe()
+    const request: CreateUserGroupRequestModel = {userGroupName: this.newGroupName, password: this.newGroupPassword}
+    this.http.post(`${this.apiUrl}/usergroups`,request).subscribe()
   }
 
   joinGroup(): void {
