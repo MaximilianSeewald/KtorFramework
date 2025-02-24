@@ -77,4 +77,12 @@ object UserService {
             }
         }
     }
+
+    fun deleteUserGroupFromUser(userGroup: String) {
+        transaction {
+            Users.update({ Users.group eq userGroup }) {
+                it[group] = null
+            }
+        }
+    }
 }
