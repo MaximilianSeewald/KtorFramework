@@ -20,13 +20,13 @@ object SessionManager {
     fun initRouting(routing: Routing) {
         gradeManager.initRouting(routing)
         userManager.initRouting(routing)
-        userGroupManager.initRouting(routing)
         shoppingListManager.initQueryRoutes(routing)
     }
 
     fun initSafeRoutes(route: Route) {
         shoppingListManager.initRoutes(route)
         userManager.initSafeRoutes(route)
+        userGroupManager.initRoutes(route)
     }
 
     fun installComponents(application: Application) {

@@ -11,10 +11,10 @@ import org.jetbrains.exposed.sql.selectAll
 
 class UserGroupManager {
 
-    fun initRouting(routing: Routing) {
-        routing.postUserGroup()
-        routing.deleteUserGroup()
-        routing.getUserGroupAdmin()
+    fun initRoutes(route: Route) {
+        route.postUserGroup()
+        route.deleteUserGroup()
+        route.getUserGroupAdmin()
     }
 
     private fun Route.postUserGroup() {
