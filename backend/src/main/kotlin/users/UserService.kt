@@ -2,9 +2,6 @@ package com.loudless.users
 
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.loudless.database.DatabaseManager
-import com.loudless.database.DatabaseManager.shoppingListMap
-import com.loudless.database.ShoppingList
-import com.loudless.database.UserGroups
 import com.loudless.database.Users
 import com.loudless.models.User
 import io.ktor.http.*
@@ -14,7 +11,6 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object UserService {
@@ -58,22 +54,18 @@ object UserService {
         return userList
     }
 
-
     suspend fun editUser(call: ApplicationCall) {
         val updateData = call.receive<User>()
         transaction {
-            checkAndAdduserGroup(updateData.userGroup)
             val oldGroup = Users.selectAll().where { Users.id eq updateData.id }.map { it[Users.group] }.first() ?: ""
             Users.update({ Users.id eq updateData.id }) {
                 it[group] = updateData.userGroup
             }
-            checkAndRemoveUserGroup(oldGroup)
         }
     }
 
     fun addUser(name: String, password: String, group: String) {
         transaction {
-            checkAndAdduserGroup(group)
             Users.insert {
                 it[Users.name] = name
                 it[Users.group] = group
@@ -82,22 +74,19 @@ object UserService {
         }
     }
 
-    private fun checkAndRemoveUserGroup(oldGroup: String) {
-        if(Users.selectAll().where { Users.group eq oldGroup }.count() <= 1) {
-            UserGroups.deleteWhere { name eq oldGroup }
-            SchemaUtils.drop(ShoppingList(oldGroup))
-            shoppingListMap.remove(oldGroup)
+    fun addUserGroupToUser(userId: Int, userGroup: String) {
+        transaction {
+            Users.update({ Users.id eq userId }) {
+                it[group] = userGroup
+            }
         }
     }
 
-    private fun checkAndAdduserGroup(group: String) {
-        if (UserGroups.selectAll().none { it[UserGroups.name] == group }) {
-            UserGroups.insert {
-                it[name] = group
+    fun deleteUserGroupFromUser(userId: Int) {
+        transaction {
+            Users.update({ Users.id eq userId }) {
+                it[group] = ""
             }
-            val shoppingList = ShoppingList(group)
-            transaction { SchemaUtils.create(shoppingList) }
-            shoppingListMap[group] = shoppingList
         }
     }
 }

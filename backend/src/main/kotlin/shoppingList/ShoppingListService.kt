@@ -6,12 +6,9 @@ import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import java.util.*
 
 object ShoppingListService {
@@ -107,6 +104,24 @@ object ShoppingListService {
                 return@transaction true
             } else {
                 return@transaction false
+            }
+        }
+    }
+
+    fun addShoppingList(userGroup: String) {
+        transaction {
+            DatabaseManager.shoppingListMap[userGroup]?.let {
+                SchemaUtils.create(it)
+                DatabaseManager.shoppingListMap[userGroup] = it
+            }
+        }
+    }
+
+    fun deleteShoppingList(userGroup: String) {
+        transaction {
+            DatabaseManager.shoppingListMap[userGroup]?.let {
+                SchemaUtils.drop(it)
+                DatabaseManager.shoppingListMap.remove(userGroup)
             }
         }
     }
