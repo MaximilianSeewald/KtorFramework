@@ -78,6 +78,7 @@ class ShoppingListManager {
                 }
             }
             runCatching {
+                send(Json.encodeToString(ShoppingListService.retrieveItems(groups[0])))
                 incoming.consumeEach {  }
             }.onFailure {
                 observerList.remove(userName)
