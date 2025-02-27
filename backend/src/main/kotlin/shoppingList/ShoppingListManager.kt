@@ -4,7 +4,6 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.loudless.SessionManager.secretJWTKey
 import com.loudless.models.ShoppingListItem
-import com.loudless.users.UserService
 import com.loudless.users.UserService.getUserGroupsByPrincipal
 import com.loudless.users.UserService.getUserGroupsByQuery
 import com.loudless.users.UserService.getUserNameByQuery
@@ -105,7 +104,7 @@ class ShoppingListManager {
     private fun Route.postShoppingList() {
         post("/shoppingList") {
             val groups = retrieveUserGroupsAndHandleErrors(call)
-            val userName = UserService.getUs(call)
+            val userName = getUsernameByPrincipal(call)
             if (groups.isEmpty()) return@post
             when (ShoppingListService.addItem(call, groups[0])) {
                 true -> call.respond(HttpStatusCode.OK)
