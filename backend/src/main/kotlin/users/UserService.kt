@@ -23,12 +23,6 @@ object UserService {
         }
     }
 
-    fun getUsernameByPrincipal(call: ApplicationCall): String {
-        val principal = call.principal<JWTPrincipal>()
-        val username = principal?.getClaim("username", String::class) ?: ""
-        return username
-    }
-
     fun getUserNameByQuery(decodedJWT: DecodedJWT): String {
         return decodedJWT.getClaim("username").asString()
     }
@@ -41,7 +35,7 @@ object UserService {
         }
     }
 
-    fun getUserInformationByPrincipal(call: ApplicationCall): List<User> {
+    private fun getUserInformationByPrincipal(call: ApplicationCall): List<User> {
         val principal = call.principal<JWTPrincipal>()
         val username = principal?.getClaim("username", String::class) ?: ""
         return transaction {
