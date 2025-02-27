@@ -4,8 +4,10 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.loudless.SessionManager.secretJWTKey
 import com.loudless.models.ShoppingListItem
+import com.loudless.users.UserService
 import com.loudless.users.UserService.getUserGroupsByPrincipal
 import com.loudless.users.UserService.getUserGroupsByQuery
+import com.loudless.users.UserService.getUserNameByQuery
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
@@ -66,12 +68,13 @@ class ShoppingListManager {
                 return@webSocket
             }
             val groups = getUserGroupsByQuery(decodedJWT)
+            val userName = getUserNameByQuery(decodedJWT)
             if(groups.isEmpty() || groups.contains("")) return@webSocket
             var flow = MutableSharedFlow<List<ShoppingListItem>>(replay = 1)
-            if(observerList[groups[0]] == null) {
-                observerList[groups[0]] = flow
+            if(observerList[userName] == null) {
+                observerList[userName] = flow
             }else {
-                flow = observerList[groups[0]]!!
+                flow = observerList[userName]!!
             }
             val job = launch {
                 flow.collect { shoppingList ->
@@ -82,11 +85,11 @@ class ShoppingListManager {
                 send(Json.encodeToString(ShoppingListService.retrieveItems(groups[0])))
                 incoming.consumeEach {  }
             }.onFailure {
-                observerList.remove(groups[0])
+                observerList.remove(userName)
                 close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, it.message ?: ""))
                 job.cancel()
             }.also {
-                observerList.remove(groups[0])
+                observerList.remove(userName)
                 job.cancel()
             }
         }
@@ -111,9 +114,7 @@ class ShoppingListManager {
                 true -> call.respond(HttpStatusCode.OK)
                 false -> call.respond(HttpStatusCode.BadRequest, "Couldn't add shopping list item")
             }
-            if(observerList[groups[0]] != null) {
-                observerList[groups[0]]!!.tryEmit(ShoppingListService.retrieveItems(groups[0]))
-            }
+            emitUpdate(groups)
         }
     }
 
@@ -125,8 +126,15 @@ class ShoppingListManager {
                 true -> call.respond(HttpStatusCode.OK)
                 false -> call.respond(HttpStatusCode.BadRequest, "Item id does not exist")
             }
-            if(observerList[groups[0]] != null) {
-                observerList[groups[0]]!!.tryEmit(ShoppingListService.retrieveItems(groups[0]))
+            emitUpdate(groups)
+        }
+    }
+
+    private fun emitUpdate(groups: List<String>) {
+        val usersForGroup = UserService.getUsersForGroup(groups[0])
+        if (observerList.any { usersForGroup.contains(it.key) }) {
+            observerList.filter { usersForGroup.contains(it.key) }.forEach {
+                it.value.tryEmit(ShoppingListService.retrieveItems(groups[0]))
             }
         }
     }
@@ -139,9 +147,7 @@ class ShoppingListManager {
                 true -> call.respond(HttpStatusCode.OK)
                 false -> call.respond(HttpStatusCode.BadRequest, "Item id is not unique")
             }
-            if(observerList[groups[0]] != null) {
-                observerList[groups[0]]!!.tryEmit(ShoppingListService.retrieveItems(groups[0]))
-            }
+            emitUpdate(groups)
         }
     }
 }

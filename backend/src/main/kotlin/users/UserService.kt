@@ -95,4 +95,10 @@ object UserService {
             }
         }
     }
+
+    fun getUsersForGroup(group: String): List<String> {
+        return transaction {
+            Users.selectAll().where { Users.group eq group }.map { it[Users.name] }
+        }
+    }
 }
