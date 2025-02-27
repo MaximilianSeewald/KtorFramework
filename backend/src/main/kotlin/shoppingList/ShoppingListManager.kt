@@ -64,7 +64,7 @@ class ShoppingListManager {
                 return@webSocket
             }
             val groups = getUserGroupsByQuery(decodedJWT)
-            if(groups.isEmpty()) return@webSocket
+            if(groups.isEmpty() || groups.contains("")) return@webSocket
             try {
                 shoppingListFlow.collect { shoppingList ->
                     send(Json.encodeToString(shoppingList))

@@ -33,7 +33,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
 
   ngOnInit() {
-    this.getShoppingItems()
     this.subscribeSSE()
   }
 
@@ -41,7 +40,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   subscribeSSE() {
     const token = localStorage.getItem('token');
     this.socket = new WebSocket(`${this.wsUrl}/shoppingListWS?token=${token}`)
-    this.socket.onmessage = (event) => this.shoppingList = JSON.parse(event.data)
+    this.socket.onmessage = (event) => {
+      this.shoppingList = JSON.parse(event.data)
+    }
     this.socket.onerror = (err) => console.log(err)
     this.socket.onclose = (close) => console.log(close.reason)
   }
@@ -50,21 +51,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const newItem: ShoppingListItem = { id: uuid(), name: this.newItemName, retrieved: false };
     this.http.post(`${this.apiUrl}/shoppingList`, newItem).subscribe()
     this.newItemName = ""
-  }
-
-  getShoppingItems() {
-    this.http.get<ShoppingListItem[]>(`${this.apiUrl}/shoppingList`).subscribe(
-      (response) => {
-        this.shoppingList = response
-          .map((value) => {
-            return { id: value.id, name: value.name, retrieved: value.retrieved, isEditing: false }
-          })
-          .sort((a, b) => Number(a.retrieved) - Number(b.retrieved));
-      },
-      () => {
-        console.log("Error retrieving Shopping List Items")
-      }
-    );
   }
 
   deleteItem(id: string) {
