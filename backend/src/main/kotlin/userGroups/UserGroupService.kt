@@ -48,9 +48,10 @@ object UserGroupService {
 
     fun checkIsAdmin(user: User): Boolean {
         return transaction {
+            val userGroup = user.userGroup?: return@transaction false
             UserGroups
                 .selectAll()
-                .where { UserGroups.name eq user.userGroup}
+                .where { UserGroups.name eq userGroup}
                 .map { it[UserGroups.adminUserId] }
                 .firstOrNull() == user.id
         }

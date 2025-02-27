@@ -3,4 +3,4 @@ package com.loudless.models
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ShoppingListItem(var name: String, var amount: String = "", var id: String, var retrieved: Boolean)
+data class ShoppingListItem(val name: String, val amount: String = "", val id: String, val retrieved: Boolean)

@@ -73,7 +73,7 @@ object UserService {
     fun deleteUserGroupFromUser(userId: Int) {
         transaction {
             Users.update({ Users.id eq userId }) {
-                it[group] = ""
+                it[group] = null
             }
         }
     }
