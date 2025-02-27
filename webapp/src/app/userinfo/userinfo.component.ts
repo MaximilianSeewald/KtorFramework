@@ -5,6 +5,7 @@ import {HttpClient} from '@angular/common/http';
 import {environment} from '../../environments/environment';
 import {FormsModule} from '@angular/forms';
 import {CreateUserGroupRequestModel} from "../models/createUserGroupRequest.model";
+import {EditUserGroupRequest} from '../models/editUserGroupRequest';
 
 @Component({
   selector: 'app-userinfo',
@@ -75,6 +76,10 @@ export class UserinfoComponent implements OnInit {
   }
 
   changeGroupPassword(): void{
-    /*TODO*/
+    const request: EditUserGroupRequest = { userGroupName: this.user?.userGroup ?? "", newPassword: this.newGroupPassword }
+    this.http.put(`${this.apiUrl}/usergroups`, request).subscribe(() => {
+      this.getUserInfo()
+      this.newGroupPassword = ""
+    })
   }
 }

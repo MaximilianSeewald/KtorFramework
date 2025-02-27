@@ -1,16 +1,14 @@
 package com.loudless.userGroups
 
 import com.loudless.database.DatabaseManager
-import com.loudless.database.UserGroups
 import com.loudless.models.CreateUserGroupRequest
+import com.loudless.models.EditUserGroupRequest
 import com.loudless.shoppingList.ShoppingListService
 import com.loudless.users.UserService
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
 
 class UserGroupManager {
 
@@ -18,6 +16,20 @@ class UserGroupManager {
         route.postUserGroup()
         route.deleteUserGroup()
         route.getUserGroupAdmin()
+        route.editPasswordUserGroup()
+    }
+
+    private fun Route.editPasswordUserGroup() {
+        put("/usergroups") {
+            val editUserGroupRequest = call.receive<EditUserGroupRequest>()
+            val user = UserService.retrieveAndHandleUsers(call)[0]
+            if(!UserGroupService.checkIsAdmin(user)){
+                call.respond(HttpStatusCode.BadRequest, "User is not admin")
+                return@put
+            }
+            UserGroupService.updatePassword(editUserGroupRequest.userGroupName, editUserGroupRequest.newPassword)
+            call.respond(HttpStatusCode.OK)
+        }
     }
 
     private fun Route.postUserGroup() {
@@ -65,14 +77,7 @@ class UserGroupManager {
     private fun Route.getUserGroupAdmin() {
         get("/usergroups/admin") {
             val user = UserService.retrieveAndHandleUsers(call)[0]
-            val isAdmin = transaction {
-                UserGroups
-                    .selectAll()
-                    .where { UserGroups.name eq user.userGroup}
-                    .map { it[UserGroups.adminUserId] }
-                    .firstOrNull() == user.id
-            }
-            call.respond(isAdmin)
+            call.respond(UserGroupService.checkIsAdmin(user))
         }
     }
 }

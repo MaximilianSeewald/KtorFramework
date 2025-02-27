@@ -1,12 +1,14 @@
 package com.loudless.userGroups
 
+import com.loudless.database.DatabaseManager
 import com.loudless.database.UserGroups
-import io.ktor.http.*
+import com.loudless.models.User
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 
 object UserGroupService {
 
@@ -39,8 +41,26 @@ object UserGroupService {
                     .firstOrNull() != userId) {
                 return@transaction false
             }
-            UserGroups.deleteWhere { UserGroups.name eq userGroupName }
+            UserGroups.deleteWhere { name eq userGroupName }
             return@transaction true
+        }
+    }
+
+    fun checkIsAdmin(user: User): Boolean {
+        return transaction {
+            UserGroups
+                .selectAll()
+                .where { UserGroups.name eq user.userGroup}
+                .map { it[UserGroups.adminUserId] }
+                .firstOrNull() == user.id
+        }
+    }
+
+    fun updatePassword(userGroupName: String, newPassword: String) {
+        transaction {
+            UserGroups.update(where = { UserGroups.name eq userGroupName }) {
+                it[hashedPassword] = DatabaseManager.hashPassword(newPassword)
+            }
         }
     }
 }
