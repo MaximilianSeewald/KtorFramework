@@ -49,6 +49,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   addItem() {
     const newItem: ShoppingListItem = { id: uuid(), name: this.newItemName, retrieved: false };
     this.http.post(`${this.apiUrl}/shoppingList`, newItem).subscribe()
+    this.newItemName = ""
   }
 
   getShoppingItems() {
