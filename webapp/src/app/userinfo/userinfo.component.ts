@@ -6,6 +6,7 @@ import {environment} from '../../environments/environment';
 import {FormsModule} from '@angular/forms';
 import {CreateUserGroupRequestModel} from "../models/createUserGroupRequest.model";
 import {EditUserGroupRequest} from '../models/editUserGroupRequest';
+import {JoinUserGroupRequestModel} from '../models/joinUserGroupRequest.model';
 
 @Component({
   selector: 'app-userinfo',
@@ -60,8 +61,11 @@ export class UserinfoComponent implements OnInit {
   }
 
   joinGroup(): void {
-    /*TODO*/
-  }
+    const request: JoinUserGroupRequestModel = {userGroupName: this.newGroupName, password: this.newGroupPassword}
+    this.http.post(`${this.apiUrl}/user/${this.user?.name}/groups`,request).subscribe(() => {
+      this.getUserInfo()
+      this.newGroupPassword = ""
+    })  }
 
   deleteGroup(): void {
     const userGroupName = this.user?.userGroup ?? ""
@@ -72,7 +76,10 @@ export class UserinfoComponent implements OnInit {
   }
 
   leaveGroup(): void {
-    /*TODO*/
+    this.http.delete(`${this.apiUrl}/user/${this.user?.name}/groups/${this.user?.userGroup}`).subscribe(() => {
+      this.getUserInfo()
+      this.newGroupPassword = ""
+    })
   }
 
   changeGroupPassword(): void{

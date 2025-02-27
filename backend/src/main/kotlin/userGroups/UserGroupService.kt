@@ -64,4 +64,16 @@ object UserGroupService {
             }
         }
     }
+
+    fun checkPassword(userGroupName: String, password: String): Boolean {
+        return transaction {
+            val storedPassword = UserGroups
+                .selectAll()
+                .where { UserGroups.name eq userGroupName }
+                .map { it[UserGroups.hashedPassword] }
+                .firstOrNull() ?: return@transaction false
+
+            return@transaction DatabaseManager.verifyPassword(password, storedPassword)
+        }
+    }
 }
