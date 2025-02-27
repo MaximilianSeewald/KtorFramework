@@ -78,7 +78,7 @@ object UserService {
         }
     }
 
-    fun deleteUserGroupFromUser(userGroup: String) {
+    fun deleteUserGroupFromAllUsers(userGroup: String) {
         transaction {
             Users.update({ Users.group eq userGroup }) {
                 it[group] = null

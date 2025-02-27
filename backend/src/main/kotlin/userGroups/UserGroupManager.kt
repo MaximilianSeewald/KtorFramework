@@ -68,7 +68,7 @@ class UserGroupManager {
                 call.respond(HttpStatusCode.BadRequest, "User is not the owner of the group")
                 return@delete
             }
-            UserService.deleteUserGroupFromUser(userGroupName)
+            UserService.deleteUserGroupFromAllUsers(userGroupName)
             ShoppingListService.deleteShoppingList(userGroupName)
             call.respond(HttpStatusCode.OK)
         }
