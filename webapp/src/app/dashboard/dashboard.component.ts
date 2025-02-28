@@ -33,11 +33,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
 
   ngOnInit() {
-    this.subscribeWebsocket()
+    this.subscribeWebSocket()
   }
 
 
-  subscribeWebsocket() {
+  subscribeWebSocket() {
     const token = localStorage.getItem('token');
     this.socket = new WebSocket(`${this.wsUrl}/shoppingListWS?token=${token}`)
     this.socket.onmessage = (event) => {
