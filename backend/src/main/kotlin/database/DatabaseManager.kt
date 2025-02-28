@@ -1,5 +1,6 @@
 package com.loudless.database
 
+import at.favre.lib.crypto.bcrypt.BCrypt
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.sql.*
@@ -41,4 +42,14 @@ object DatabaseManager {
         config.validate()
         return HikariDataSource(config)
     }
+
+    fun hashPassword(plainPassword: String): String {
+        return BCrypt.withDefaults().hashToString(12, plainPassword.toCharArray())
+    }
+
+    fun verifyPassword(plainPassword: String, hashedPassword: String): Boolean {
+        val result = BCrypt.verifyer().verify(plainPassword.toCharArray(), hashedPassword)
+        return result.verified
+    }
+
 }

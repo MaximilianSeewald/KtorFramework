@@ -1,17 +1,15 @@
 package com.loudless.users
 
-import at.favre.lib.crypto.bcrypt.BCrypt
 import com.auth0.jwt.interfaces.DecodedJWT
-import com.loudless.database.DatabaseManager.shoppingListMap
-import com.loudless.database.ShoppingList
-import com.loudless.database.UserGroups
+import com.loudless.database.DatabaseManager
 import com.loudless.database.Users
+import com.loudless.models.User
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
+import io.ktor.server.response.*
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object UserService {
@@ -19,17 +17,10 @@ object UserService {
     fun getUserGroupsByPrincipal(call: ApplicationCall): List<String> {
         val principal = call.principal<JWTPrincipal>()
         val username = principal?.getClaim("username", String::class) ?: ""
-        val groups = transaction {
+        return transaction {
             Users.selectAll().where { Users.name eq username }
                 .map { it[Users.group] ?: "" }
         }
-        return groups
-    }
-
-    fun getUsernameByPrincipal(call: ApplicationCall): String {
-        val principal = call.principal<JWTPrincipal>()
-        val username = principal?.getClaim("username", String::class) ?: ""
-        return username
     }
 
     fun getUserNameByQuery(decodedJWT: DecodedJWT): String {
@@ -38,37 +29,70 @@ object UserService {
 
     fun getUserGroupsByQuery(decodedJWT: DecodedJWT): List<String> {
         val username = decodedJWT.getClaim("username").asString()
-        val groups = transaction {
+        return transaction {
             Users.selectAll().where { Users.name eq username }
                 .map { it[Users.group] ?: "" }
         }
-        return groups
     }
 
-    private fun hashPassword(plainPassword: String): String {
-        return BCrypt.withDefaults().hashToString(12, plainPassword.toCharArray())
+    private fun getUserInformationByPrincipal(call: ApplicationCall): List<User> {
+        val principal = call.principal<JWTPrincipal>()
+        val username = principal?.getClaim("username", String::class) ?: ""
+        return transaction {
+            Users.selectAll().where { Users.name eq username }
+                .map { User(it[Users.id], it[Users.name], it[Users.group] ?: "") }
+        }
     }
 
-    fun verifyPassword(plainPassword: String, hashedPassword: String): Boolean {
-        val result = BCrypt.verifyer().verify(plainPassword.toCharArray(), hashedPassword)
-        return result.verified
+    suspend fun retrieveAndHandleUsers(call: ApplicationCall): List<User> {
+        val userList = getUserInformationByPrincipal(call)
+        if(userList.isEmpty()) {
+            call.respond(HttpStatusCode.BadRequest, "No User Found")
+            return emptyList()
+        }
+        if(userList.size > 1) {
+            call.respond(HttpStatusCode.BadRequest, "Multiple User Found for this name")
+            return emptyList()
+        }
+        return userList
     }
 
-    fun addUser(name: String, password: String, group: String) {
+    fun addUser(name: String, password: String) {
         transaction {
-            if(UserGroups.selectAll().none { it[UserGroups.name] == group }) {
-                UserGroups.insert {
-                    it[UserGroups.name] = group
-                }
-                val shoppingList = ShoppingList(group)
-                transaction { SchemaUtils.create(shoppingList) }
-                shoppingListMap[group] = shoppingList
-            }
             Users.insert {
                 it[Users.name] = name
-                it[Users.group] = group
-                it[Users.hashedPassword] = hashPassword(password)
+                it[hashedPassword] = DatabaseManager.hashPassword(password)
             }
+        }
+    }
+
+    fun addUserGroupToUser(userId: Int, userGroup: String) {
+        transaction {
+            Users.update({ Users.id eq userId }) {
+                it[group] = userGroup
+            }
+        }
+    }
+
+    fun deleteUserGroupFromUser(userId: Int) {
+        transaction {
+            Users.update({ Users.id eq userId }) {
+                it[group] = null
+            }
+        }
+    }
+
+    fun deleteUserGroupFromAllUsers(userGroup: String) {
+        transaction {
+            Users.update({ Users.group eq userGroup }) {
+                it[group] = null
+            }
+        }
+    }
+
+    fun getUsersForGroup(group: String): List<String> {
+        return transaction {
+            Users.selectAll().where { Users.group eq group }.map { it[Users.name] }
         }
     }
 }

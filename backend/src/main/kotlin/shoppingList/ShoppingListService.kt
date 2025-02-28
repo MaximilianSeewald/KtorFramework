@@ -1,17 +1,15 @@
 package com.loudless.shoppingList
 
 import com.loudless.database.DatabaseManager
+import com.loudless.database.ShoppingList
 import com.loudless.models.ShoppingListItem
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import java.util.*
 
 object ShoppingListService {
@@ -108,6 +106,22 @@ object ShoppingListService {
             } else {
                 return@transaction false
             }
+        }
+    }
+
+    fun addShoppingList(userGroup: String) {
+        transaction {
+            val shoppingList = ShoppingList(userGroup)
+            SchemaUtils.create(shoppingList)
+            DatabaseManager.shoppingListMap[userGroup] = shoppingList
+        }
+    }
+
+    fun deleteShoppingList(userGroup: String) {
+        transaction {
+            val shoppingList = DatabaseManager.shoppingListMap[userGroup]
+            SchemaUtils.drop(shoppingList!!)
+            DatabaseManager.shoppingListMap.remove(userGroup)
         }
     }
 }
