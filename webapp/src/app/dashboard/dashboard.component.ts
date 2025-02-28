@@ -41,7 +41,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const token = localStorage.getItem('token');
     this.socket = new WebSocket(`${this.wsUrl}/shoppingListWS?token=${token}`)
     this.socket.onmessage = (event) => {
-      this.shoppingList = JSON.parse(event.data)
+      const data: ShoppingListItemExtended[] = JSON.parse(event.data)
+      this.shoppingList = data.sort(
+        (a, b) => Number(a.retrieved) - Number(b.retrieved)
+      );
     }
     this.socket.onerror = (err) => console.log(err)
     this.socket.onclose = (close) => console.log(close.reason)
