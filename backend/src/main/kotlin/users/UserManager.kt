@@ -20,6 +20,7 @@ class UserManager {
 
     fun initRouting(routing: Routing) {
         routing.login()
+        routing.userSignUp()
     }
 
     fun initSafeRoutes(routing: Route) {
@@ -33,6 +34,48 @@ class UserManager {
     private fun Route.getUserInformation() {
         get("/user") {
             call.respond(UserService.retrieveAndHandleUsers(call)[0])
+        }
+    }
+
+    private fun Route.userSignUp() {
+        post("/user") {
+            val parameters = call.receiveParameters()
+            val username: String = parameters["username"] ?: ""
+            val password: String = parameters["password"] ?: ""
+            if (username == "" || password == "") {
+                call.respond(HttpStatusCode.BadRequest, "Username or password is empty")
+                return@post
+            }
+            if (UserService.userExists(username)) {
+                call.respond(HttpStatusCode.BadRequest, "User already exists")
+                return@post
+            }
+            UserService.addUser(username, password)
+            call.respond(HttpStatusCode.Created)
+        }
+    }
+
+    private fun Route.userChangePassword() {
+        post("/user/{userName}/password") {
+            val user = UserService.retrieveAndHandleUsers(call)[0]
+            val userNameFromRoute = call.parameters["userName"]!!
+            val parameters = call.receiveParameters()
+            val currentPassword: String = parameters["oldPassword"] ?: ""
+            val newPassword: String = parameters["newPassword"] ?: ""
+            if (user.name != userNameFromRoute) {
+                call.respond(HttpStatusCode.BadRequest, "User does not match")
+                return@post
+            }
+            if (!UserService.verifyUserPassword(user.id, currentPassword)) {
+                call.respond(HttpStatusCode.BadRequest, "Current password is incorrect")
+                return@post
+            }
+            if (newPassword == "") {
+                call.respond(HttpStatusCode.BadRequest, "New password is empty")
+                return@post
+            }
+            //UserService.changePassword(user.id, newPassword)
+            call.respond(HttpStatusCode.OK)
         }
     }
 

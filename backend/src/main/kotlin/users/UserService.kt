@@ -61,7 +61,7 @@ object UserService {
         transaction {
             Users.insert {
                 it[Users.name] = name
-                it[hashedPassword] = DatabaseManager.hashPassword(password)
+                it[Users.hashedPassword] = DatabaseManager.hashPassword(password)
             }
         }
     }
@@ -70,6 +70,23 @@ object UserService {
         transaction {
             Users.update({ Users.id eq userId }) {
                 it[group] = userGroup
+            }
+        }
+    }
+
+    fun userExists(username: String): Boolean {
+        return transaction {
+            Users.selectAll().where { Users.name eq username }.count() > 0
+        }
+    }
+
+    fun verifyUserPassword(userId: Int, password: String): Boolean {
+        return transaction {
+            val user = Users.selectAll().where { Users.id eq userId }.firstOrNull()
+            if (user != null) {
+                DatabaseManager.verifyPassword(password, user[Users.hashedPassword])
+            } else {
+                false
             }
         }
     }
