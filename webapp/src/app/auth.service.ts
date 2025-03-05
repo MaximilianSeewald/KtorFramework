@@ -59,5 +59,22 @@ export class AuthService {
     );
   }
 
+  signup(username: string, password: string) {
 
+    const body = new URLSearchParams();
+    body.set('username', username);
+    body.set('password', password);
+
+    const headers = new HttpHeaders().set('Content-Type', 'application/x-www-form-urlencoded');
+
+    this.http.post(`${this.apiUrl}/user`, body.toString(), { headers }).subscribe(
+      (response: any) => {
+        this.isLoggedIn = false
+        this.router.navigate(['login']);
+      },
+      () => {
+        this.isLoggedIn = false
+      }
+    );
+  }
 }

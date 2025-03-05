@@ -33,4 +33,13 @@ export class LoginComponent {
     this.authService.login(username,password)
 
   }
+
+  public onCreateAccount(form: any): void {
+    if (form.valid) {
+      const { username, password } = form.value;
+      this.authService.signup(username, password);
+      form.reset();
+    }
+  }
+
 }

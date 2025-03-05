@@ -3,9 +3,9 @@
     <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)">
       <h2>Log In</h2>
       <mat-form-field>
-        <input matInput placeholder="Email" [(ngModel)]="username" name="username" required>
+        <input matInput placeholder="Username" [(ngModel)]="username" name="username" required>
         <mat-error>
-          Please provide a valid email address
+          Please provide a valid username address
         </mat-error>
       </mat-form-field>
       <mat-form-field>
@@ -15,6 +15,7 @@
         </mat-error>
       </mat-form-field>
       <button mat-raised-button color="primary" [disabled]="!loginForm.form.valid">Login</button>
+      <button mat-raised-button color="accent" type="button" (click)="onCreateAccount(loginForm)">Create Account</button>
     </form>
   </mat-card-content>
 </mat-card>
