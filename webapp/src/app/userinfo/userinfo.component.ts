@@ -7,12 +7,14 @@ import {FormsModule} from '@angular/forms';
 import {CreateUserGroupRequestModel} from "../models/createUserGroupRequest.model";
 import {EditUserGroupRequest} from '../models/editUserGroupRequest';
 import {JoinUserGroupRequestModel} from '../models/joinUserGroupRequest.model';
+import {RouterLink} from '@angular/router';
 
 @Component({
   selector: 'app-userinfo',
   imports: [
     NgIf,
-    FormsModule
+    FormsModule,
+    RouterLink
   ],
   templateUrl: './userinfo.component.html',
   standalone: true,

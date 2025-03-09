@@ -8,6 +8,13 @@
     <div class="mb-2"><strong>Name:</strong> {{ user.name }}</div>
     <div class="mb-2"><strong>Group:</strong> {{ user.userGroup }}</div>
 
+    <div class="text-center mt-4">
+      <button class="px-3 py-2 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600" routerLink="/change-password">
+        Change Password
+      </button>
+    </div>
+
+
     <div *ngIf="!user.userGroup" class="mt-4 flex gap-2">
       <input
         type="text"

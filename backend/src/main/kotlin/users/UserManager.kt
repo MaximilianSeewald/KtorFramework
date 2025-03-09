@@ -27,6 +27,7 @@ class UserManager {
         routing.getUserInformation()
         routing.joinUserGroup()
         routing.leaveUserGroup()
+        routing.userChangePassword()
     }
 
 
