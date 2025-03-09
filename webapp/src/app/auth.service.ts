@@ -10,6 +10,7 @@ import {firstValueFrom} from 'rxjs';
 export class AuthService {
   apiUrl = environment.apiUrl;
   isLoggedIn: boolean = false;
+  isRegistered: boolean = false;
 
   constructor(private http: HttpClient, private router: Router) {}
 
@@ -70,11 +71,16 @@ export class AuthService {
     this.http.post(`${this.apiUrl}/user`, body.toString(), { headers }).subscribe(
       (response: any) => {
         this.isLoggedIn = false
-        this.router.navigate(['login']);
+        this.isRegistered = true
       },
       () => {
         this.isLoggedIn = false
+        this.isRegistered = false
       }
     );
+  }
+
+  resetRegistrationStatus() {
+    this.isRegistered = false;
   }
 }

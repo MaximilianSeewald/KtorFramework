@@ -1,0 +1,25 @@
+<mat-card>
+  <mat-card-content>
+    <form #registerForm="ngForm" (ngSubmit)="onSubmit(registerForm)">
+      <h2>Create Account</h2>
+      <mat-form-field>
+        <input matInput placeholder="Username" [(ngModel)]="username" name="username" required>
+        <mat-error>
+          Please choose a username
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <input matInput type="password" placeholder="Password" [(ngModel)]="password" name="password" required>
+        <mat-error>
+          Please set a password
+        </mat-error>
+      </mat-form-field>
+      <button mat-raised-button color="primary" [disabled]="!registerForm.form.valid">Create Account</button>
+    </form>
+    <div *ngIf="authService.isRegistered">
+      <h2>Registration Successful!</h2>
+      <p>Your account has been created. You can now login <a routerLink="/login" (click)="authService.resetRegistrationStatus()">here</a>.</p>
+    </div>
+  </mat-card-content>
+</mat-card>
+
