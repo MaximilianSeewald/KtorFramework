@@ -91,6 +91,14 @@ object UserService {
         }
     }
 
+    fun updatePassword(userId: Int, newPassword: String) {
+        transaction {
+            Users.update(where = { Users.id eq userId }) {
+                it[hashedPassword] = DatabaseManager.hashPassword(newPassword)
+            }
+        }
+    }
+
     fun deleteUserGroupFromUser(userId: Int) {
         transaction {
             Users.update({ Users.id eq userId }) {

@@ -75,7 +75,7 @@ class UserManager {
                 call.respond(HttpStatusCode.BadRequest, "New password is empty")
                 return@post
             }
-            //UserService.changePassword(user.id, newPassword)
+            UserService.updatePassword(user.id, newPassword)
             call.respond(HttpStatusCode.OK)
         }
     }

@@ -5,7 +5,6 @@ import {FormsModule} from '@angular/forms';
 import {MatInput} from '@angular/material/input';
 import {MatButton} from '@angular/material/button';
 import {NgIf} from '@angular/common';
-import {RouterLink} from '@angular/router';
 import {HttpHeaders} from '@angular/common/http';
 import {environment} from '../../environments/environment';
 import {HttpClient} from '@angular/common/http';
@@ -23,7 +22,6 @@ import {User} from '../models/user.model';
     MatInput,
     MatButton,
     NgIf,
-    RouterLink
   ],
   templateUrl: './changePassword.component.html',
   styleUrl: './changePassword.component.css',
