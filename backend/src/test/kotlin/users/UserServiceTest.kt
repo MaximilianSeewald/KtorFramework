@@ -2,12 +2,9 @@ package com.loudless.users
 
 import com.auth0.jwt.interfaces.DecodedJWT
 import com.loudless.database.Users
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
-import io.ktor.server.response.respond
-import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -19,11 +16,11 @@ import kotlinx.coroutines.test.runTest
 
 class UserServiceTest {
 
-    val username: String = "testUser"
-    val username2: String = "testUser2"
-    val username3: String = "testUser3"
-    val password: String = "testPassword"
-    val group: String = "testGroup"
+    private val username: String = "testUser"
+    private val username2: String = "testUser2"
+    private val username3: String = "testUser3"
+    private val password: String = "testPassword"
+    private val group: String = "testGroup"
 
     @BeforeTest
     fun setup() {
@@ -132,7 +129,6 @@ class UserServiceTest {
 
         // Assert
         assertTrue(users.isEmpty())
-        coVerify { mockCall.respond(HttpStatusCode.BadRequest, "No User Found") }
     }
 
     @Test
@@ -150,7 +146,6 @@ class UserServiceTest {
 
         // Assert
         assertTrue(users.isEmpty())
-        coVerify { mockCall.respond(HttpStatusCode.BadRequest, "Multiple User Found for this name") }
     }
 
     @Test

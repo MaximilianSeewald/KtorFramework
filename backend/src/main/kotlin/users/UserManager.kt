@@ -32,7 +32,17 @@ class UserManager {
     // TODO: change to `GET /user/{userName}` and verify that userName matches the user in the token?
     private fun Route.getUserInformation() {
         get("/user") {
-            call.respond(UserService.retrieveAndHandleUsers(call)[0])
+            val userList = UserService.retrieveAndHandleUsers(call)
+            if(userList.isEmpty()) {
+                call.respond(HttpStatusCode.BadRequest, "No User Found")
+                return@get
+            }
+            if(userList.size > 1) {
+                call.respond(HttpStatusCode.BadRequest, "Multiple Users Found")
+                return@get
+            }
+
+            call.respond(userList[0])
         }
     }
 

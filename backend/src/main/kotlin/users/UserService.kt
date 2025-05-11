@@ -44,17 +44,8 @@ object UserService {
         }
     }
 
-    suspend fun retrieveAndHandleUsers(call: ApplicationCall): List<User> {
-        val userList = getUserInformationByPrincipal(call)
-        if(userList.isEmpty()) {
-            call.respond(HttpStatusCode.BadRequest, "No User Found")
-            return emptyList()
-        }
-        if(userList.size > 1) {
-            call.respond(HttpStatusCode.BadRequest, "Multiple User Found for this name")
-            return emptyList()
-        }
-        return userList
+    fun retrieveAndHandleUsers(call: ApplicationCall): List<User> {
+        return getUserInformationByPrincipal(call)
     }
 
     fun addUser(name: String, password: String) {
