@@ -5,9 +5,11 @@ import {FormsModule} from '@angular/forms';
 import {MatInput} from '@angular/material/input';
 import {MatButton} from '@angular/material/button';
 import {AuthService} from '../auth.service';
+import {NgIf} from '@angular/common';
+import {RouterLink} from '@angular/router';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-register',
   imports: [
     MatCard,
     MatCardContent,
@@ -15,31 +17,24 @@ import {AuthService} from '../auth.service';
     FormsModule,
     MatFormField,
     MatInput,
-    MatButton
+    MatButton,
+    NgIf,
+    RouterLink
   ],
-  templateUrl: './login.component.html',
-  styleUrl: './login.component.css',
+  templateUrl: './register.component.html',
+  styleUrl: './register.component.css',
   standalone: true
 })
-export class LoginComponent {
+export class RegisterComponent {
 
   username = '';
   password = '';
 
-  constructor(private authService: AuthService) {}
+  constructor(protected authService: AuthService) {}
 
   public onSubmit(form: any): void {
     const { username, password } = form.value;
-    this.authService.login(username,password)
-
-  }
-
-  public onCreateAccount(form: any): void {
-    if (form.valid) {
-      const { username, password } = form.value;
-      this.authService.signup(username, password);
-      form.reset();
-    }
-  }
-
+    this.authService.signup(username, password);
+    form.reset();
+  };
 }

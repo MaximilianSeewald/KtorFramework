@@ -10,6 +10,7 @@ import {firstValueFrom} from 'rxjs';
 export class AuthService {
   apiUrl = environment.apiUrl;
   isLoggedIn: boolean = false;
+  isRegistered: boolean = false;
 
   constructor(private http: HttpClient, private router: Router) {}
 
@@ -59,5 +60,27 @@ export class AuthService {
     );
   }
 
+  signup(username: string, password: string) {
 
+    const body = new URLSearchParams();
+    body.set('username', username);
+    body.set('password', password);
+
+    const headers = new HttpHeaders().set('Content-Type', 'application/x-www-form-urlencoded');
+
+    this.http.post(`${this.apiUrl}/user`, body.toString(), { headers }).subscribe(
+      (response: any) => {
+        this.isLoggedIn = false
+        this.isRegistered = true
+      },
+      () => {
+        this.isLoggedIn = false
+        this.isRegistered = false
+      }
+    );
+  }
+
+  resetRegistrationStatus() {
+    this.isRegistered = false;
+  }
 }
