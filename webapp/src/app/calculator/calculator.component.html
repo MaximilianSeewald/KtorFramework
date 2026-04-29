@@ -1,41 +1,56 @@
-<!-- Hero Section -->
-<section class="text-center py-20 bg-gradient-to-r from-purple-600 to-teal-600 text-white">
-  <h1 class="text-5xl font-bold">Grade Calculator</h1>
-</section>
+<!-- Page Header -->
+<div class="px-6 pt-10 pb-6 max-w-md mx-auto">
+  <div class="flex items-center gap-3 mb-1">
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center"
+         style="background-color: #EBF3FF;">
+      <mat-icon style="color: #0071E3; font-size: 20px; width: 20px; height: 20px;">calculate</mat-icon>
+    </div>
+    <h1 class="text-2xl font-semibold tracking-tight" style="color: #1D1D1F;">Grade Calculator</h1>
+  </div>
+  <p class="text-sm" style="color: #6E6E73;">Upload a .csv file with names and points to generate grades.</p>
+</div>
 
-<div class="flex items-start justify-center h-1/2 bg-gray-50">
-  <div class="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6 mt-10">
-    <h2 class="text-xl font-bold mb-4 text-center">Upload .csv File</h2>
+<div class="max-w-md mx-auto px-6 pb-16">
+  <div class="rounded-2xl p-6"
+       style="background-color: #FFFFFF; border: 1px solid #E8E8ED; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+    <h2 class="text-xs font-semibold uppercase tracking-wider mb-5" style="color: #6E6E73;">Upload .csv File</h2>
 
-    <!-- Max Points Input & File Input in One Row -->
-    <div class="flex items-center space-x-4 mb-4">
-      <!-- Max Points Label + Input -->
-      <div class="flex items-center w-2/3">
-        <label class="text-gray-700 font-medium mr-2">Points:</label>
+    <div class="flex items-center gap-3 mb-5">
+      <!-- Points Input -->
+      <div class="flex-grow">
+        <label class="block text-sm font-medium mb-1.5" style="color: #1D1D1F;">Max Points</label>
         <input type="number" [(ngModel)]="points"
-               class="border p-2 w-full bg-gray-50 rounded">
+               placeholder="e.g. 100"
+               class="w-full px-4 py-2.5 text-sm rounded-xl border"
+               style="background-color: #F5F5F7; border-color: #D2D2D7; color: #1D1D1F;">
       </div>
 
       <!-- File Input -->
-      <div class="w-1/3">
+      <div class="flex-shrink-0 self-end">
         <label for="fileUpload"
-               class="block bg-purple-600 text-white text-center py-2 px-4 rounded-lg cursor-pointer hover:bg-purple-700 transition">
+               class="block text-sm font-medium px-4 py-2.5 rounded-xl cursor-pointer apple-btn text-center"
+               style="background-color: #F5F5F7; color: #1D1D1F; border: 1px solid #D2D2D7; white-space: nowrap;">
           Choose File
         </label>
         <input id="fileUpload" type="file" (change)="onFileSelected($event)" class="hidden" accept=".csv">
       </div>
     </div>
 
-    <!-- File Name Display -->
-    <p *ngIf="fileName" class="mt-2 text-center text-gray-700 font-medium">
-      Selected File: {{ fileName }}
-    </p>
+    <!-- Selected File Name -->
+    <div *ngIf="fileName"
+         class="flex items-center gap-2 px-3 py-2 rounded-xl mb-4"
+         style="background-color: #EBF3FF; border: 1px solid #C3DEFF;">
+      <mat-icon style="color: #0071E3; font-size: 16px; width: 16px; height: 16px;">description</mat-icon>
+      <span class="text-sm font-medium" style="color: #0071E3;">{{ fileName }}</span>
+    </div>
 
-    <!-- Upload Button -->
-    <button (click)="onUpload()" class="mt-4 bg-teal-600 text-white px-4 py-2 rounded-lg w-full hover:bg-teal-700 transition">
+    <!-- Generate Button -->
+    <button (click)="onUpload()"
+            class="w-full py-3 rounded-full text-sm font-semibold apple-btn"
+            style="background-color: #0071E3; color: #FFFFFF;">
       Generate Grades
     </button>
 
-    <p class="mt-4 text-red-600 text-center">{{ message }}</p>
+    <p *ngIf="message" class="mt-4 text-sm text-center" style="color: #FF3B30;">{{ message }}</p>
   </div>
 </div>

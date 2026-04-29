@@ -1,9 +1,5 @@
 import {Component, OnInit} from '@angular/core';
-import {MatCard, MatCardContent} from '@angular/material/card';
-import {MatError, MatFormField, MatLabel} from '@angular/material/form-field';
 import {FormsModule} from '@angular/forms';
-import {MatInput} from '@angular/material/input';
-import {MatButton} from '@angular/material/button';
 import {NgIf} from '@angular/common';
 import {HttpHeaders} from '@angular/common/http';
 import {environment} from '../../environments/environment';
@@ -16,15 +12,8 @@ import {ErrorService} from '../error.service';
 @Component({
   selector: 'app-change-password',
   imports: [
-    MatCard,
-    MatCardContent,
-    MatError,
     FormsModule,
-    MatFormField,
-    MatInput,
-    MatButton,
     NgIf,
-    MatLabel,
     MatIconModule
   ],
   templateUrl: './changePassword.component.html',

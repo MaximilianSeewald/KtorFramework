@@ -1,73 +1,104 @@
-<!-- Hero Section -->
-<section class="text-center py-20 bg-gradient-to-r from-purple-600 to-teal-600 text-white">
-  <h1 class="text-5xl font-bold flex items-center justify-center">
-    <mat-icon class="mr-4 text-6xl">shopping_cart</mat-icon>
-    Shopping List
-  </h1>
-</section>
+<!-- Page Header -->
+<div class="px-6 pt-10 pb-6 max-w-2xl mx-auto">
+  <div class="flex items-center gap-3 mb-1">
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center"
+         style="background-color: #EBF3FF;">
+      <mat-icon style="color: #0071E3; font-size: 20px; width: 20px; height: 20px;">shopping_cart</mat-icon>
+    </div>
+    <h1 class="text-2xl font-semibold tracking-tight" style="color: #1D1D1F;">Shopping List</h1>
+  </div>
+  <p class="text-sm" style="color: #6E6E73;">Manage and share your shopping list.</p>
+</div>
 
-<div class="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6 mt-10">
-  <!-- Add / Edit Item Form -->
-  <div class="mb-6">
-    <h2 class="text-xl font-bold mb-4 text-center">Add New Item</h2>
+<div class="max-w-2xl mx-auto px-6 pb-16">
+
+  <!-- Add New Item Card -->
+  <div class="rounded-2xl p-6 mb-6"
+       style="background-color: #FFFFFF; border: 1px solid #E8E8ED; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+    <h2 class="text-sm font-semibold uppercase tracking-wider mb-4" style="color: #6E6E73;">Add Item</h2>
     <div class="flex gap-2">
       <input
         type="text"
         [(ngModel)]="newItemName"
         placeholder="Item name"
-        class="flex-grow p-3 border rounded-lg focus:ring focus:ring-purple-300"
+        class="flex-grow px-4 py-2.5 text-sm rounded-xl border"
+        style="background-color: #F5F5F7; border-color: #D2D2D7; color: #1D1D1F;"
       />
       <button
         (click)="addItem()"
-        class="px-4 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition flex items-center"
+        class="px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-1 apple-btn"
+        style="background-color: #0071E3; color: #FFFFFF; white-space: nowrap;"
       >
-        <mat-icon class="mr-1">add</mat-icon>
+        <mat-icon style="font-size: 18px; width: 18px; height: 18px;">add</mat-icon>
         Add
       </button>
     </div>
   </div>
 
-  <!-- Shopping List Items -->
-  <div class="mb-6">
-    <h2 class="text-xl font-bold mb-4 text-center">Your Shopping List</h2>
-    <ul class="space-y-3">
-      <li *ngFor="let item of shoppingList" class="flex justify-between items-center bg-gray-50 p-4 rounded-lg shadow-sm">
-        <div class="flex items-center">
+  <!-- Shopping List Card -->
+  <div class="rounded-2xl"
+       style="background-color: #FFFFFF; border: 1px solid #E8E8ED; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+    <div class="px-6 py-4 border-b" style="border-color: #E8E8ED;">
+      <h2 class="text-sm font-semibold uppercase tracking-wider" style="color: #6E6E73;">Your Items</h2>
+    </div>
+
+    <ul>
+      <li *ngFor="let item of shoppingList; let last = last"
+          class="flex justify-between items-center px-6 py-4"
+          [style.border-bottom]="!last ? '1px solid #F0F0F5' : 'none'">
+
+        <div class="flex items-center gap-3 flex-grow">
           <input
             type="checkbox"
             [(ngModel)]="item.retrieved"
             (change)="toggleRetrieved(item)"
-            class="mr-3 w-5 h-5 text-purple-600"
+            class="w-4 h-4 rounded"
+            style="accent-color: #0071E3; cursor: pointer;"
           />
           <input
             *ngIf="item.isEditing"
             [(ngModel)]="item.name"
-            class="p-2 border rounded-lg focus:ring focus:ring-purple-300 flex-grow"
+            class="px-3 py-1.5 text-sm rounded-xl border flex-grow"
+            style="background-color: #F5F5F7; border-color: #D2D2D7; color: #1D1D1F;"
           />
-          <span *ngIf="!item.isEditing" [class.line-through]="item.retrieved" class="text-gray-800 text-lg">{{ item.name }}</span>
+          <span *ngIf="!item.isEditing"
+                class="text-sm"
+                [style.text-decoration]="item.retrieved ? 'line-through' : 'none'"
+                [style.color]="item.retrieved ? '#86868B' : '#1D1D1F'">
+            {{ item.name }}
+          </span>
         </div>
 
-        <div class="flex space-x-2">
+        <div class="flex gap-1.5 ml-4">
           <button
             (click)="toggleEdit(item)"
-            class="px-3 py-2 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition flex items-center"
+            class="px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1 apple-btn"
+            style="background-color: #F5F5F7; color: #1D1D1F; border: 1px solid #D2D2D7;"
           >
-            <mat-icon class="mr-1">{{ item.isEditing ? 'save' : 'edit' }}</mat-icon>
+            <mat-icon style="font-size: 14px; width: 14px; height: 14px;">{{ item.isEditing ? 'save' : 'edit' }}</mat-icon>
             {{ item.isEditing ? 'Save' : 'Edit' }}
           </button>
           <button
             (click)="deleteItem(item.id)"
-            class="px-3 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition flex items-center"
+            class="px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1 apple-btn"
+            style="background-color: #FFF2F1; color: #FF3B30; border: 1px solid #FFD5D2;"
           >
-            <mat-icon class="mr-1">delete</mat-icon>
+            <mat-icon style="font-size: 14px; width: 14px; height: 14px;">delete</mat-icon>
             Delete
           </button>
         </div>
       </li>
+
+      <li *ngIf="shoppingList?.length === 0" class="px-6 py-10 text-center text-sm" style="color: #86868B;">
+        No items yet. Add something above.
+      </li>
     </ul>
   </div>
-</div>
 
-<div *ngIf="errorService.errorMessage" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded max-w-2xl mx-auto">
-  {{ errorService.errorMessage }}
+  <div *ngIf="errorService.errorMessage"
+       class="mt-4 p-3 rounded-xl text-sm"
+       style="background-color: #FFF2F1; color: #FF3B30; border: 1px solid #FFD5D2;">
+    {{ errorService.errorMessage }}
+  </div>
+
 </div>

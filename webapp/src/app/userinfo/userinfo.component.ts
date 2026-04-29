@@ -9,13 +9,15 @@ import {EditUserGroupRequest} from '../models/editUserGroupRequest';
 import {JoinUserGroupRequestModel} from '../models/joinUserGroupRequest.model';
 import {RouterLink} from '@angular/router';
 import {ErrorService} from '../error.service';
+import {MatIcon} from '@angular/material/icon';
 
 @Component({
   selector: 'app-userinfo',
   imports: [
     NgIf,
     FormsModule,
-    RouterLink
+    RouterLink,
+    MatIcon
   ],
   templateUrl: './userinfo.component.html',
   standalone: true,
