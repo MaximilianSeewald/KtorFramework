@@ -1,25 +1,29 @@
-<mat-card>
-  <mat-card-content>
-    <form #registerForm="ngForm" (ngSubmit)="onSubmit(registerForm)">
-      <h2>Create Account</h2>
-      <mat-form-field>
-        <input matInput placeholder="Username" [(ngModel)]="username" name="username" required>
-        <mat-error>
-          Please choose a username
-        </mat-error>
-      </mat-form-field>
-      <mat-form-field>
-        <input matInput type="password" placeholder="Password" [(ngModel)]="password" name="password" required>
-        <mat-error>
-          Please set a password
-        </mat-error>
-      </mat-form-field>
-      <button mat-raised-button color="primary" [disabled]="!registerForm.form.valid">Create Account</button>
-    </form>
-    <div *ngIf="authService.isRegistered">
-      <h2>Registration Successful!</h2>
-      <p>Your account has been created. You can now login <a routerLink="/login" (click)="authService.resetRegistrationStatus()">here</a>.</p>
-    </div>
-  </mat-card-content>
-</mat-card>
-
+<div class="min-h-screen flex items-center justify-center bg-gray-50">
+  <mat-card class="w-full max-w-md shadow-lg">
+    <mat-card-content class="p-6">
+      <div class="text-center mb-6">
+        <mat-icon class="text-6xl text-purple-600 mb-4">person_add</mat-icon>
+        <h2 class="text-2xl font-bold text-gray-800">Create Account</h2>
+      </div>
+      <form #registerForm="ngForm" (ngSubmit)="onSubmit(registerForm)">
+        <mat-form-field class="w-full mb-4">
+          <mat-label>Username</mat-label>
+          <input matInput [(ngModel)]="username" name="username" required>
+          <mat-error>Please choose a username</mat-error>
+        </mat-form-field>
+        <mat-form-field class="w-full mb-6">
+          <mat-label>Password</mat-label>
+          <input matInput type="password" [(ngModel)]="password" name="password" required>
+          <mat-error>Please set a password</mat-error>
+        </mat-form-field>
+        <button mat-raised-button color="primary" [disabled]="!registerForm.form.valid" class="w-full py-3 text-lg">
+          Create Account
+        </button>
+      </form>
+      <div *ngIf="authService.isRegistered" class="mt-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+        <h2 class="font-bold">Registration Successful!</h2>
+        <p>Your account has been created. You can now <a routerLink="/login" (click)="authService.resetRegistrationStatus()" class="text-purple-600 underline">login here</a>.</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

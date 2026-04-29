@@ -3,10 +3,11 @@ import {RouterLink, RouterOutlet} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {AuthService} from './auth.service';
 import {NgIf} from '@angular/common';
+import {MatIconModule} from '@angular/material/icon';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, FormsModule, RouterLink, NgIf],
+  imports: [RouterOutlet, FormsModule, RouterLink, NgIf, MatIconModule],
   templateUrl: './app.component.html',
   standalone: true,
   styleUrl: './app.component.css',
@@ -25,4 +26,3 @@ export class AppComponent implements OnInit {
   }
 
 }
-

@@ -1,6 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {MatCard, MatCardContent} from '@angular/material/card';
-import {MatError, MatFormField} from '@angular/material/form-field';
+import {MatError, MatFormField, MatLabel} from '@angular/material/form-field';
 import {FormsModule} from '@angular/forms';
 import {MatInput} from '@angular/material/input';
 import {MatButton} from '@angular/material/button';
@@ -10,6 +10,7 @@ import {environment} from '../../environments/environment';
 import {HttpClient} from '@angular/common/http';
 import {AuthService} from '../auth.service';
 import {User} from '../models/user.model';
+import {MatIconModule} from '@angular/material/icon';
 
 @Component({
   selector: 'app-change-password',
@@ -22,6 +23,8 @@ import {User} from '../models/user.model';
     MatInput,
     MatButton,
     NgIf,
+    MatLabel,
+    MatIconModule
   ],
   templateUrl: './changePassword.component.html',
   styleUrl: './changePassword.component.css',
@@ -76,5 +79,3 @@ export class ChangePasswordComponent implements OnInit{
     form.reset();
   }
 }
-
-

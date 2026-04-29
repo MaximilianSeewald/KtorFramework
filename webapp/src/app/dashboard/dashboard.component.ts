@@ -5,13 +5,15 @@ import {ShoppingListItem, ShoppingListItemExtended} from '../models/shoppingList
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../../environments/environment';
 import { v4 as uuid } from 'uuid';
+import {MatIconModule} from '@angular/material/icon';
 
 @Component({
   selector: 'app-dashboard',
   imports: [
     FormsModule,
     NgForOf,
-    NgIf
+    NgIf,
+    MatIconModule
   ],
   templateUrl: './dashboard.component.html',
   standalone: true,

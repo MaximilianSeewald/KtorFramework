@@ -1,12 +1,13 @@
 import {Component} from '@angular/core';
 import {MatCard, MatCardContent} from '@angular/material/card';
-import {MatError, MatFormField} from '@angular/material/form-field';
+import {MatError, MatFormField, MatLabel} from '@angular/material/form-field';
 import {FormsModule} from '@angular/forms';
 import {MatInput} from '@angular/material/input';
 import {MatButton} from '@angular/material/button';
 import {AuthService} from '../auth.service';
 import {NgIf} from '@angular/common';
 import {RouterLink} from '@angular/router';
+import {MatIconModule} from '@angular/material/icon';
 
 @Component({
   selector: 'app-register',
@@ -19,7 +20,9 @@ import {RouterLink} from '@angular/router';
     MatInput,
     MatButton,
     NgIf,
-    RouterLink
+    RouterLink,
+    MatIconModule,
+    MatLabel
   ],
   templateUrl: './register.component.html',
   styleUrl: './register.component.css',

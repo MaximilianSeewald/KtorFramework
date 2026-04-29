@@ -1,57 +1,69 @@
 <!-- Hero Section -->
-<section class="text-center py-20 bg-indigo-600 text-white">
-  <h1 class="text-5xl font-bold">Shopping List</h1>
+<section class="text-center py-20 bg-gradient-to-r from-purple-600 to-teal-600 text-white">
+  <h1 class="text-5xl font-bold flex items-center justify-center">
+    <mat-icon class="mr-4 text-6xl">shopping_cart</mat-icon>
+    Shopping List
+  </h1>
 </section>
 
-<div class="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6 mt-10">
+<div class="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6 mt-10">
   <!-- Add / Edit Item Form -->
-  <div class="mt-4 flex gap-2">
-    <input
-      type="text"
-      [(ngModel)]="newItemName"
-      placeholder="Item name"
-      class="w-full p-2 border rounded-lg focus:ring focus:ring-blue-300"
-    />
-    <button
-      (click)="addItem()"
-      class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-    >
-      Add
-    </button>
+  <div class="mb-6">
+    <h2 class="text-xl font-bold mb-4 text-center">Add New Item</h2>
+    <div class="flex gap-2">
+      <input
+        type="text"
+        [(ngModel)]="newItemName"
+        placeholder="Item name"
+        class="flex-grow p-3 border rounded-lg focus:ring focus:ring-purple-300"
+      />
+      <button
+        (click)="addItem()"
+        class="px-4 py-3 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition flex items-center"
+      >
+        <mat-icon class="mr-1">add</mat-icon>
+        Add
+      </button>
+    </div>
   </div>
 
   <!-- Shopping List Items -->
-  <ul class="mt-6 space-y-2">
-    <li *ngFor="let item of shoppingList" class="flex justify-between items-center bg-gray-100 p-3 rounded-lg">
-      <!-- Inline Retrieved Input -->
-      <input
-        type="checkbox"
-        [(ngModel)]="item.retrieved"
-        (change)="toggleRetrieved(item)"
-        class="mr-2"
-      />
-      <!-- Inline Edit Input -->
-      <input
-        *ngIf="item.isEditing"
-        [(ngModel)]="item.name"
-        class="p-1 border rounded-lg focus:ring focus:ring-blue-300"
-      />
-      <span *ngIf="!item.isEditing" [class.line-through]="item.retrieved" class="text-gray-800">{{ item.name }}</span>
+  <div class="mb-6">
+    <h2 class="text-xl font-bold mb-4 text-center">Your Shopping List</h2>
+    <ul class="space-y-3">
+      <li *ngFor="let item of shoppingList" class="flex justify-between items-center bg-gray-50 p-4 rounded-lg shadow-sm">
+        <div class="flex items-center">
+          <input
+            type="checkbox"
+            [(ngModel)]="item.retrieved"
+            (change)="toggleRetrieved(item)"
+            class="mr-3 w-5 h-5 text-purple-600"
+          />
+          <input
+            *ngIf="item.isEditing"
+            [(ngModel)]="item.name"
+            class="p-2 border rounded-lg focus:ring focus:ring-purple-300 flex-grow"
+          />
+          <span *ngIf="!item.isEditing" [class.line-through]="item.retrieved" class="text-gray-800 text-lg">{{ item.name }}</span>
+        </div>
 
-      <div class="space-x-2">
-        <button
-          (click)="toggleEdit(item)"
-          class="px-3 py-1 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
-        >
-          {{ item.isEditing ? 'Save' : 'Edit' }}
-        </button>
-        <button
-          (click)="deleteItem(item.id)"
-          class="px-3 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600"
-        >
-          Delete
-        </button>
-      </div>
-    </li>
-  </ul>
+        <div class="flex space-x-2">
+          <button
+            (click)="toggleEdit(item)"
+            class="px-3 py-2 text-sm bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition flex items-center"
+          >
+            <mat-icon class="mr-1">{{ item.isEditing ? 'save' : 'edit' }}</mat-icon>
+            {{ item.isEditing ? 'Save' : 'Edit' }}
+          </button>
+          <button
+            (click)="deleteItem(item.id)"
+            class="px-3 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition flex items-center"
+          >
+            <mat-icon class="mr-1">delete</mat-icon>
+            Delete
+          </button>
+        </div>
+      </li>
+    </ul>
+  </div>
 </div>

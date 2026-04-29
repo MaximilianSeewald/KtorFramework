@@ -1,22 +1,30 @@
-<div class="bg-gray-100 min-h-screen flex flex-col">
+<div class="bg-gray-50 min-h-screen flex flex-col">
   <!-- Navbar -->
   <nav class="bg-white shadow-md py-4">
     <div class="container mx-auto flex justify-between items-center px-6">
-      <a href="#" class="text-2xl font-bold text-indigo-600">Maximilian Seewald</a>
-      <div>
-        <button *ngIf="authService.isLoggedIn" class="text-indigo-600 px-4 py-2 rounded-lg ml-4" routerLink="/user">
+      <a href="#" class="text-2xl font-bold text-purple-600 flex items-center">
+        <mat-icon class="mr-2">home</mat-icon>
+        Maximilian Seewald
+      </a>
+      <div class="flex items-center space-x-4">
+        <button *ngIf="authService.isLoggedIn" class="text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition flex items-center" routerLink="/user">
+          <mat-icon class="mr-1">person</mat-icon>
           User
         </button>
-        <button *ngIf="authService.isLoggedIn" class="text-indigo-600 px-4 py-2 rounded-lg ml-4" routerLink="/dashboard">
-          DashBoard
+        <button *ngIf="authService.isLoggedIn" class="text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition flex items-center" routerLink="/dashboard">
+          <mat-icon class="mr-1">dashboard</mat-icon>
+          Dashboard
         </button>
-        <button *ngIf="authService.isLoggedIn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg ml-4" (click)="logout()">
+        <button *ngIf="authService.isLoggedIn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition flex items-center" (click)="logout()">
+          <mat-icon class="mr-1">logout</mat-icon>
           Sign Out
         </button>
-        <button *ngIf="!(authService.isLoggedIn)" class="bg-indigo-600 text-white px-4 py-2 rounded-lg ml-4" routerLink="/login">
+        <button *ngIf="!(authService.isLoggedIn)" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition flex items-center" routerLink="/login">
+          <mat-icon class="mr-1">login</mat-icon>
           Sign In
         </button>
-        <button *ngIf="!(authService.isLoggedIn)" class="bg-indigo-600 text-white px-4 py-2 rounded-lg ml-4" routerLink="/register">
+        <button *ngIf="!(authService.isLoggedIn)" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition flex items-center" routerLink="/register">
+          <mat-icon class="mr-1">person_add</mat-icon>
           Create Account
         </button>
       </div>
@@ -27,7 +35,7 @@
   </div>
 
   <!-- Footer -->
-  <footer class="bg-indigo-600 text-white py-6 text-center">
+  <footer class="bg-purple-600 text-white py-6 text-center">
     <p>&copy; 2025 Maximilian Seewald. All rights reserved.</p>
     <div class="mt-2">
       <a href="#" class="px-3">Imprint</a>
