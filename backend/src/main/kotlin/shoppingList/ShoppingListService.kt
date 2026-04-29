@@ -32,7 +32,7 @@ object ShoppingListService {
     suspend fun addItem(call: RoutingCall, groupName: String): Boolean {
         val shoppingListTable = DatabaseManager.shoppingListMap[groupName]
         if (shoppingListTable == null) {
-            call.respond(HttpStatusCode.BadRequest, "No shopping list found for this user")
+            call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No shopping list found for this user"))
             return false
         }
         val updateData = call.receive<ShoppingListItem>()
@@ -59,7 +59,7 @@ object ShoppingListService {
     suspend fun editItem(call: RoutingCall, groupName: String): Boolean {
         val shoppingListTable = DatabaseManager.shoppingListMap[groupName]
         if (shoppingListTable == null) {
-            call.respond(HttpStatusCode.BadRequest, "No shopping list found for this user")
+            call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No shopping list found for this user"))
             return false
         }
         val updateData = call.receive<ShoppingListItem>()
@@ -85,7 +85,7 @@ object ShoppingListService {
     suspend fun deleteItem(call: RoutingCall, groupName: String): Boolean {
         val shoppingListTable = DatabaseManager.shoppingListMap[groupName]
         if (shoppingListTable == null) {
-            call.respond(HttpStatusCode.BadRequest, "No shopping list found for this user")
+            call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No shopping list found for this user"))
             return false
         }
         val id = call.request.queryParameters["id"]
