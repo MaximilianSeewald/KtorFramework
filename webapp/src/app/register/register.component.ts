@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {MatCard, MatCardContent} from '@angular/material/card';
 import {MatError, MatFormField, MatLabel} from '@angular/material/form-field';
 import {FormsModule} from '@angular/forms';
@@ -28,14 +28,19 @@ import {MatIconModule} from '@angular/material/icon';
   styleUrl: './register.component.css',
   standalone: true
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
 
   username = '';
   password = '';
 
   constructor(protected authService: AuthService) {}
 
+  ngOnInit(): void {
+    this.authService.errorMessage = ''; // Clear errors when entering register page
+  }
+
   public onSubmit(form: any): void {
+    this.authService.errorMessage = ''; // Clear previous errors
     const { username, password } = form.value;
     this.authService.signup(username, password);
     form.reset();

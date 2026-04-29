@@ -54,6 +54,7 @@ export class ChangePasswordComponent implements OnInit{
   }
 
   public onSubmit(form: any): void {
+    this.authService.errorMessage = ''; // Clear previous errors
     this.wrongUsername = false;
     this.wrongPassword = false;
     const { oldPassword, newPassword } = form.value;
@@ -74,8 +75,11 @@ export class ChangePasswordComponent implements OnInit{
           form.reset();
           this.authService.logout();
           return;
+        },
+        (error) => {
+          this.authService.errorMessage = error.error?.message || 'Password change failed.';
+          this.wrongPassword = true;
+          form.reset();
         });
-    this.wrongPassword = true;
-    form.reset();
   }
 }

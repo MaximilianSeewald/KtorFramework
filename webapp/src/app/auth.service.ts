@@ -11,6 +11,7 @@ export class AuthService {
   apiUrl = environment.apiUrl;
   isLoggedIn: boolean = false;
   isRegistered: boolean = false;
+  errorMessage: string = '';
 
   constructor(private http: HttpClient, private router: Router) {}
 
@@ -52,10 +53,12 @@ export class AuthService {
       (response: any) => {
         localStorage.setItem('token', response.token);
         this.isLoggedIn = true
+        this.errorMessage = ''; // Clear any previous errors
         this.router.navigate(['dashboard']);
       },
-      () => {
+      (error) => {
         this.isLoggedIn = false
+        this.errorMessage = error.error?.message || 'Login failed. Please check your credentials.';
       }
     );
   }
@@ -69,13 +72,16 @@ export class AuthService {
     const headers = new HttpHeaders().set('Content-Type', 'application/x-www-form-urlencoded');
 
     this.http.post(`${this.apiUrl}/user`, body.toString(), { headers }).subscribe(
-      (response: any) => {
-        this.isLoggedIn = false
-        this.isRegistered = true
-      },
       () => {
         this.isLoggedIn = false
+        this.isRegistered = true
+        this.errorMessage = ''; // Clear any previous errors
+        this.login(username, password);
+      },
+      (error) => {
+        this.isLoggedIn = false
         this.isRegistered = false
+        this.errorMessage = error.error?.message || 'Registration failed. Please try again.';
       }
     );
   }
