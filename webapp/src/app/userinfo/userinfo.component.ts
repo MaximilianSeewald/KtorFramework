@@ -8,7 +8,7 @@ import {CreateUserGroupRequestModel} from "../models/createUserGroupRequest.mode
 import {EditUserGroupRequest} from '../models/editUserGroupRequest';
 import {JoinUserGroupRequestModel} from '../models/joinUserGroupRequest.model';
 import {RouterLink} from '@angular/router';
-import {AuthService} from '../auth.service';
+import {ErrorService} from '../error.service';
 
 @Component({
   selector: 'app-userinfo',
@@ -29,7 +29,7 @@ export class UserinfoComponent implements OnInit {
   newGroupName: string = ""
   newGroupPassword: string = ""
 
-  constructor(private http: HttpClient, public authService: AuthService) {}
+  constructor(private http: HttpClient, public errorService: ErrorService) {}
 
   ngOnInit(): void {
       this.getUserInfo()
@@ -57,38 +57,38 @@ export class UserinfoComponent implements OnInit {
 
   createGroup(): void {
     if (!this.newGroupName.trim() || !this.newGroupPassword.trim()) {
-      this.authService.errorMessage = 'Please enter both group name and password.';
+      this.errorService.setError('Please enter both group name and password.');
       return;
     }
     const request: CreateUserGroupRequestModel = {userGroupName: this.newGroupName, password: this.newGroupPassword}
     this.http.post(`${this.apiUrl}/usergroups`,request).subscribe(
       () => {
-        this.authService.errorMessage = ''; // Clear errors on success
+        this.errorService.clearError();
         this.getUserInfo()
         this.newGroupPassword = ""
         this.newGroupName = ""
       },
       (error) => {
-        this.authService.errorMessage = error.error?.message || 'Failed to create group.';
+        this.errorService.setError(error.error?.message || 'Failed to create group.');
       }
     );
   }
 
   joinGroup(): void {
     if (!this.newGroupName.trim() || !this.newGroupPassword.trim()) {
-      this.authService.errorMessage = 'Please enter both group name and password.';
+      this.errorService.setError('Please enter both group name and password.');
       return;
     }
     const request: JoinUserGroupRequestModel = {userGroupName: this.newGroupName, password: this.newGroupPassword}
     this.http.post(`${this.apiUrl}/user/${this.user?.name}/groups`,request).subscribe(
       () => {
-        this.authService.errorMessage = ''; // Clear errors on success
+        this.errorService.clearError();
         this.getUserInfo()
         this.newGroupPassword = ""
         this.newGroupName = ""
       },
       (error) => {
-        this.authService.errorMessage = error.error?.message || 'Failed to join group.';
+        this.errorService.setError(error.error?.message || 'Failed to join group.');
       }
     );
   }
@@ -97,12 +97,12 @@ export class UserinfoComponent implements OnInit {
     const userGroupName = this.user?.userGroup ?? ""
     this.http.delete(`${this.apiUrl}/usergroups`, { params: { name: userGroupName } }).subscribe(
       () => {
-        this.authService.errorMessage = ''; // Clear errors on success
+        this.errorService.clearError();
         this.getUserInfo()
         this.newGroupPassword = ""
       },
       (error) => {
-        this.authService.errorMessage = error.error?.message || 'Failed to delete group.';
+        this.errorService.setError(error.error?.message || 'Failed to delete group.');
       }
     );
   }
@@ -110,30 +110,30 @@ export class UserinfoComponent implements OnInit {
   leaveGroup(): void {
     this.http.delete(`${this.apiUrl}/user/${this.user?.name}/groups/${this.user?.userGroup}`).subscribe(
       () => {
-        this.authService.errorMessage = ''; // Clear errors on success
+        this.errorService.clearError();
         this.getUserInfo()
         this.newGroupPassword = ""
       },
       (error) => {
-        this.authService.errorMessage = error.error?.message || 'Failed to leave group.';
+        this.errorService.setError(error.error?.message || 'Failed to leave group.');
       }
     );
   }
 
   changeGroupPassword(): void{
     if (!this.newGroupPassword.trim()) {
-      this.authService.errorMessage = 'Please enter a new password.';
+      this.errorService.setError('Please enter a new password.');
       return;
     }
     const request: EditUserGroupRequest = { userGroupName: this.user?.userGroup ?? "", newPassword: this.newGroupPassword }
     this.http.put(`${this.apiUrl}/usergroups`, request).subscribe(
       () => {
-        this.authService.errorMessage = ''; // Clear errors on success
+        this.errorService.clearError();
         this.getUserInfo()
         this.newGroupPassword = ""
       },
       (error) => {
-        this.authService.errorMessage = error.error?.message || 'Failed to change group password.';
+        this.errorService.setError(error.error?.message || 'Failed to change group password.');
       }
     );
   }

@@ -11,6 +11,7 @@ import {HttpClient} from '@angular/common/http';
 import {AuthService} from '../auth.service';
 import {User} from '../models/user.model';
 import {MatIconModule} from '@angular/material/icon';
+import {ErrorService} from '../error.service';
 
 @Component({
   selector: 'app-change-password',
@@ -40,7 +41,7 @@ export class ChangePasswordComponent implements OnInit{
   wrongUsername: boolean = false;
   wrongPassword: boolean = false;
 
-  constructor(private http: HttpClient, protected authService: AuthService) {}
+  constructor(private http: HttpClient, private authService: AuthService, public errorService: ErrorService) {}
 
   ngOnInit(): void {
     this.getUserInfo()
@@ -54,7 +55,7 @@ export class ChangePasswordComponent implements OnInit{
   }
 
   public onSubmit(form: any): void {
-    this.authService.errorMessage = ''; // Clear previous errors
+    this.errorService.clearError();
     this.wrongUsername = false;
     this.wrongPassword = false;
     const { oldPassword, newPassword } = form.value;
@@ -77,7 +78,7 @@ export class ChangePasswordComponent implements OnInit{
           return;
         },
         (error) => {
-          this.authService.errorMessage = error.error?.message || 'Password change failed.';
+          this.errorService.setError(error.error?.message || 'Password change failed.');
           this.wrongPassword = true;
           form.reset();
         });

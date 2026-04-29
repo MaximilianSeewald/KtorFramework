@@ -24,8 +24,8 @@
         <h2 class="font-bold">Registration Successful!</h2>
         <p>Your account has been created. You can now <a routerLink="/login" (click)="authService.resetRegistrationStatus()" class="text-purple-600 underline">login here</a>.</p>
       </div>
-      <div *ngIf="authService.errorMessage" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-        {{ authService.errorMessage }}
+      <div *ngIf="errorService.errorMessage" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+        {{ errorService.errorMessage }}
       </div>
     </mat-card-content>
   </mat-card>

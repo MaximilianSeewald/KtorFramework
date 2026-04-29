@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component} from '@angular/core';
 import {MatCard, MatCardContent} from '@angular/material/card';
 import {MatError, MatFormField, MatLabel} from '@angular/material/form-field';
 import {FormsModule} from '@angular/forms';
@@ -8,6 +8,7 @@ import {AuthService} from '../auth.service';
 import {NgIf} from '@angular/common';
 import {RouterLink} from '@angular/router';
 import {MatIconModule} from '@angular/material/icon';
+import {ErrorService} from '../error.service';
 
 @Component({
   selector: 'app-register',
@@ -28,19 +29,14 @@ import {MatIconModule} from '@angular/material/icon';
   styleUrl: './register.component.css',
   standalone: true
 })
-export class RegisterComponent implements OnInit {
+export class RegisterComponent {
 
   username = '';
   password = '';
 
-  constructor(protected authService: AuthService) {}
-
-  ngOnInit(): void {
-    this.authService.errorMessage = ''; // Clear errors when entering register page
-  }
+  constructor(protected authService: AuthService, public errorService: ErrorService) {}
 
   public onSubmit(form: any): void {
-    this.authService.errorMessage = ''; // Clear previous errors
     const { username, password } = form.value;
     this.authService.signup(username, password);
     form.reset();

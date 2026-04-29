@@ -3,6 +3,7 @@ import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {environment} from '../environments/environment';
 import {Router} from '@angular/router';
 import {firstValueFrom} from 'rxjs';
+import {ErrorService} from './error.service';
 
 @Injectable({
   providedIn: 'root',
@@ -11,9 +12,8 @@ export class AuthService {
   apiUrl = environment.apiUrl;
   isLoggedIn: boolean = false;
   isRegistered: boolean = false;
-  errorMessage: string = '';
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private http: HttpClient, private router: Router, private errorService: ErrorService) {}
 
 
   async verifyToken(): Promise<boolean> {
@@ -53,12 +53,12 @@ export class AuthService {
       (response: any) => {
         localStorage.setItem('token', response.token);
         this.isLoggedIn = true
-        this.errorMessage = ''; // Clear any previous errors
+        this.errorService.clearError();
         this.router.navigate(['dashboard']);
       },
       (error) => {
         this.isLoggedIn = false
-        this.errorMessage = error.error?.message || 'Login failed. Please check your credentials.';
+        this.errorService.setError(error.error?.message || 'Login failed. Please check your credentials.');
       }
     );
   }
@@ -75,13 +75,13 @@ export class AuthService {
       () => {
         this.isLoggedIn = false
         this.isRegistered = true
-        this.errorMessage = ''; // Clear any previous errors
+        this.errorService.clearError();
         this.login(username, password);
       },
       (error) => {
         this.isLoggedIn = false
         this.isRegistered = false
-        this.errorMessage = error.error?.message || 'Registration failed. Please try again.';
+        this.errorService.setError(error.error?.message || 'Registration failed. Please try again.');
       }
     );
   }

@@ -39,11 +39,11 @@ class ShoppingListManager {
     private suspend fun retrieveUserGroupsAndHandleErrors(call: ApplicationCall): List<String> {
         val groups = getUserGroupsByPrincipal(call)
         if (groups.isEmpty()) {
-            call.respond(HttpStatusCode.BadRequest, "No user found with this username")
+            call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No user found with this username"))
             return emptyList()
         }
         if (groups.size > 1) {
-            call.respond(HttpStatusCode.BadRequest, "Too many users found")
+            call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Too many users found"))
             return emptyList()
         }
         return groups
@@ -112,7 +112,7 @@ class ShoppingListManager {
             if (groups.isEmpty()) return@post
             when (ShoppingListService.addItem(call, groups[0])) {
                 true -> call.respond(HttpStatusCode.OK)
-                false -> call.respond(HttpStatusCode.BadRequest, "Couldn't add shopping list item")
+                false -> call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Couldn't add shopping list item"))
             }
             emitUpdate(groups)
         }
@@ -124,7 +124,7 @@ class ShoppingListManager {
             if (groups.isEmpty()) return@put
             when (ShoppingListService.editItem(call, groups[0])) {
                 true -> call.respond(HttpStatusCode.OK)
-                false -> call.respond(HttpStatusCode.BadRequest, "Item id does not exist")
+                false -> call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Item id does not exist"))
             }
             emitUpdate(groups)
         }
@@ -145,7 +145,7 @@ class ShoppingListManager {
             if (groups.isEmpty()) return@delete
             when (ShoppingListService.deleteItem(call, groups[0])) {
                 true -> call.respond(HttpStatusCode.OK)
-                false -> call.respond(HttpStatusCode.BadRequest, "Item id is not unique")
+                false -> call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Item id is not unique"))
             }
             emitUpdate(groups)
         }

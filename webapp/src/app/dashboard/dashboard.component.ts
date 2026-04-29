@@ -6,7 +6,7 @@ import {HttpClient} from '@angular/common/http';
 import {environment} from '../../environments/environment';
 import { v4 as uuid } from 'uuid';
 import {MatIconModule} from '@angular/material/icon';
-import {AuthService} from '../auth.service';
+import {ErrorService} from '../error.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -28,7 +28,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   newItemName = '';
   socket: WebSocket | null = null
 
-  constructor(private http: HttpClient, public authService: AuthService) {}
+  constructor(private http: HttpClient, public errorService: ErrorService) {}
 
   ngOnDestroy(): void {
     this.socket?.close()
@@ -55,17 +55,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   addItem() {
     if (!this.newItemName.trim()) {
-      this.authService.errorMessage = 'Please enter an item name.';
+      this.errorService.setError('Please enter an item name.');
       return;
     }
     const newItem: ShoppingListItem = { id: uuid(), name: this.newItemName, retrieved: false };
     this.http.post(`${this.apiUrl}/shoppingList`, newItem).subscribe(
       () => {
-        this.authService.errorMessage = ''; // Clear errors on success
+        this.errorService.clearError();
         this.newItemName = "";
       },
       (error) => {
-        this.authService.errorMessage = error.error?.message || 'Failed to add item.';
+        this.errorService.setError(error.error?.message || 'Failed to add item.');
       }
     );
   }
@@ -73,10 +73,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   deleteItem(id: string) {
     this.http.delete(`${this.apiUrl}/shoppingList`, { params: { id: id } }).subscribe(
       () => {
-        this.authService.errorMessage = ''; // Clear errors on success
+        this.errorService.clearError();
       },
       (error) => {
-        this.authService.errorMessage = error.error?.message || 'Failed to delete item.';
+        this.errorService.setError(error.error?.message || 'Failed to delete item.');
       }
     );
   }
@@ -84,16 +84,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   toggleEdit(item: ShoppingListItemExtended) {
     if (item.isEditing) {
       if (!item.name.trim()) {
-        this.authService.errorMessage = 'Item name cannot be empty.';
+        this.errorService.setError('Item name cannot be empty.');
         return;
       }
       const shoppingListItem: ShoppingListItem = { id: item.id, name: item.name, retrieved: item.retrieved}
       this.http.put(`${this.apiUrl}/shoppingList`,shoppingListItem).subscribe(
         () => {
-          this.authService.errorMessage = ''; // Clear errors on success
+          this.errorService.clearError();
         },
         (error) => {
-          this.authService.errorMessage = error.error?.message || 'Failed to update item.';
+          this.errorService.setError(error.error?.message || 'Failed to update item.');
         }
       );
     }
@@ -104,10 +104,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const shoppingListItem: ShoppingListItem = {id: item.id, name: item.name, retrieved: item.retrieved};
     this.http.put(`${this.apiUrl}/shoppingList`, shoppingListItem).subscribe(
       () => {
-        this.authService.errorMessage = ''; // Clear errors on success
+        this.errorService.clearError();
       },
       (error) => {
-        this.authService.errorMessage = error.error?.message || 'Failed to update item status.';
+        this.errorService.setError(error.error?.message || 'Failed to update item status.');
       }
     );
   }

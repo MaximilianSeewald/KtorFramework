@@ -25,7 +25,7 @@ class UserGroupManager {
             val editUserGroupRequest = call.receive<EditUserGroupRequest>()
             val user = UserService.retrieveAndHandleUsers(call)[0]
             if(!UserGroupService.checkIsAdmin(user)){
-                call.respond(HttpStatusCode.BadRequest, "User is not admin")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User is not admin"))
                 return@put
             }
             UserGroupService.updatePassword(editUserGroupRequest.userGroupName, editUserGroupRequest.newPassword)
@@ -39,7 +39,7 @@ class UserGroupManager {
             val userId = UserService.retrieveAndHandleUsers(call)[0].id
             val userGroupName = createUserGroupRequest.userGroupName
             if (UserGroupService.userGroupExists(userGroupName)) {
-                call.respond(HttpStatusCode.BadRequest, "User group already exists")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User group already exists"))
                 return@post
             }
             UserGroupService.addUserGroup(
@@ -59,7 +59,7 @@ class UserGroupManager {
             val userId = UserService.retrieveAndHandleUsers(call)[0].id
             val userGroupName = call.request.queryParameters["name"]!!
             if (!UserGroupService.userGroupExists(userGroupName)) {
-                call.respond(HttpStatusCode.BadRequest, "User group does not exist")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User group does not exist"))
                 return@delete
             }
             val success = UserGroupService.checkOwnershipAndDeleteUserGroup(
@@ -67,7 +67,7 @@ class UserGroupManager {
                 userId
             )
             if (!success) {
-                call.respond(HttpStatusCode.BadRequest, "User is not the owner of the group")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User is not the owner of the group"))
                 return@delete
             }
             UserService.deleteUserGroupFromAllUsers(userGroupName)

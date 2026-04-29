@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component} from '@angular/core';
 import {MatCard, MatCardContent} from '@angular/material/card';
 import {MatError, MatFormField, MatLabel} from '@angular/material/form-field';
 import {FormsModule} from '@angular/forms';
@@ -7,6 +7,7 @@ import {MatButton} from '@angular/material/button';
 import {AuthService} from '../auth.service';
 import {MatIconModule} from '@angular/material/icon';
 import {NgIf} from '@angular/common';
+import {ErrorService} from '../error.service';
 
 @Component({
   selector: 'app-login',
@@ -26,22 +27,16 @@ import {NgIf} from '@angular/common';
   styleUrl: './login.component.css',
   standalone: true
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent {
 
   username = '';
   password = '';
 
-  constructor(public authService: AuthService) {}
-
-  ngOnInit() {
-    this.authService.errorMessage = ''; // Clear errors when entering login page
-  }
+  constructor(private authService: AuthService, public errorService: ErrorService) {}
 
   public onSubmit(form: any): void {
-    this.authService.errorMessage = ''; // Clear previous errors
     const { username, password } = form.value;
-    this.authService.login(username,password)
-
+    this.authService.login(username, password)
   }
 
   public onCreateAccount(form: any): void {

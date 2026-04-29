@@ -1,9 +1,11 @@
 import {Component, OnInit} from '@angular/core';
-import {RouterLink, RouterOutlet} from '@angular/router';
+import {Router, RouterLink, RouterOutlet, NavigationStart} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {AuthService} from './auth.service';
 import {NgIf} from '@angular/common';
 import {MatIconModule} from '@angular/material/icon';
+import {ErrorService} from './error.service';
+import {filter} from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -14,11 +16,14 @@ import {MatIconModule} from '@angular/material/icon';
 })
 export class AppComponent implements OnInit {
 
-  constructor(public authService: AuthService) {}
+  constructor(public authService: AuthService, private router: Router, private errorService: ErrorService) {}
 
   ngOnInit(): void {
-        this.authService.verifyToken().then()
-    }
+    this.authService.verifyToken().then()
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationStart)
+    ).subscribe(() => this.errorService.clearError());
+  }
 
 
   logout() {
