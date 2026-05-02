@@ -9,18 +9,18 @@ import {MatIconModule} from '@angular/material/icon';
 import {ErrorService} from '../error.service';
 
 @Component({
-  selector: 'app-dashboard',
+  selector: 'app-shopping-list',
   imports: [
     FormsModule,
     NgForOf,
     NgIf,
     MatIconModule
   ],
-  templateUrl: './dashboard.component.html',
+  templateUrl: './shopping-list.component.html',
   standalone: true,
-  styleUrl: './dashboard.component.css'
+  styleUrl: './shopping-list.component.css'
 })
-export class DashboardComponent implements OnInit, OnDestroy {
+export class ShoppingListComponent implements OnInit, OnDestroy {
 
   apiUrl = environment.apiUrl;
   wsUrl = environment.wsUrl
