@@ -20,6 +20,13 @@
                 onmouseleave="this.style.backgroundColor='transparent'">
           Dashboard
         </button>
+        <button *ngIf="authService.isLoggedIn" routerLink="/recipe"
+                class="text-sm px-3 py-1.5 rounded-lg transition-colors"
+                style="color: #1D1D1F; background: transparent;"
+                onmouseenter="this.style.backgroundColor='rgba(0,0,0,0.06)'"
+                onmouseleave="this.style.backgroundColor='transparent'">
+          Recipes
+        </button>
         <button *ngIf="authService.isLoggedIn" (click)="logout()"
                 class="text-sm px-4 py-1.5 rounded-full font-medium apple-btn"
                 style="background-color: #1D1D1F; color: #FFFFFF;">

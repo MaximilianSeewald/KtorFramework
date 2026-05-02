@@ -1,0 +1,177 @@
+<div class="px-6 pt-10 pb-6 max-w-4xl mx-auto">
+  <div class="flex items-center gap-3 mb-1">
+    <div class="w-9 h-9 rounded-xl flex items-center justify-center"
+         style="background-color: #FFF3E0;">
+      <mat-icon style="color: #FF9800; font-size: 20px; width: 20px; height: 20px;">restaurant</mat-icon>
+    </div>
+    <h1 class="text-2xl font-semibold tracking-tight" style="color: #1D1D1F;">Recipes</h1>
+  </div>
+  <p class="text-sm" style="color: #6E6E73;">Create and manage your recipes with ingredients.</p>
+</div>
+
+<div class="max-w-4xl mx-auto px-6 pb-16">
+
+  <div class="rounded-2xl p-6 mb-6"
+       style="background-color: #FFFFFF; border: 1px solid #E8E8ED; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+    <h2 class="text-sm font-semibold uppercase tracking-wider mb-4" style="color: #6E6E73;">Add Recipe</h2>
+    <div class="flex gap-2">
+      <input
+        type="text"
+        [(ngModel)]="newRecipeName"
+        placeholder="Recipe name"
+        class="flex-grow px-4 py-2.5 text-sm rounded-xl border"
+        style="background-color: #F5F5F7; border-color: #D2D2D7; color: #1D1D1F;"
+      />
+      <button
+        (click)="addRecipe()"
+        class="px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-1 apple-btn"
+        style="background-color: #0071E3; color: #FFFFFF; white-space: nowrap;"
+      >
+        <mat-icon style="font-size: 18px; width: 18px; height: 18px;">add</mat-icon>
+        Add Recipe
+      </button>
+    </div>
+  </div>
+
+  <div class="grid gap-4">
+    <div *ngFor="let recipe of recipes; let i = index"
+         class="rounded-2xl overflow-hidden"
+         style="background-color: #FFFFFF; border: 1px solid #E8E8ED; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+
+      <div (click)="selectRecipe(i)"
+           class="px-6 py-4 flex justify-between items-center cursor-pointer"
+           style="border-bottom: 1px solid #E8E8ED;"
+           onmouseenter="this.style.backgroundColor='#F8F8F8'"
+           onmouseleave="this.style.backgroundColor='#FFFFFF'">
+
+        <div class="flex items-center gap-3 flex-grow">
+          <mat-icon *ngIf="selectedRecipeIndex !== i" style="color: #86868B;">expand_more</mat-icon>
+          <mat-icon *ngIf="selectedRecipeIndex === i" style="color: #86868B;">expand_less</mat-icon>
+
+          <input *ngIf="recipe.isEditing"
+                 [(ngModel)]="recipe.name"
+                 class="px-3 py-1.5 text-sm rounded-xl border flex-grow font-medium"
+                 style="background-color: #F5F5F7; border-color: #D2D2D7; color: #1D1D1F;"
+                 (click)="$event.stopPropagation()"
+          />
+          <span *ngIf="!recipe.isEditing" class="text-sm font-medium" style="color: #1D1D1F;">
+            {{ recipe.name }}
+          </span>
+        </div>
+
+        <div class="flex gap-1.5 ml-4" (click)="$event.stopPropagation()">
+          <button
+            (click)="toggleEditRecipe(recipe)"
+            class="px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1 apple-btn"
+            style="background-color: #F5F5F7; color: #1D1D1F; border: 1px solid #D2D2D7;"
+          >
+            <mat-icon style="font-size: 14px; width: 14px; height: 14px;">{{ recipe.isEditing ? 'save' : 'edit' }}</mat-icon>
+            {{ recipe.isEditing ? 'Save' : 'Edit' }}
+          </button>
+          <button
+            (click)="deleteRecipe(recipe.id)"
+            class="px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1 apple-btn"
+            style="background-color: #FFF2F1; color: #FF3B30; border: 1px solid #FFD5D2;"
+          >
+            <mat-icon style="font-size: 14px; width: 14px; height: 14px;">delete</mat-icon>
+            Delete
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="selectedRecipeIndex === i" class="px-6 py-4">
+
+        <div class="mb-4 pb-4" style="border-bottom: 1px solid #E8E8ED;">
+          <h3 class="text-xs font-semibold uppercase tracking-wider mb-3" style="color: #6E6E73;">Add Item</h3>
+          <div class="grid grid-cols-2 gap-2 mb-3">
+            <input
+              type="text"
+              [(ngModel)]="newItemName"
+              placeholder="Item name"
+              class="px-3 py-2 text-sm rounded-lg border"
+              style="background-color: #F5F5F7; border-color: #D2D2D7; color: #1D1D1F;"
+            />
+            <input
+              type="text"
+              [(ngModel)]="newItemValue"
+              placeholder="Value"
+              class="px-3 py-2 text-sm rounded-lg border"
+              style="background-color: #F5F5F7; border-color: #D2D2D7; color: #1D1D1F;"
+            />
+          </div>
+          <button
+            (click)="addItemToRecipe()"
+            class="w-full px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1 apple-btn"
+            style="background-color: #0071E3; color: #FFFFFF;"
+          >
+            <mat-icon style="font-size: 16px; width: 16px; height: 16px;">add</mat-icon>
+            Add Item
+          </button>
+        </div>
+
+        <div>
+          <h3 class="text-xs font-semibold uppercase tracking-wider mb-3" style="color: #6E6E73;">Items</h3>
+          <ul class="space-y-2">
+            <li *ngFor="let item of recipe.items; let itemIdx = index"
+                class="flex justify-between items-center p-3 rounded-lg"
+                style="background-color: #F8F8F8; border: 1px solid #E8E8ED;">
+
+              <div class="flex items-center gap-2 flex-grow">
+                <span *ngIf="recipe.editingItemIndex !== itemIdx" class="text-sm" style="color: #1D1D1F;">
+                  {{ item.name }} - <strong>{{ item.value }}</strong>
+                </span>
+                <div *ngIf="recipe.editingItemIndex === itemIdx" class="flex gap-2 flex-grow">
+                  <input
+                    [(ngModel)]="item.name"
+                    class="px-2 py-1 text-sm rounded border flex-grow"
+                    style="background-color: #FFFFFF; border-color: #D2D2D7; color: #1D1D1F;"
+                  />
+                  <input
+                    [(ngModel)]="item.value"
+                    class="px-2 py-1 text-sm rounded border"
+                    style="background-color: #FFFFFF; border-color: #D2D2D7; color: #1D1D1F; width: 100px;"
+                  />
+                </div>
+              </div>
+
+              <div class="flex gap-1 ml-2">
+                <button
+                  (click)="editItem(itemIdx)"
+                  class="px-2 py-1 text-xs font-medium rounded flex items-center gap-1 apple-btn"
+                  style="background-color: #F5F5F7; color: #1D1D1F; border: 1px solid #D2D2D7;"
+                >
+                  <mat-icon style="font-size: 12px; width: 12px; height: 12px;">{{ recipe.editingItemIndex === itemIdx ? 'save' : 'edit' }}</mat-icon>
+                </button>
+                <button
+                  (click)="removeItemFromRecipe(itemIdx)"
+                  class="px-2 py-1 text-xs font-medium rounded flex items-center gap-1 apple-btn"
+                  style="background-color: #FFF2F1; color: #FF3B30; border: 1px solid #FFD5D2;"
+                >
+                  <mat-icon style="font-size: 12px; width: 12px; height: 12px;">delete</mat-icon>
+                </button>
+              </div>
+            </li>
+
+            <li *ngIf="recipe.items?.length === 0" class="px-3 py-6 text-center text-sm" style="color: #86868B;">
+              No items yet. Add something above.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="recipes?.length === 0" class="rounded-2xl p-12 text-center"
+         style="background-color: #FFFFFF; border: 1px solid #E8E8ED;">
+      <mat-icon style="color: #D2D2D7; font-size: 48px; width: 48px; height: 48px; margin: 0 auto;">restaurant</mat-icon>
+      <p class="mt-3 text-sm" style="color: #86868B;">No recipes yet. Create one above to get started.</p>
+    </div>
+  </div>
+
+  <div *ngIf="errorService.errorMessage"
+       class="mt-4 p-3 rounded-xl text-sm"
+       style="background-color: #FFF2F1; color: #FF3B30; border: 1px solid #FFD5D2;">
+    {{ errorService.errorMessage }}
+  </div>
+
+</div>
+

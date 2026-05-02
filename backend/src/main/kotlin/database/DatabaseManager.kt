@@ -9,6 +9,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 object DatabaseManager {
 
     val shoppingListMap: MutableMap<String, ShoppingList> = mutableMapOf()
+    val recipeMap: MutableMap<String, Recipe> = mutableMapOf()
 
     fun init(){
         Database.connect(hikari())
@@ -19,6 +20,9 @@ object DatabaseManager {
                 val shoppingList = ShoppingList(it)
                 SchemaUtils.create(shoppingList)
                 shoppingListMap[it] = shoppingList
+                val recipe = Recipe(it + "_recipe")
+                SchemaUtils.create(recipe)
+                recipeMap[it] = recipe
             }
             migrateTablesIfMissing()
         }
@@ -27,6 +31,9 @@ object DatabaseManager {
     private fun Transaction.migrateTablesIfMissing() {
         shoppingListMap.forEach { (_, shoppingList) ->
             SchemaUtils.addMissingColumnsStatements(shoppingList).forEach { exec(it) }
+        }
+        recipeMap.forEach { (_, recipe) ->
+            SchemaUtils.addMissingColumnsStatements(recipe).forEach { exec(it) }
         }
         SchemaUtils.addMissingColumnsStatements(Users).forEach { exec(it) }
         SchemaUtils.addMissingColumnsStatements(UserGroups).forEach { exec(it) }

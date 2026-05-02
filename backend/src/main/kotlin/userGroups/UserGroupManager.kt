@@ -3,6 +3,7 @@ package com.loudless.userGroups
 import com.loudless.database.DatabaseManager
 import com.loudless.models.CreateUserGroupRequest
 import com.loudless.models.EditUserGroupRequest
+import com.loudless.recipes.RecipeService
 import com.loudless.shoppingList.ShoppingListService
 import com.loudless.users.UserService
 import io.ktor.http.*
@@ -49,6 +50,7 @@ class UserGroupManager {
             )
             UserService.addUserGroupToUser(userId, userGroupName)
             ShoppingListService.addShoppingList(userGroupName)
+            RecipeService.addRecipeList(userGroupName)
             call.respond(HttpStatusCode.OK)
         }
     }
@@ -72,6 +74,7 @@ class UserGroupManager {
             }
             UserService.deleteUserGroupFromAllUsers(userGroupName)
             ShoppingListService.deleteShoppingList(userGroupName)
+            RecipeService.deleteRecipeList(userGroupName)
             call.respond(HttpStatusCode.OK)
         }
     }
