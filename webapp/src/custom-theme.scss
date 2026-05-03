@@ -4,10 +4,10 @@ html {
   @include mat.theme((
     color: (
       theme-type: light,
-      primary: mat.$cyan-palette,
+      primary: mat.$blue-palette,
       tertiary: mat.$blue-palette,
     ),
-    typography: Arial,
+    typography: Roboto,
     density: 0,
   ));
 }

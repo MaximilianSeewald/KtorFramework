@@ -1,21 +1,43 @@
-<mat-card>
-  <mat-card-content>
-    <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)">
-      <h2>Sign In</h2>
-      <mat-form-field>
-        <input matInput placeholder="Username" [(ngModel)]="username" name="username" required>
-        <mat-error>
-          Please provide a valid username
-        </mat-error>
-      </mat-form-field>
-      <mat-form-field>
-        <input matInput type="password" placeholder="Password" [(ngModel)]="password" name="password" required>
-        <mat-error>
-          Please provide a valid password
-        </mat-error>
-      </mat-form-field>
-      <button mat-raised-button color="primary" [disabled]="!loginForm.form.valid">Sign In</button>
-    </form>
-  </mat-card-content>
-</mat-card>
+<div class="min-h-screen flex items-center justify-center px-4 py-12" style="background-color: #F5F5F7;">
+  <div class="w-full max-w-sm rounded-2xl p-8"
+       style="background-color: #FFFFFF; border: 1px solid #E8E8ED; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
 
+    <div class="text-center mb-8">
+      <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+           style="background-color: #EBF3FF;">
+        <mat-icon style="color: #0071E3; font-size: 28px; width: 28px; height: 28px;">lock</mat-icon>
+      </div>
+      <h1 class="text-2xl font-semibold tracking-tight" style="color: #1D1D1F;">Sign In</h1>
+      <p class="mt-1 text-sm" style="color: #6E6E73;">Enter your credentials to continue</p>
+    </div>
+
+    <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)">
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1.5" style="color: #1D1D1F;">Username</label>
+        <input [(ngModel)]="username" name="username" type="text"
+               placeholder="Your username"
+               class="w-full px-4 py-3 text-sm rounded-xl border"
+               style="background-color: #F5F5F7; border-color: #D2D2D7; color: #1D1D1F; transition: border-color 0.15s, box-shadow 0.15s;">
+      </div>
+      <div class="mb-6">
+        <label class="block text-sm font-medium mb-1.5" style="color: #1D1D1F;">Password</label>
+        <input [(ngModel)]="password" name="password" type="password"
+               placeholder="Your password"
+               class="w-full px-4 py-3 text-sm rounded-xl border"
+               style="background-color: #F5F5F7; border-color: #D2D2D7; color: #1D1D1F; transition: border-color 0.15s, box-shadow 0.15s;">
+      </div>
+      <button type="submit"
+              class="w-full py-3 rounded-full text-sm font-semibold apple-btn"
+              style="background-color: #0071E3; color: #FFFFFF;">
+        Sign In
+      </button>
+    </form>
+
+    <div *ngIf="errorService.errorMessage"
+         class="mt-4 p-3 rounded-xl text-sm"
+         style="background-color: #FFF2F1; color: #FF3B30; border: 1px solid #FFD5D2;">
+      {{ errorService.errorMessage }}
+    </div>
+
+  </div>
+</div>

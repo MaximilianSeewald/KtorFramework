@@ -1,10 +1,12 @@
 import { Component } from '@angular/core';
 import {RouterLink} from '@angular/router';
+import {MatIconModule} from '@angular/material/icon';
 
 @Component({
   selector: 'app-landing',
   imports: [
-    RouterLink
+    RouterLink,
+    MatIconModule
   ],
   templateUrl: './landing.component.html',
   standalone: true,

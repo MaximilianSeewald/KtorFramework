@@ -9,7 +9,7 @@ import io.ktor.server.routing.*
 import io.ktor.server.auth.*
 
 
-suspend fun main() {
+fun main() {
     DatabaseManager.init()
     embeddedServer(Netty, port = 8080) {
         SessionManager.installComponents(this)

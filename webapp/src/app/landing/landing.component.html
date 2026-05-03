@@ -1,29 +1,60 @@
-  <!-- Hero Section -->
-  <section class="text-center py-20 bg-indigo-600 text-white">
-    <h1 class="text-5xl font-bold">Welcome to my personal Space</h1>
-    <p class="mt-4 text-lg">Software Engineer for more than 10 years!</p>
-  </section>
+<!-- Hero Section -->
+<section class="text-center px-6" style="padding-top: 100px; padding-bottom: 100px; background: linear-gradient(180deg, #1D1D1F 0%, #2C2C2E 100%);">
+  <p class="text-xs font-semibold tracking-widest uppercase mb-4" style="color: #0071E3;">Personal Space</p>
+  <h1 class="text-5xl font-semibold text-white tracking-tight leading-tight" style="font-size: clamp(2.5rem, 6vw, 4rem);">
+    Welcome to my<br>personal Space.
+  </h1>
+  <p class="mt-5 text-lg max-w-xl mx-auto" style="color: #86868B;">
+    Software Engineer for more than 10 years, building great experiences.
+  </p>
+</section>
 
-  <!-- Features -->//
-  <section class="container mx-auto px-6 py-16">
-    <h2 class="text-3xl font-bold text-center">Features</h2>
-    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-      <div class="p-6 bg-white shadow-md rounded-lg">
-        <h3 class="text-xl font-semibold">Grade Calculator</h3>
-        <p class="mt-2 text-gray-600">Submit your points and names as .csv sheet and get the results.</p>
-        <button class="mt-6 px-6 py-3 bg-white text-indigo-600 font-semibold rounded-lg" routerLink="/calculator">
-          To Calculator
-        </button>
+<!-- Features -->
+<section class="max-w-5xl mx-auto px-6 py-20">
+  <h2 class="text-3xl font-semibold text-center tracking-tight" style="color: #1D1D1F;">What's available</h2>
+  <p class="text-center mt-2 text-sm" style="color: #6E6E73;">A collection of tools to make your life easier.</p>
+  <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <div class="p-8 rounded-2xl border transition-shadow hover:shadow-md"
+         style="background-color: #FFFFFF; border-color: #E8E8ED; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
+           style="background-color: #EBF3FF;">
+        <mat-icon style="color: #0071E3;">calculate</mat-icon>
       </div>
-      <div class="p-6 bg-white shadow-md rounded-lg">
-        <h3 class="text-xl font-semibold">Shopping List App</h3>
-        <p class="mt-2 text-gray-600">Share your shopping list with your friends and manage it from where ever you want</p>
-      </div>
-      <div class="p-6 bg-white shadow-md rounded-lg">
-        <h3 class="text-xl font-semibold">Home Assistant</h3>
-        <p class="mt-2 text-gray-600">Integrate your Home Assistant Apps via our service and communicate over this site</p>
-      </div>
+      <h3 class="text-base font-semibold" style="color: #1D1D1F;">Grade Calculator</h3>
+      <p class="mt-2 text-sm leading-relaxed" style="color: #6E6E73;">
+        Submit your points and names as a .csv sheet and get the results instantly.
+      </p>
+      <button routerLink="/calculator"
+              class="mt-6 text-sm font-medium px-5 py-2 rounded-full apple-btn"
+              style="background-color: #0071E3; color: #FFFFFF;">
+        Open Calculator
+      </button>
     </div>
-  </section>
 
+    <div class="p-8 rounded-2xl border transition-shadow hover:shadow-md"
+         style="background-color: #FFFFFF; border-color: #E8E8ED; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
+           style="background-color: #EBF3FF;">
+        <mat-icon style="color: #0071E3;">shopping_cart</mat-icon>
+      </div>
+      <h3 class="text-base font-semibold" style="color: #1D1D1F;">Shopping List App</h3>
+      <p class="mt-2 text-sm leading-relaxed" style="color: #6E6E73;">
+        Share your shopping list with friends and manage it from anywhere you want.
+      </p>
+    </div>
 
+    <div class="p-8 rounded-2xl border transition-shadow hover:shadow-md"
+         style="background-color: #FFFFFF; border-color: #E8E8ED; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+      <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
+           style="background-color: #EBF3FF;">
+        <mat-icon style="color: #0071E3;">home</mat-icon>
+      </div>
+      <h3 class="text-base font-semibold" style="color: #1D1D1F;">Home Assistant</h3>
+      <p class="mt-2 text-sm leading-relaxed" style="color: #6E6E73;">
+        Integrate your Home Assistant apps and communicate over this platform.
+      </p>
+    </div>
+
+  </div>
+</section>

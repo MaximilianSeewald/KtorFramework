@@ -1,27 +1,20 @@
 import {Component, OnInit} from '@angular/core';
-import {MatCard, MatCardContent} from '@angular/material/card';
-import {MatError, MatFormField} from '@angular/material/form-field';
 import {FormsModule} from '@angular/forms';
-import {MatInput} from '@angular/material/input';
-import {MatButton} from '@angular/material/button';
 import {NgIf} from '@angular/common';
 import {HttpHeaders} from '@angular/common/http';
 import {environment} from '../../environments/environment';
 import {HttpClient} from '@angular/common/http';
 import {AuthService} from '../auth.service';
 import {User} from '../models/user.model';
+import {MatIconModule} from '@angular/material/icon';
+import {ErrorService} from '../error.service';
 
 @Component({
   selector: 'app-change-password',
   imports: [
-    MatCard,
-    MatCardContent,
-    MatError,
     FormsModule,
-    MatFormField,
-    MatInput,
-    MatButton,
     NgIf,
+    MatIconModule
   ],
   templateUrl: './changePassword.component.html',
   styleUrl: './changePassword.component.css',
@@ -37,7 +30,7 @@ export class ChangePasswordComponent implements OnInit{
   wrongUsername: boolean = false;
   wrongPassword: boolean = false;
 
-  constructor(private http: HttpClient, protected authService: AuthService) {}
+  constructor(private http: HttpClient, private authService: AuthService, public errorService: ErrorService) {}
 
   ngOnInit(): void {
     this.getUserInfo()
@@ -51,6 +44,7 @@ export class ChangePasswordComponent implements OnInit{
   }
 
   public onSubmit(form: any): void {
+    this.errorService.clearError();
     this.wrongUsername = false;
     this.wrongPassword = false;
     const { oldPassword, newPassword } = form.value;
@@ -71,10 +65,11 @@ export class ChangePasswordComponent implements OnInit{
           form.reset();
           this.authService.logout();
           return;
+        },
+        (error) => {
+          this.errorService.setError(error.error?.message || 'Password change failed.');
+          this.wrongPassword = true;
+          form.reset();
         });
-    this.wrongPassword = true;
-    form.reset();
   }
 }
-
-

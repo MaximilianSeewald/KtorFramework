@@ -5,19 +5,22 @@ import {ShoppingListItem, ShoppingListItemExtended} from '../models/shoppingList
 import {HttpClient} from '@angular/common/http';
 import {environment} from '../../environments/environment';
 import { v4 as uuid } from 'uuid';
+import {MatIconModule} from '@angular/material/icon';
+import {ErrorService} from '../error.service';
 
 @Component({
-  selector: 'app-dashboard',
+  selector: 'app-shopping-list',
   imports: [
     FormsModule,
     NgForOf,
-    NgIf
+    NgIf,
+    MatIconModule
   ],
-  templateUrl: './dashboard.component.html',
+  templateUrl: './shopping-list.component.html',
   standalone: true,
-  styleUrl: './dashboard.component.css'
+  styleUrl: './shopping-list.component.css'
 })
-export class DashboardComponent implements OnInit, OnDestroy {
+export class ShoppingListComponent implements OnInit, OnDestroy {
 
   apiUrl = environment.apiUrl;
   wsUrl = environment.wsUrl
@@ -25,7 +28,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   newItemName = '';
   socket: WebSocket | null = null
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, public errorService: ErrorService) {}
 
   ngOnDestroy(): void {
     this.socket?.close()
@@ -51,25 +54,61 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   addItem() {
+    if (!this.newItemName.trim()) {
+      this.errorService.setError('Please enter an item name.');
+      return;
+    }
     const newItem: ShoppingListItem = { id: uuid(), name: this.newItemName, retrieved: false };
-    this.http.post(`${this.apiUrl}/shoppingList`, newItem).subscribe()
-    this.newItemName = ""
+    this.http.post(`${this.apiUrl}/shoppingList`, newItem).subscribe(
+      () => {
+        this.errorService.clearError();
+        this.newItemName = "";
+      },
+      (error) => {
+        this.errorService.setError(error.error?.message || 'Failed to add item.');
+      }
+    );
   }
 
   deleteItem(id: string) {
-    this.http.delete(`${this.apiUrl}/shoppingList`, { params: { id: id } }).subscribe()
+    this.http.delete(`${this.apiUrl}/shoppingList`, { params: { id: id } }).subscribe(
+      () => {
+        this.errorService.clearError();
+      },
+      (error) => {
+        this.errorService.setError(error.error?.message || 'Failed to delete item.');
+      }
+    );
   }
 
   toggleEdit(item: ShoppingListItemExtended) {
     if (item.isEditing) {
+      if (!item.name.trim()) {
+        this.errorService.setError('Item name cannot be empty.');
+        return;
+      }
       const shoppingListItem: ShoppingListItem = { id: item.id, name: item.name, retrieved: item.retrieved}
-      this.http.put(`${this.apiUrl}/shoppingList`,shoppingListItem).subscribe()
+      this.http.put(`${this.apiUrl}/shoppingList`,shoppingListItem).subscribe(
+        () => {
+          this.errorService.clearError();
+        },
+        (error) => {
+          this.errorService.setError(error.error?.message || 'Failed to update item.');
+        }
+      );
     }
     item.isEditing = !item.isEditing
   }
 
   toggleRetrieved(item: ShoppingListItem) {
     const shoppingListItem: ShoppingListItem = {id: item.id, name: item.name, retrieved: item.retrieved};
-    this.http.put(`${this.apiUrl}/shoppingList`, shoppingListItem).subscribe()
+    this.http.put(`${this.apiUrl}/shoppingList`, shoppingListItem).subscribe(
+      () => {
+        this.errorService.clearError();
+      },
+      (error) => {
+        this.errorService.setError(error.error?.message || 'Failed to update item status.');
+      }
+    );
   }
 }

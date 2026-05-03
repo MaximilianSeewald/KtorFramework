@@ -1,37 +1,64 @@
-<div class="bg-gray-100 min-h-screen flex flex-col">
+<div class="min-h-screen flex flex-col" style="background-color: #F5F5F7;">
   <!-- Navbar -->
-  <nav class="bg-white shadow-md py-4">
-    <div class="container mx-auto flex justify-between items-center px-6">
-      <a href="#" class="text-2xl font-bold text-indigo-600">Maximilian Seewald</a>
-      <div>
-        <button *ngIf="authService.isLoggedIn" class="text-indigo-600 px-4 py-2 rounded-lg ml-4" routerLink="/user">
+  <nav class="sticky top-0 z-50" style="background: rgba(255,255,255,0.82); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid rgba(0,0,0,0.1);">
+    <div class="max-w-5xl mx-auto flex justify-between items-center px-6 h-14">
+      <a routerLink="/" class="text-base font-semibold tracking-tight" style="color: #1D1D1F; text-decoration: none;">
+        Maximilian Seewald
+      </a>
+      <div class="flex items-center space-x-1">
+        <button *ngIf="authService.isLoggedIn" routerLink="/user"
+                class="text-sm px-3 py-1.5 rounded-lg transition-colors"
+                style="color: #1D1D1F; background: transparent;"
+                onmouseenter="this.style.backgroundColor='rgba(0,0,0,0.06)'"
+                onmouseleave="this.style.backgroundColor='transparent'">
           User
         </button>
-        <button *ngIf="authService.isLoggedIn" class="text-indigo-600 px-4 py-2 rounded-lg ml-4" routerLink="/dashboard">
-          DashBoard
+        <button *ngIf="authService.isLoggedIn" routerLink="/dashboard"
+                class="text-sm px-3 py-1.5 rounded-lg transition-colors"
+                style="color: #1D1D1F; background: transparent;"
+                onmouseenter="this.style.backgroundColor='rgba(0,0,0,0.06)'"
+                onmouseleave="this.style.backgroundColor='transparent'">
+          Shopping List
         </button>
-        <button *ngIf="authService.isLoggedIn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg ml-4" (click)="logout()">
+        <button *ngIf="authService.isLoggedIn" routerLink="/recipe"
+                class="text-sm px-3 py-1.5 rounded-lg transition-colors"
+                style="color: #1D1D1F; background: transparent;"
+                onmouseenter="this.style.backgroundColor='rgba(0,0,0,0.06)'"
+                onmouseleave="this.style.backgroundColor='transparent'">
+          Recipes
+        </button>
+        <button *ngIf="authService.isLoggedIn" (click)="logout()"
+                class="text-sm px-4 py-1.5 rounded-full font-medium apple-btn"
+                style="background-color: #1D1D1F; color: #FFFFFF;">
           Sign Out
         </button>
-        <button *ngIf="!(authService.isLoggedIn)" class="bg-indigo-600 text-white px-4 py-2 rounded-lg ml-4" routerLink="/login">
+        <button *ngIf="!(authService.isLoggedIn)" routerLink="/login"
+                class="text-sm px-3 py-1.5 rounded-lg transition-colors"
+                style="color: #1D1D1F; background: transparent;"
+                onmouseenter="this.style.backgroundColor='rgba(0,0,0,0.06)'"
+                onmouseleave="this.style.backgroundColor='transparent'">
           Sign In
         </button>
-        <button *ngIf="!(authService.isLoggedIn)" class="bg-indigo-600 text-white px-4 py-2 rounded-lg ml-4" routerLink="/register">
-          Create Account
+        <button *ngIf="!(authService.isLoggedIn)" routerLink="/register"
+                class="text-sm px-4 py-1.5 rounded-full font-medium apple-btn"
+                style="background-color: #0071E3; color: #FFFFFF;">
+          Get Started
         </button>
       </div>
     </div>
   </nav>
+
   <div class="flex-grow">
     <router-outlet></router-outlet>
   </div>
 
   <!-- Footer -->
-  <footer class="bg-indigo-600 text-white py-6 text-center">
-    <p>&copy; 2025 Maximilian Seewald. All rights reserved.</p>
+  <footer class="py-8 text-center" style="background-color: #F5F5F7; border-top: 1px solid #D2D2D7;">
+    <p class="text-sm" style="color: #6E6E73;">&copy; 2026 Maximilian Seewald. All rights reserved.</p>
     <div class="mt-2">
-      <a href="#" class="px-3">Imprint</a>
+      <a href="#" class="text-sm px-3 transition-colors" style="color: #6E6E73;"
+         onmouseenter="this.style.color='#1D1D1F'"
+         onmouseleave="this.style.color='#6E6E73'">Imprint</a>
     </div>
   </footer>
 </div>
-

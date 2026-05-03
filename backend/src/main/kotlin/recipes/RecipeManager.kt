@@ -1,9 +1,9 @@
-package com.loudless.shoppingList
+package com.loudless.recipes
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.loudless.SessionManager.secretJWTKey
-import com.loudless.models.ShoppingListItem
+import com.loudless.models.Recipe
 import com.loudless.users.UserService
 import com.loudless.users.UserService.getUserGroupsByPrincipal
 import com.loudless.users.UserService.getUserGroupsByQuery
@@ -17,23 +17,22 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 
-class ShoppingListManager {
+class RecipeManager {
 
-    private val observerList: MutableMap<String,MutableSharedFlow<List<ShoppingListItem>>> = mutableMapOf()
+    private val observerList: MutableMap<String,MutableSharedFlow<List<Recipe>>> = mutableMapOf()
 
     fun initRoutes(route: Route) {
-        route.getShoppingList()
-        route.putShoppingList()
-        route.postShoppingList()
-        route.deleteShoppingList()
+        route.getRecipes()
+        route.putRecipes()
+        route.postRecipes()
+        route.deleteRecipes()
     }
 
     fun initQueryRoutes(route: Route) {
-       route.webSocketShoppingList()
+        route.webSocketRecipes()
     }
 
     private suspend fun retrieveUserGroupsAndHandleErrors(call: ApplicationCall): List<String> {
@@ -49,8 +48,8 @@ class ShoppingListManager {
         return groups
     }
 
-    private fun Route.webSocketShoppingList() {
-        webSocket("/shoppingListWS") {
+    private fun Route.webSocketRecipes() {
+        webSocket("/recipeWS") {
             val token = call.request.queryParameters["token"]
             if (token == null) {
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Missing token"))
@@ -63,26 +62,26 @@ class ShoppingListManager {
 
             val decodedJWT = try {
                 verifier.verify(token)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Invalid token"))
                 return@webSocket
             }
             val groups = getUserGroupsByQuery(decodedJWT)
             val userName = getUserNameByQuery(decodedJWT)
             if(groups.isEmpty() || groups.contains("")) return@webSocket
-            var flow = MutableSharedFlow<List<ShoppingListItem>>(replay = 1)
+            var flow = MutableSharedFlow<List<Recipe>>(replay = 1)
             if(observerList[userName] == null) {
                 observerList[userName] = flow
             }else {
                 flow = observerList[userName]!!
             }
             val job = launch {
-                flow.collect { shoppingList ->
-                    send(Json.encodeToString(shoppingList))
+                flow.collect { recipes ->
+                    send(Json.encodeToString(recipes))
                 }
             }
             runCatching {
-                send(Json.encodeToString(ShoppingListService.retrieveItems(groups[0])))
+                send(Json.encodeToString(RecipeService.retrieveRecipes(groups[0])))
                 incoming.consumeEach {  }
             }.onFailure {
                 observerList.remove(userName)
@@ -95,36 +94,36 @@ class ShoppingListManager {
         }
     }
 
-    private fun Route.getShoppingList() {
-        get("/shoppingList") {
+    private fun Route.getRecipes() {
+        get("/recipe") {
             val groups = retrieveUserGroupsAndHandleErrors(call)
             if(groups.isEmpty()) return@get
             call.respondText(
-                text = Json.encodeToString(ShoppingListService.retrieveItems(groups[0])),
+                text = Json.encodeToString(RecipeService.retrieveRecipes(groups[0])),
                 contentType = ContentType.Application.Json
             )
         }
     }
 
-    private fun Route.postShoppingList() {
-        post("/shoppingList") {
+    private fun Route.postRecipes() {
+        post("/recipe") {
             val groups = retrieveUserGroupsAndHandleErrors(call)
             if (groups.isEmpty()) return@post
-            when (ShoppingListService.addItem(call, groups[0])) {
+            when (RecipeService.addRecipe(call, groups[0])) {
                 true -> call.respond(HttpStatusCode.OK)
-                false -> call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Couldn't add shopping list item"))
+                false -> call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Couldn't add recipe"))
             }
             emitUpdate(groups)
         }
     }
 
-    private fun Route.putShoppingList() {
-        put("/shoppingList") {
+    private fun Route.putRecipes() {
+        put("/recipe") {
             val groups = retrieveUserGroupsAndHandleErrors(call)
             if (groups.isEmpty()) return@put
-            when (ShoppingListService.editItem(call, groups[0])) {
+            when (RecipeService.editRecipe(call, groups[0])) {
                 true -> call.respond(HttpStatusCode.OK)
-                false -> call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Item id does not exist"))
+                false -> call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Recipe id does not exist"))
             }
             emitUpdate(groups)
         }
@@ -134,20 +133,21 @@ class ShoppingListManager {
         val usersForGroup = UserService.getUsersForGroup(groups[0])
         if (observerList.any { usersForGroup.contains(it.key) }) {
             observerList.filter { usersForGroup.contains(it.key) }.forEach {
-                it.value.tryEmit(ShoppingListService.retrieveItems(groups[0]))
+                it.value.tryEmit(RecipeService.retrieveRecipes(groups[0]))
             }
         }
     }
 
-    private fun Route.deleteShoppingList() {
-        delete("/shoppingList") {
+    private fun Route.deleteRecipes() {
+        delete("/recipe") {
             val groups = retrieveUserGroupsAndHandleErrors(call)
             if (groups.isEmpty()) return@delete
-            when (ShoppingListService.deleteItem(call, groups[0])) {
+            when (RecipeService.deleteRecipe(call, groups[0])) {
                 true -> call.respond(HttpStatusCode.OK)
-                false -> call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Item id is not unique"))
+                false -> call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Recipe id is not unique"))
             }
             emitUpdate(groups)
         }
     }
 }
+

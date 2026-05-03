@@ -1,15 +1,15 @@
 plugins {
-    kotlin("jvm") version "2.1.0"
-    id("io.ktor.plugin") version "3.0.3"
-    kotlin("plugin.serialization") version "2.1.0"
+    kotlin("jvm") version "2.1.10"
+    id("io.ktor.plugin") version "3.1.1"
+    kotlin("plugin.serialization") version "2.1.10"
     application
 }
 
 group = "com.loudless"
 version = "1.0-SNAPSHOT"
 
-val ktorVersion = "3.0.3"
-val exposedVersion = "0.58.0"
+val ktorVersion = "3.1.1"
+val exposedVersion = "0.59.0"
 val h2Version = "2.3.232"
 val hikariVersion = "6.2.1"
 
@@ -48,7 +48,7 @@ dependencies {
     implementation("com.h2database:h2:$h2Version")
     implementation("com.zaxxer:HikariCP:$hikariVersion")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("com.jsoizo:kotlin-csv-jvm:1.10.0")
     implementation("at.favre.lib:bcrypt:0.10.2")
 }

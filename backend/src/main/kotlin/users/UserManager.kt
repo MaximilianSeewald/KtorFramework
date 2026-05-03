@@ -44,11 +44,11 @@ class UserManager {
             val username: String = parameters["username"] ?: ""
             val password: String = parameters["password"] ?: ""
             if (username == "" || password == "") {
-                call.respond(HttpStatusCode.BadRequest, "Username or password is empty")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Username or password is empty"))
                 return@post
             }
             if (UserService.userExists(username)) {
-                call.respond(HttpStatusCode.BadRequest, "User already exists")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User already exists"))
                 return@post
             }
             UserService.addUser(username, password)
@@ -64,15 +64,15 @@ class UserManager {
             val currentPassword: String = parameters["oldPassword"] ?: ""
             val newPassword: String = parameters["newPassword"] ?: ""
             if (user.name != userNameFromRoute) {
-                call.respond(HttpStatusCode.BadRequest, "User does not match")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User does not match"))
                 return@post
             }
             if (!UserService.verifyUserPassword(user.id, currentPassword)) {
-                call.respond(HttpStatusCode.BadRequest, "Current password is incorrect")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Current password is incorrect"))
                 return@post
             }
             if (newPassword == "") {
-                call.respond(HttpStatusCode.BadRequest, "New password is empty")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "New password is empty"))
                 return@post
             }
             UserService.updatePassword(user.id, newPassword)
@@ -88,23 +88,23 @@ class UserManager {
             val password = joinUserGroupRequest.password
             val userGroupName = joinUserGroupRequest.userGroupName
             if (user.name != userFromRoute) {
-                call.respond(HttpStatusCode.BadRequest, "User does not match")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User does not match"))
                 return@post
             }
             if (user.userGroup != null && user.userGroup != "") {
-                call.respond(HttpStatusCode.BadRequest, "User is already in a group")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User is already in a group"))
                 return@post
             }
             if (!UserGroupService.userGroupExists(userGroupName)) {
-                call.respond(HttpStatusCode.NotFound, "User group does not exist")
+                call.respond(HttpStatusCode.NotFound, mapOf("message" to "User group does not exist"))
                 return@post
             }
             if (!UserGroupService.checkPassword(userGroupName, password)) {
-                call.respond(HttpStatusCode.BadRequest, "Incorrect password")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Incorrect password"))
                 return@post
             }
             if (user.userGroup == userGroupName) {
-                call.respond(HttpStatusCode.BadRequest, "User is already in the group")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User is already in the group"))
                 return@post
             }
             UserService.addUserGroupToUser(user.id, userGroupName)
@@ -118,19 +118,19 @@ class UserManager {
             val userFromRoute = call.parameters["userName"]!!
             val userGroupName = call.parameters["groupName"]!!
             if (user.name != userFromRoute) {
-                call.respond(HttpStatusCode.BadRequest, "User does not match")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User does not match"))
                 return@delete
             }
             if (!UserGroupService.userGroupExists(userGroupName)) {
-                call.respond(HttpStatusCode.NotFound, "User group does not exist")
+                call.respond(HttpStatusCode.NotFound, mapOf("message" to "User group does not exist"))
                 return@delete
             }
             if (UserGroupService.checkIsAdmin(user)) {
-                call.respond(HttpStatusCode.BadRequest, "Admin cannot leave group")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Admin cannot leave group"))
                 return@delete
             }
             if (user.userGroup != userGroupName) {
-                call.respond(HttpStatusCode.BadRequest, "User is not in the group")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User is not in the group"))
                 return@delete
             }
             UserService.deleteUserGroupFromUser(user.id)
@@ -160,7 +160,7 @@ class UserManager {
                     .sign(Algorithm.HMAC256(secretJWTKey))
                 call.respond(HttpStatusCode.OK, mapOf("token" to token))
             } else {
-                call.respond(HttpStatusCode.Unauthorized)
+                call.respond(HttpStatusCode.Unauthorized, mapOf("message" to "Login failed. Please check your credentials."))
             }
         }
     }

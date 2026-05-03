@@ -3,12 +3,14 @@ import {HttpClient} from '@angular/common/http';
 import {NgIf} from '@angular/common';
 import {environment} from '../../environments/environment';
 import {FormsModule} from '@angular/forms';
+import {MatIcon} from '@angular/material/icon';
 
 @Component({
   selector: 'app-calculator',
   imports: [
     NgIf,
-    FormsModule
+    FormsModule,
+    MatIcon
   ],
   templateUrl: './calculator.component.html',
   standalone: true,
