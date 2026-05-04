@@ -30,8 +30,6 @@ class UserManager {
         routing.userChangePassword()
     }
 
-
-    // TODO: change to `GET /user/{userName}` and verify that userName matches the user in the token?
     private fun Route.getUserInformation() {
         get("/user") {
             call.respond(UserService.retrieveAndHandleUsers(call)[0])

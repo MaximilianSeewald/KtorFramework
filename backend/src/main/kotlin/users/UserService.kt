@@ -23,10 +23,6 @@ object UserService {
         }
     }
 
-    fun getUserNameByQuery(decodedJWT: DecodedJWT): String {
-        return decodedJWT.getClaim("username").asString()
-    }
-
     fun getUserGroupsByQuery(decodedJWT: DecodedJWT): List<String> {
         val username = decodedJWT.getClaim("username").asString()
         return transaction {
@@ -46,15 +42,17 @@ object UserService {
 
     suspend fun retrieveAndHandleUsers(call: ApplicationCall): List<User> {
         val userList = getUserInformationByPrincipal(call)
-        if(userList.isEmpty()) {
-            call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No User Found"))
-            return emptyList()
+        return when {
+            userList.isEmpty() -> {
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No User Found"))
+                emptyList()
+            }
+            userList.size > 1 -> {
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Multiple User Found for this name"))
+                emptyList()
+            }
+            else -> userList
         }
-        if(userList.size > 1) {
-            call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Multiple User Found for this name"))
-            return emptyList()
-        }
-        return userList
     }
 
     fun addUser(name: String, password: String) {

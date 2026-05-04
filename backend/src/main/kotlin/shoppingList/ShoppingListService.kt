@@ -16,7 +16,7 @@ object ShoppingListService {
 
     fun retrieveItems(userGroup: String): List<ShoppingListItem> {
         val shoppingListTable = DatabaseManager.shoppingListMap[userGroup]
-        val shoppingListDataMap = transaction {
+        return transaction {
             shoppingListTable?.selectAll()?.map {
                 ShoppingListItem(
                     name = it[shoppingListTable.name],
@@ -24,9 +24,8 @@ object ShoppingListService {
                     id = it[shoppingListTable.id].toString(),
                     retrieved = it[shoppingListTable.retrieved]
                 )
-            } ?: mutableListOf()
+            } ?: emptyList()
         }
-        return shoppingListDataMap
     }
 
     suspend fun addItem(call: RoutingCall, groupName: String): Boolean {
@@ -37,21 +36,19 @@ object ShoppingListService {
         }
         val updateData = call.receive<ShoppingListItem>()
         return transaction {
-            val item = shoppingListTable
-                .selectAll()
-                .where { shoppingListTable.id eq UUID.fromString(updateData.id) }
-                .map { it[shoppingListTable.id] }
-
-            if (item.isEmpty()) {
+            if (shoppingListTable
+                    .selectAll()
+                    .where { shoppingListTable.id eq UUID.fromString(updateData.id) }
+                    .empty()) {
                 shoppingListTable.insert {
                     it[id] = UUID.fromString(updateData.id)
                     it[name] = updateData.name
                     it[amount] = updateData.amount
                     it[retrieved] = false
                 }
-                return@transaction true
-            }  else {
-                return@transaction false
+                true
+            } else {
+                false
             }
         }
     }
@@ -64,20 +61,20 @@ object ShoppingListService {
         }
         val updateData = call.receive<ShoppingListItem>()
         return transaction {
-            val item = shoppingListTable
+            val count = shoppingListTable
                 .selectAll()
                 .where { shoppingListTable.id eq UUID.fromString(updateData.id) }
-                .map { it[shoppingListTable.id] }
+                .count()
 
-            if (item.size == 1) {
+            if (count == 1L) {
                 shoppingListTable.update({ shoppingListTable.id eq UUID.fromString(updateData.id) }) {
                     it[name] = updateData.name
                     it[amount] = updateData.amount
                     it[retrieved] = updateData.retrieved
                 }
-                return@transaction true
+                true
             } else {
-                return@transaction false
+                false
             }
         }
     }
@@ -88,23 +85,21 @@ object ShoppingListService {
             call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No shopping list found for this user"))
             return false
         }
-        val id = call.request.queryParameters["id"]
+        val id = call.request.queryParameters["id"] ?: return false
 
         return transaction {
-            val item = shoppingListTable
+            val count = shoppingListTable
                 .selectAll()
                 .where { shoppingListTable.id eq UUID.fromString(id) }
-                .map { it[shoppingListTable.id] }
+                .count()
 
-            if (item.isEmpty()) {
-                return@transaction true
-            } else if (item.size == 1) {
-                shoppingListTable.deleteWhere {
-                    shoppingListTable.id eq UUID.fromString(id)
+            when (count) {
+                0L -> true
+                1L -> {
+                    shoppingListTable.deleteWhere { shoppingListTable.id eq UUID.fromString(id) }
+                    true
                 }
-                return@transaction true
-            } else {
-                return@transaction false
+                else -> false
             }
         }
     }
