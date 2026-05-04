@@ -68,9 +68,7 @@ jobs:
           sed -i "s/version: \"$version\"/version: \"$new_version\"/" addons/ktor_app/config.yaml
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
       - name: Create Pull Request
-        if: |
-          github.actor != 'github-actions[bot]' &&
-          !contains(github.event.head_commit.message, '[skip ci]')
+        id: cpr
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -78,3 +76,8 @@ jobs:
           title: Bump add-on version to ${{ steps.bump.outputs.new_version }}
           branch: version-bump
           delete-branch: true
+
+      - name: Enable Auto Merge
+        run: gh pr merge version-bump --auto --squash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

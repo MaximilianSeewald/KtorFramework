@@ -14,18 +14,9 @@ fun main() {
     DatabaseManager.init()
     embeddedServer(Netty, port = 8080) {
         SessionManager.installComponents(this)
-        val isHA = File("/data").exists()
         routing {
-            if (isHA) {
-                route("/app") {
-                    singlePageApplication {
-                        angular("app/browser")
-                    }
-                }
-            } else {
-                singlePageApplication {
-                    angular("app/browser")
-                }
+            singlePageApplication {
+                angular("app/browser")
             }
             SessionManager.initRouting(this)
             authenticate("auth-jwt") {
