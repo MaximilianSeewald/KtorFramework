@@ -2,8 +2,8 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-COPY deploy/ktor.jar ktor.jar
-COPY deploy/app app
+COPY ktor.jar ktor.jar
+COPY app app
 
 EXPOSE 8080
 
