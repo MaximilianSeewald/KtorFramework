@@ -48,13 +48,17 @@ jobs:
           cp deploy/ktor.jar addons/ktor_app/
           cp -r deploy/app addons/ktor_app/
       - name: Get current version
-        if: github.actor != 'github-actions[bot]'
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]')
         id: version
         run: |
           version=$(grep '^version:' addons/ktor_app/config.yaml | sed 's/version: "\(.*\)"/\1/')
           echo "current_version=$version" >> $GITHUB_OUTPUT
       - name: Bump version
-        if: github.actor != 'github-actions[bot]'
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]')
         id: bump
         run: |
           version=${{ steps.version.outputs.current_version }}
@@ -64,7 +68,9 @@ jobs:
           sed -i "s/version: \"$version\"/version: \"$new_version\"/" addons/ktor_app/config.yaml
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
       - name: Create Pull Request
-        if: github.actor != 'github-actions[bot]'
+        if: |
+          github.actor != 'github-actions[bot]' &&
+          !contains(github.event.head_commit.message, '[skip ci]')
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
