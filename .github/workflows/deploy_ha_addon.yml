@@ -36,11 +36,13 @@ jobs:
       - name: Build JAR
         run: ./gradlew deployGithub
       - name: Get current version
+        if: github.actor != 'github-actions[bot]'
         id: version
         run: |
           version=$(grep '^version:' addons/ktor_app/config.yaml | sed 's/version: "\(.*\)"/\1/')
           echo "current_version=$version" >> $GITHUB_OUTPUT
       - name: Bump version
+        if: github.actor != 'github-actions[bot]'
         id: bump
         run: |
           version=${{ steps.version.outputs.current_version }}
@@ -49,10 +51,12 @@ jobs:
           new_version="$major.$minor.$new_patch"
           sed -i "s/version: \"$version\"/version: \"$new_version\"/" addons/ktor_app/config.yaml
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
-      - name: Commit version bump
-        run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'actions@github.com'
-          git add addons/ktor_app/config.yaml
-          git commit -m "Bump add-on version to ${{ steps.bump.outputs.new_version }}" || echo "No changes to commit"
-          git push
+      - name: Create Pull Request
+        if: github.actor != 'github-actions[bot]'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Bump add-on version to ${{ steps.bump.outputs.new_version }}
+          title: Bump add-on version to ${{ steps.bump.outputs.new_version }}
+          branch: version-bump
+          delete-branch: true
