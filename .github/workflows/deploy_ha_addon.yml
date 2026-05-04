@@ -1,0 +1,55 @@
+name: Deploy HA Add-on
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22.13.1
+      - name: Install Dependencies
+        run: |
+          cd webapp 
+          npm install
+      - name: Build FrontEnd
+        run: |
+          cd webapp
+          npm run build
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b
+      - name: Build JAR
+        run: ./gradlew deployGithub
+      - name: Get current version
+        id: version
+        run: |
+          version=$(grep '^version:' addons/ktor_app/config.yaml | sed 's/version: "\(.*\)"/\1/')
+          echo "current_version=$version" >> $GITHUB_OUTPUT
+      - name: Bump version
+        id: bump
+        run: |
+          version=${{ steps.version.outputs.current_version }}
+          IFS='.' read -r major minor patch <<< "$version"
+          new_patch=$((patch + 1))
+          new_version="$major.$minor.$new_patch"
+          sed -i "s/version: \"$version\"/version: \"$new_version\"/" addons/ktor_app/config.yaml
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+      - name: Commit version bump
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          git add addons/ktor_app/config.yaml
+          git commit -m "Bump add-on version to ${{ steps.bump.outputs.new_version }}" || echo "No changes to commit"
+          git push
