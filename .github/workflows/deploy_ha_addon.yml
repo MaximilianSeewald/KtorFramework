@@ -9,9 +9,16 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: version-bump
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: |
+      github.actor != 'github-actions[bot]' &&
+      !contains(github.event.head_commit.message, '[skip ci]')
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -61,7 +68,7 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: Bump add-on version to ${{ steps.bump.outputs.new_version }}
+          commit-message: "Bump add-on version to ${{ steps.bump.outputs.new_version }} [skip ci]"
           title: Bump add-on version to ${{ steps.bump.outputs.new_version }}
           branch: version-bump
           delete-branch: true
