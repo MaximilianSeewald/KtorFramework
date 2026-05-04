@@ -117,7 +117,7 @@ object RecipeService {
 
     fun addRecipeList(userGroup: String) {
         transaction {
-            val recipe = Recipe(userGroup)
+            val recipe = Recipe(userGroup + "_recipe")
             SchemaUtils.create(recipe)
             DatabaseManager.recipeMap[userGroup] = recipe
         }
