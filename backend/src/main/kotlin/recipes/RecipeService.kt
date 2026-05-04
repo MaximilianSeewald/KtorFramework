@@ -18,16 +18,15 @@ object RecipeService {
 
     fun retrieveRecipes(userGroup: String): List<RecipeModel> {
         val recipeTable = DatabaseManager.recipeMap[userGroup]
-        val recipeDataList = transaction {
+        return transaction {
             recipeTable?.selectAll()?.map {
                 RecipeModel(
                     id = it[recipeTable.id].toString(),
                     name = it[recipeTable.name],
                     items = parseItems(it[recipeTable.items])
                 )
-            } ?: mutableListOf()
+            } ?: emptyList()
         }
-        return recipeDataList
     }
 
     suspend fun addRecipe(call: RoutingCall, groupName: String): Boolean {
@@ -39,21 +38,19 @@ object RecipeService {
 
         return try {
             val updateData = call.receive<RecipeModel>()
-            return transaction {
-                val recipe = recipeTable
-                    .selectAll()
-                    .where { recipeTable.id eq UUID.fromString(updateData.id) }
-                    .map { it[recipeTable.id] }
-
-                if (recipe.isEmpty()) {
+            transaction {
+                if (recipeTable
+                        .selectAll()
+                        .where { recipeTable.id eq UUID.fromString(updateData.id) }
+                        .empty()) {
                     recipeTable.insert {
                         it[id] = UUID.fromString(updateData.id)
                         it[name] = updateData.name
                         it[items] = serializeItems(updateData.items)
                     }
-                    return@transaction true
+                    true
                 } else {
-                    return@transaction false
+                    false
                 }
             }
         } catch (e: Exception) {
@@ -71,20 +68,20 @@ object RecipeService {
 
         return try {
             val updateData = call.receive<RecipeModel>()
-            return transaction {
-                val recipe = recipeTable
+            transaction {
+                val count = recipeTable
                     .selectAll()
                     .where { recipeTable.id eq UUID.fromString(updateData.id) }
-                    .map { it[recipeTable.id] }
+                    .count()
 
-                if (recipe.size == 1) {
+                if (count == 1L) {
                     recipeTable.update({ recipeTable.id eq UUID.fromString(updateData.id) }) {
                         it[name] = updateData.name
                         it[items] = serializeItems(updateData.items)
                     }
-                    return@transaction true
+                    true
                 } else {
-                    return@transaction false
+                    false
                 }
             }
         } catch (e: Exception) {
@@ -99,23 +96,21 @@ object RecipeService {
             call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No recipe list found for this user"))
             return false
         }
-        val id = call.request.queryParameters["id"]
+        val id = call.request.queryParameters["id"] ?: return false
 
         return transaction {
-            val recipe = recipeTable
+            val count = recipeTable
                 .selectAll()
                 .where { recipeTable.id eq UUID.fromString(id) }
-                .map { it[recipeTable.id] }
+                .count()
 
-            if (recipe.isEmpty()) {
-                return@transaction true
-            } else if (recipe.size == 1) {
-                recipeTable.deleteWhere {
-                    recipeTable.id eq UUID.fromString(id)
+            when (count) {
+                0L -> true
+                1L -> {
+                    recipeTable.deleteWhere { recipeTable.id eq UUID.fromString(id) }
+                    true
                 }
-                return@transaction true
-            } else {
-                return@transaction false
+                else -> false
             }
         }
     }

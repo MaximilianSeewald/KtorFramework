@@ -1,0 +1,15 @@
+name: "Ktor App"
+version: "1.0.0"
+slug: "ktor_app"
+description: "Ktor backend application with Angular frontend for recipes, shopping lists, and more"
+arch:
+  - amd64
+  - armv7
+  - aarch64
+startup: application
+boot: auto
+ports:
+  8080/tcp: 8080
+web_ui: http://[HOST]:[PORT:8080]/
+options: {}
+schema: {}

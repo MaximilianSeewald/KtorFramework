@@ -17,8 +17,7 @@ object UserGroupService {
             UserGroups
                 .selectAll()
                 .where { UserGroups.name eq userGroupName }
-                .map { it[UserGroups.name] }
-                .isNotEmpty()
+                .empty().not()
         }
     }
 
@@ -34,26 +33,30 @@ object UserGroupService {
 
     fun checkOwnershipAndDeleteUserGroup(userGroupName: String, userId: Int): Boolean {
         return transaction {
-            if (UserGroups
-                    .selectAll()
-                    .where { UserGroups.name eq userGroupName }
-                    .map { it[UserGroups.adminUserId] }
-                    .firstOrNull() != userId) {
+            val adminId = UserGroups
+                .selectAll()
+                .where { UserGroups.name eq userGroupName }
+                .map { it[UserGroups.adminUserId] }
+                .firstOrNull()
+            
+            if (adminId != userId) {
                 return@transaction false
             }
             UserGroups.deleteWhere { name eq userGroupName }
-            return@transaction true
+            true
         }
     }
 
     fun checkIsAdmin(user: User): Boolean {
         return transaction {
-            val userGroup = user.userGroup?: return@transaction false
-            UserGroups
+            val userGroup = user.userGroup ?: return@transaction false
+            val adminId = UserGroups
                 .selectAll()
-                .where { UserGroups.name eq userGroup}
+                .where { UserGroups.name eq userGroup }
                 .map { it[UserGroups.adminUserId] }
-                .firstOrNull() == user.id
+                .firstOrNull()
+            
+            adminId == user.id
         }
     }
 
@@ -73,7 +76,7 @@ object UserGroupService {
                 .map { it[UserGroups.hashedPassword] }
                 .firstOrNull() ?: return@transaction false
 
-            return@transaction DatabaseManager.verifyPassword(password, storedPassword)
+            DatabaseManager.verifyPassword(password, storedPassword)
         }
     }
 }

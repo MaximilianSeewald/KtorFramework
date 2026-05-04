@@ -20,12 +20,11 @@ class UserGroupManager {
         route.editPasswordUserGroup()
     }
 
-    // TODO: change this to `PATCH /usergroups/{groupname}`
     private fun Route.editPasswordUserGroup() {
         put("/usergroups") {
             val editUserGroupRequest = call.receive<EditUserGroupRequest>()
             val user = UserService.retrieveAndHandleUsers(call)[0]
-            if(!UserGroupService.checkIsAdmin(user)){
+            if (!UserGroupService.checkIsAdmin(user)) {
                 call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User is not admin"))
                 return@put
             }
@@ -55,7 +54,6 @@ class UserGroupManager {
         }
     }
 
-    // TODO: change this to `DELETE /usergroups/{groupname}`
     private fun Route.deleteUserGroup() {
         delete("/usergroups") {
             val userId = UserService.retrieveAndHandleUsers(call)[0].id
