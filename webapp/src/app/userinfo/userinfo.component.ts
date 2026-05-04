@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import {NgIf} from '@angular/common';
 import {User} from '../models/user.model';
 import {HttpClient} from '@angular/common/http';
-import {environment} from '../../environments/environment';
 import {FormsModule} from '@angular/forms';
 import {CreateUserGroupRequestModel} from "../models/createUserGroupRequest.model";
 import {EditUserGroupRequest} from '../models/editUserGroupRequest';
@@ -27,7 +26,7 @@ export class UserinfoComponent implements OnInit {
 
   user: User | null = null
   isAdmin: boolean = false
-  apiUrl = environment.apiUrl;
+  apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8080' : window.location.origin;
   newGroupName: string = ""
   newGroupPassword: string = ""
 

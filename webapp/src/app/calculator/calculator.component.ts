@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {NgIf} from '@angular/common';
-import {environment} from '../../environments/environment';
 import {FormsModule} from '@angular/forms';
 import {MatIcon} from '@angular/material/icon';
 
@@ -22,7 +21,7 @@ export class CalculatorComponent {
   fileName: string = '';
   message: string = '';
   file: File | null = null;
-  apiUrl = environment.apiUrl;
+  apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8080' : window.location.origin;
 
   constructor(private http: HttpClient) {}
 
