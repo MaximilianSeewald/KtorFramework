@@ -9,10 +9,14 @@ arch:
 startup: application
 boot: auto
 ingress: true
+ingress_timeout: 60
 panel_icon: "mdi:chef-hat"
 panel_title: "Recipes & Shopping"
 data: true
+network: true
 environment:
   JWT_SECRET_KEY: "change-this-to-a-secure-key"
-options: {}
-schema: {}
+options:
+  jwt_secret: "change-this-to-a-secure-key"
+schema:
+  jwt_secret: "str"
