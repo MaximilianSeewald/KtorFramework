@@ -5,6 +5,7 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.io.File
 
 object DatabaseManager {
 
@@ -41,8 +42,13 @@ object DatabaseManager {
 
     private fun hikari(): HikariDataSource {
         val config = HikariConfig()
+        val dbPath = when {
+            File("/config").exists() -> "/config/Ktor/db"
+            System.getProperty("os.name").startsWith("Windows") -> "./data/db"
+            else -> "./data/db"
+        }
         config.driverClassName = "org.h2.Driver"
-        config.jdbcUrl = "jdbc:h2:file:./data/db"
+        config.jdbcUrl = "jdbc:h2:file:$dbPath"
         config.maximumPoolSize = 3
         config.isAutoCommit = false
         config.transactionIsolation = "TRANSACTION_REPEATABLE_READ"
