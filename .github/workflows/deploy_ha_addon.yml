@@ -36,6 +36,10 @@ jobs:
         uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b
       - name: Build JAR
         run: ./gradlew deployGithub
+      - name: Prepare add-on files
+        run: |
+          cp deploy/ktor.jar addons/ktor_app/
+          cp -r deploy/app addons/ktor_app/
       - name: Get current version
         if: github.actor != 'github-actions[bot]'
         id: version
