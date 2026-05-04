@@ -43,7 +43,7 @@ object DatabaseManager {
     private fun hikari(): HikariDataSource {
         val config = HikariConfig()
         val dbPath = when {
-            File("/config").exists() -> "/config/Ktor/db"
+            File("/data").exists() -> "/data/db"
             System.getProperty("os.name").startsWith("Windows") -> "./data/db"
             else -> "./data/db"
         }
