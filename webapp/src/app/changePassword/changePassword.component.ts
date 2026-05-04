@@ -2,7 +2,6 @@ import {Component, OnInit} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {NgIf} from '@angular/common';
 import {HttpHeaders} from '@angular/common/http';
-import {environment} from '../../environments/environment';
 import {HttpClient} from '@angular/common/http';
 import {AuthService} from '../auth.service';
 import {User} from '../models/user.model';
@@ -23,7 +22,7 @@ import {ErrorService} from '../error.service';
 export class ChangePasswordComponent implements OnInit{
 
   user: User | null = null
-  apiUrl = environment.apiUrl;
+  apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8080' : window.location.origin;
   username: string = '';
   oldPassword: string = '';
   newPassword: string = '';

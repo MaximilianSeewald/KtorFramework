@@ -3,7 +3,6 @@ import {FormsModule} from '@angular/forms';
 import {NgForOf, NgIf} from '@angular/common';
 import {ShoppingListItem, ShoppingListItemExtended} from '../models/shoppingList.model';
 import {HttpClient} from '@angular/common/http';
-import {environment} from '../../environments/environment';
 import { v4 as uuid } from 'uuid';
 import {MatIconModule} from '@angular/material/icon';
 import {ErrorService} from '../error.service';
@@ -22,8 +21,8 @@ import {ErrorService} from '../error.service';
 })
 export class ShoppingListComponent implements OnInit, OnDestroy {
 
-  apiUrl = environment.apiUrl;
-  wsUrl = environment.wsUrl
+  apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8080' : window.location.origin;
+  wsUrl = window.location.hostname === 'localhost' ? 'ws://localhost:8080' : (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host;
   shoppingList: ShoppingListItemExtended[] = [];
   newItemName = '';
   socket: WebSocket | null = null
