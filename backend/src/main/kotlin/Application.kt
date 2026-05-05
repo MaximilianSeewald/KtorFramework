@@ -1,6 +1,7 @@
 package com.loudless
 
 import com.loudless.database.DatabaseManager
+import java.io.File
 import io.ktor.server.application.install
 import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
@@ -30,8 +31,8 @@ fun main() {
                 }
             }
 
-            singlePageApplication {
-                angular("app/browser")
+            staticFiles("/", File("app/browser")) {
+                default("index.html")
             }
         }
     }.start(wait = true)
