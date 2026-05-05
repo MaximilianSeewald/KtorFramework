@@ -21,8 +21,7 @@ export class AuthService {
       const token = localStorage.getItem('token');
 
       if(!token) {
-        this.isLoggedIn = false
-        return false
+        return environment.haAutoLogin ? this.loginHomeAssistantUser() : false
       }
       const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
@@ -31,9 +30,28 @@ export class AuthService {
         this.isLoggedIn = response.valid
         return response.valid
       } catch (error) {
-        this.isLoggedIn = false
-        return false
+        localStorage.removeItem('token');
+        return environment.haAutoLogin ? this.loginHomeAssistantUser() : false
       }
+  }
+
+  async loginHomeAssistantUser(): Promise<boolean> {
+    if (!environment.haAutoLogin) {
+      this.isLoggedIn = false;
+      return false;
+    }
+
+    try {
+      const response = await firstValueFrom(this.http.get<{ token: string }>(`${this.apiUrl}/ha/session`));
+      localStorage.setItem('token', response.token);
+      this.isLoggedIn = true;
+      this.errorService.clearError();
+      return true;
+    } catch (error) {
+      this.isLoggedIn = false;
+      this.errorService.setError('Home Assistant session could not be started.');
+      return false;
+    }
   }
 
   logout(redirectTo: string[] = ['landing']) {

@@ -152,7 +152,12 @@
               "outputHashing": "all"
             },
             "development": {
-              "fileReplacements": [],
+              "fileReplacements": [
+                {
+                  "replace": "libs/core/environments/environment.ts",
+                  "with": "libs/core/environments/environment.ha.dev.ts"
+                }
+              ],
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
