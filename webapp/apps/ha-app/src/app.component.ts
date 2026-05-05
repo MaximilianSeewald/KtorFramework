@@ -1,5 +1,5 @@
 import {Component, OnInit} from '@angular/core';
-import {Router, RouterLink, RouterOutlet, NavigationStart} from '@angular/router';
+import {Router, RouterLink, RouterOutlet, NavigationEnd, NavigationStart} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {AuthService} from '@core/services/auth.service';
 import {NgIf} from '@angular/common';
@@ -16,6 +16,7 @@ import {filter} from 'rxjs';
 })
 export class AppComponent implements OnInit {
   menuOpen = false;
+  isWidgetRoute = false;
 
   constructor(public authService: AuthService, private router: Router, private errorService: ErrorService) {}
 
@@ -25,13 +26,24 @@ export class AppComponent implements OnInit {
         this.router.navigate(['shoppingList']);
       }
     })
+    this.updateWidgetMode(this.router.url);
     this.router.events.pipe(
       filter(event => event instanceof NavigationStart)
     ).subscribe(() => this.errorService.clearError());
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event) => this.updateWidgetMode(event.urlAfterRedirects));
   }
 
   toggleMenu() {
     this.menuOpen = !this.menuOpen;
+  }
+
+  private updateWidgetMode(url: string) {
+    this.isWidgetRoute = url.includes('Widget');
+    if (this.isWidgetRoute) {
+      this.menuOpen = false;
+    }
   }
 }
 
