@@ -4,12 +4,13 @@ import {Router} from '@angular/router';
 import {firstValueFrom} from 'rxjs';
 import {ErrorService} from './error.service';
 import {environment} from '../environments/environment';
+import {resolveApiUrl} from '../utils/url.util';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  apiUrl = environment.apiUrl;
+  apiUrl = resolveApiUrl(environment.apiUrl);
   isLoggedIn: boolean = false;
   isRegistered: boolean = false;
 

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../environments/environment';
+import { resolveApiUrl } from '../utils/url.util';
 import { User } from '../models/user.model';
 import {
   CreateUserGroupRequestModel,
@@ -13,7 +14,7 @@ import {
   providedIn: 'root'
 })
 export class UserService {
-  private readonly apiUrl = environment.apiUrl;
+  private readonly apiUrl = resolveApiUrl(environment.apiUrl);
 
   constructor(private http: HttpClient) {}
 

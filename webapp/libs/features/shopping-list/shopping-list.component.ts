@@ -29,6 +29,10 @@ export class ShoppingListComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
+    this.shoppingListService.loadItems().subscribe({
+      next: (list) => this.shoppingListService.setShoppingList(list),
+      error: () => this.errorService.setError('Failed to load shopping list.')
+    });
     this.shoppingListService.initWebSocket();
     this.shoppingListService.shoppingList$.subscribe((list) => {
       this.shoppingList = list;
@@ -75,6 +79,7 @@ export class ShoppingListComponent implements OnInit, OnDestroy {
       this.shoppingListService.updateItem({
         id: item.id,
         name: item.name,
+        amount: item.amount,
         retrieved: item.retrieved
       }).subscribe(
         () => {
@@ -89,11 +94,18 @@ export class ShoppingListComponent implements OnInit, OnDestroy {
   }
 
   toggleRetrieved(item: ShoppingListItemExtended) {
-    this.shoppingListService.toggleRetrieved(item).subscribe(
+    const nextRetrieved = item.retrieved;
+    this.shoppingListService.updateItem({
+      id: item.id,
+      name: item.name,
+      amount: item.amount,
+      retrieved: nextRetrieved
+    }).subscribe(
       () => {
         this.errorService.clearError();
       },
       (error) => {
+        item.retrieved = !nextRetrieved;
         this.errorService.setError(error.error?.message || 'Failed to update item status.');
       }
     );

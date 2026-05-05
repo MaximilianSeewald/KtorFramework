@@ -32,12 +32,13 @@ abstract class GenericManager<T> {
         if (groups.isEmpty()) return
 
         val usersForGroup = UserService.getUsersForGroup(groups[0])
-        if (observerList.any { usersForGroup.contains(it.key) }) {
-            observerList
-                .filter { usersForGroup.contains(it.key) }
-                .forEach {
-                    it.value.tryEmit(dataRetriever(groups[0]))
-                }
+        val observersForGroup = observerList.filter { usersForGroup.contains(it.key) }
+
+        if (observersForGroup.isNotEmpty()) {
+            val data = dataRetriever(groups[0])
+            observersForGroup.forEach {
+                it.value.tryEmit(data)
+            }
         }
     }
 }
