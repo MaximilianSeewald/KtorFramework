@@ -6,6 +6,8 @@ export const routes: Routes = [
 
   { path: 'shoppingList', loadComponent: () => import('@features/shopping-list/shopping-list.component').then(m => m.ShoppingListComponent), canActivate: [AuthGuard] },
   { path: 'recipeList', loadComponent: () => import('@features/recipe/recipe.component').then(m => m.RecipeComponent), canActivate: [AuthGuard] },
+  { path: 'shoppingListWidget', loadComponent: () => import('@features/shopping-list/shopping-list.component').then(m => m.ShoppingListComponent), canActivate: [AuthGuard] },
+  { path: 'recipeListWidget', loadComponent: () => import('@features/recipe/recipe.component').then(m => m.RecipeComponent), canActivate: [AuthGuard] },
 
   { path: 'dashboard', redirectTo: 'shoppingList' },
   { path: 'recipe', redirectTo: 'recipeList' },
