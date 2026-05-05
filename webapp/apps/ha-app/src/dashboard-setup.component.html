@@ -1,0 +1,33 @@
+<section class="mx-auto max-w-3xl px-6 py-8">
+  <div class="mb-6 flex items-center gap-3">
+    <div class="setup-icon flex h-9 w-9 items-center justify-center rounded-xl">
+      <mat-icon>dashboard_customize</mat-icon>
+    </div>
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight">Dashboard setup</h1>
+      <p class="setup-muted text-sm">Copy a card into your Home Assistant dashboard.</p>
+    </div>
+  </div>
+
+  <div class="grid gap-4">
+    <article *ngFor="let widget of widgets" class="setup-card">
+      <div class="mb-4 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <mat-icon class="setup-card-icon">{{ widget.icon }}</mat-icon>
+          <h2 class="text-base font-semibold">{{ widget.title }}</h2>
+        </div>
+
+        <a [href]="widget.url" target="_blank" rel="noreferrer" class="setup-link">
+          Open
+        </a>
+      </div>
+
+      <pre>{{ widget.yaml }}</pre>
+
+      <button type="button" class="setup-copy" (click)="copy(widget)">
+        <mat-icon>{{ copiedTitle === widget.title ? 'check' : 'content_copy' }}</mat-icon>
+        {{ copiedTitle === widget.title ? 'Copied' : 'Copy card YAML' }}
+      </button>
+    </article>
+  </div>
+</section>
