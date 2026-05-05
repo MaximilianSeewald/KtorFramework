@@ -3,8 +3,8 @@ import { appConfig } from './app.config';
 import { AppComponent } from './app.component';
 import { APP_BASE_HREF } from '@angular/common';
 
-// Home Assistant specific base href handling
-const baseHref = '/api/hassio_ingress/';
+// Hash routing and document-relative assets keep this ingress-safe.
+const baseHref = './';
 const config = {
   ...appConfig,
   providers: [

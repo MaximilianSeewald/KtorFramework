@@ -40,8 +40,7 @@ jobs:
           password: ${{secrets.password}}
           port: 22
           uploads: |
-            deploy/app/ => ../var/www/html/app
-            deploy/ktor.jar => ../var/www/html/ktor.jar
+            deploy/ => ../var/www/html
       - name: stop and start ktor backend
         uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17
         continue-on-error: true
@@ -52,7 +51,7 @@ jobs:
           port: 22
           script: |
             cd ../var/www/html
-            kill $(cat ktor.pid)
+            if [ -f ktor.pid ]; then kill $(cat ktor.pid) || true; fi
             chmod +x ktor.jar
             nohup java -jar ktor.jar > ktor.log 2>&1 &
             echo $! > ktor.pid

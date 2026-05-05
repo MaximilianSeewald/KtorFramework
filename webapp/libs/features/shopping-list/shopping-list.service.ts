@@ -3,12 +3,13 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '@core/environments/environment';
 import { ShoppingListItem, ShoppingListItemExtended } from '@core/models/shopping-list.model';
+import { resolveApiUrl, resolveWebSocketUrl } from '@core/utils/url.util';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ShoppingListService {
-  private apiUrl = environment.apiUrl;
+  private apiUrl = resolveApiUrl(environment.apiUrl);
   private wsUrl = environment.wsUrl;
   private shoppingListSubject = new BehaviorSubject<ShoppingListItemExtended[]>([]);
 
@@ -22,14 +23,12 @@ export class ShoppingListService {
    */
   initWebSocket(): void {
     const token = localStorage.getItem('token');
-    this.socket = new WebSocket(`${this.wsUrl}/shoppingListWS?token=${token}`);
+    this.socket?.close();
+    this.socket = new WebSocket(resolveWebSocketUrl(this.wsUrl, `shoppingListWS?token=${encodeURIComponent(token ?? '')}`));
 
     this.socket.onmessage = (event) => {
       const data: ShoppingListItemExtended[] = JSON.parse(event.data);
-      const sorted = data.sort(
-        (a, b) => Number(a.retrieved) - Number(b.retrieved)
-      );
-      this.shoppingListSubject.next(sorted);
+      this.setShoppingList(data);
     };
 
     this.socket.onerror = (err) => console.error('WebSocket error:', err);
@@ -44,11 +43,8 @@ export class ShoppingListService {
     this.socket = null;
   }
 
-  /**
-   * Get current shopping list value
-   */
-  getShoppingList(): ShoppingListItemExtended[] {
-    return this.shoppingListSubject.value;
+  loadItems(): Observable<ShoppingListItem[]> {
+    return this.http.get<ShoppingListItem[]>(`${this.apiUrl}/shoppingList`);
   }
 
   /**
@@ -58,8 +54,10 @@ export class ShoppingListService {
     const newItem: ShoppingListItem = {
       id: this.generateId(),
       name,
+      amount: '',
       retrieved: false
     };
+    this.setShoppingList([...this.shoppingListSubject.value, newItem]);
     return this.http.post(`${this.apiUrl}/shoppingList`, newItem);
   }
 
@@ -67,6 +65,7 @@ export class ShoppingListService {
    * Delete an item from the shopping list
    */
   deleteItem(id: string): Observable<any> {
+    this.setShoppingList(this.shoppingListSubject.value.filter(item => item.id !== id));
     return this.http.delete(`${this.apiUrl}/shoppingList`, { params: { id } });
   }
 
@@ -74,18 +73,24 @@ export class ShoppingListService {
    * Update an item in the shopping list
    */
   updateItem(item: ShoppingListItem): Observable<any> {
+    this.mergeItem(item);
     return this.http.put(`${this.apiUrl}/shoppingList`, item);
   }
 
-  /**
-   * Toggle the retrieved status of an item
-   */
-  toggleRetrieved(item: ShoppingListItem): Observable<any> {
-    return this.updateItem({
-      id: item.id,
-      name: item.name,
-      retrieved: !item.retrieved
-    });
+  setShoppingList(items: ShoppingListItem[]): void {
+    const sorted = items
+      .map(item => ({ ...item, isEditing: false }))
+      .sort((a, b) => Number(a.retrieved) - Number(b.retrieved));
+
+    this.shoppingListSubject.next(sorted);
+  }
+
+  private mergeItem(item: ShoppingListItem): void {
+    this.setShoppingList(
+      this.shoppingListSubject.value.map(existing =>
+        existing.id === item.id ? { ...existing, ...item } : existing
+      )
+    );
   }
 
   private generateId(): string {

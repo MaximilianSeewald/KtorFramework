@@ -3,12 +3,13 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '@core/environments/environment';
 import { Recipe, RecipeExtended, RecipeItem } from '@core/models/recipe.model';
+import { resolveApiUrl, resolveWebSocketUrl } from '@core/utils/url.util';
 
 @Injectable({
   providedIn: 'root',
 })
 export class RecipeService {
-  private apiUrl = environment.apiUrl;
+  private apiUrl = resolveApiUrl(environment.apiUrl);
   private wsUrl = environment.wsUrl;
   private recipesSubject = new BehaviorSubject<RecipeExtended[]>([]);
 
@@ -22,7 +23,8 @@ export class RecipeService {
    */
   initWebSocket(): void {
     const token = localStorage.getItem('token');
-    this.socket = new WebSocket(`${this.wsUrl}/recipeWS?token=${token}`);
+    this.socket?.close();
+    this.socket = new WebSocket(resolveWebSocketUrl(this.wsUrl, `recipeWS?token=${encodeURIComponent(token ?? '')}`));
 
     this.socket.onmessage = (event) => {
       const data: RecipeExtended[] = JSON.parse(event.data).map((recipe: Recipe) => ({

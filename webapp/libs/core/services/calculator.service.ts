@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../environments/environment';
+import { resolveApiUrl } from '../utils/url.util';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CalculatorService {
-  private readonly apiUrl = environment.apiUrl;
+  private readonly apiUrl = resolveApiUrl(environment.apiUrl);
 
   constructor(private http: HttpClient) {}
 
