@@ -19,7 +19,7 @@ object SessionManager {
     private val userManager = UserManager()
     private val userGroupManager = UserGroupManager()
 
-    fun initRouting(routing: Routing) {
+    fun initRouting(routing: Route) {
         gradeManager.initRouting(routing)
         userManager.initRouting(routing)
         shoppingListManager.initQueryRoutes(routing)

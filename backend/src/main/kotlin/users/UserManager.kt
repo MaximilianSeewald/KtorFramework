@@ -18,7 +18,7 @@ import java.util.*
 class UserManager {
     private val validityInMs = 1000000000
 
-    fun initRouting(routing: Routing) {
+    fun initRouting(routing: Route) {
         routing.login()
         routing.userSignUp()
     }
@@ -137,7 +137,7 @@ class UserManager {
         }
     }
 
-    private fun Routing.login() {
+    private fun Route.login() {
         post("/login") {
             val parameters = call.receiveParameters()
             val username: String = parameters["username"] ?: ""

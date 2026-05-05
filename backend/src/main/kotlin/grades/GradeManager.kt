@@ -10,11 +10,11 @@ import java.io.ByteArrayOutputStream
 
 class GradeManager {
 
-    fun initRouting(routing: Routing) {
+    fun initRouting(routing: Route) {
         routing.uploadGrade()
     }
 
-    private fun Routing.uploadGrade() {
+    private fun Route.uploadGrade() {
         post("/upload") {
             val multipartData = call.receiveMultipart()
             var byteArrayContent: ByteArray? = null

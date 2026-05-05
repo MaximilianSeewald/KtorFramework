@@ -16,15 +16,19 @@ fun main() {
         install(io.ktor.server.plugins.forwardedheaders.XForwardedHeaders)
         SessionManager.installComponents(this)
         routing {
+
+            route("/api") {
+                SessionManager.initRouting(this)
+                authenticate("auth-jwt") {
+                    get("/verify") {
+                        call.respond(mapOf("valid" to true))
+                    }
+                    SessionManager.initSafeRoutes(this)
+                }
+            }
+
             singlePageApplication {
                 angular("app/browser")
-            }
-            SessionManager.initRouting(this)
-            authenticate("auth-jwt") {
-                get("/verify") {
-                    call.respond(mapOf("valid" to true))
-                }
-                SessionManager.initSafeRoutes(this)
             }
         }
     }.start(wait = true)
