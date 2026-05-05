@@ -9,8 +9,8 @@ arch:
 startup: application
 boot: auto
 ingress: true
-ports:
-  8080/tcp: 8080
+ingress_port: 8080
+ingress_timeout: 60
 panel_icon: "mdi:chef-hat"
 panel_title: "Recipes & Shopping"
 data: true
