@@ -1,8 +1,6 @@
 .gradle
 build/
 deploy/
-addons/ktor_app/app/
-addons/ktor_app/ktor.jar
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
