@@ -12,7 +12,10 @@ import io.ktor.server.auth.*
 
 fun main() {
     DatabaseManager.init()
-    embeddedServer(Netty, host = "0.0.0.0" ,port = 8080) {
+    val host = System.getenv("KTOR_HOST") ?: "0.0.0.0"
+    val port = System.getenv("KTOR_PORT")?.toIntOrNull() ?: 8080
+
+    embeddedServer(Netty, host = host, port = port) {
         install(io.ktor.server.plugins.forwardedheaders.XForwardedHeaders)
         SessionManager.installComponents(this)
         routing {

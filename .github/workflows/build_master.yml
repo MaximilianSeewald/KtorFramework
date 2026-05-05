@@ -60,7 +60,7 @@ jobs:
               rm -f ktor.pid
             fi
             chmod +x ktor.jar
-            nohup java -jar ktor.jar > ktor.log 2>&1 &
+            nohup env KTOR_HOST=127.0.0.1 KTOR_PORT=8090 java -jar ktor.jar > ktor.log 2>&1 &
             echo $! > ktor.pid
             sleep 5
             if ! kill -0 "$(cat ktor.pid)" 2>/dev/null; then
@@ -68,8 +68,8 @@ jobs:
               tail -n 200 ktor.log
               exit 1
             fi
-            if ! curl -fsS http://127.0.0.1:8080/ >/dev/null; then
-              echo "Ktor is running but not reachable on localhost:8080"
+            if ! curl -fsS http://127.0.0.1:8090/ >/dev/null; then
+              echo "Ktor is running but not reachable on localhost:8090"
               tail -n 200 ktor.log
               exit 1
             fi
