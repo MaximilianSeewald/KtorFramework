@@ -1,18 +1,19 @@
 package com.loudless
 
 import com.loudless.database.DatabaseManager
+import io.ktor.server.application.install
 import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.auth.*
-import java.io.File
 
 
 fun main() {
     DatabaseManager.init()
     embeddedServer(Netty, host = "0.0.0.0" ,port = 8080) {
+        install(io.ktor.server.plugins.forwardedheaders.XForwardedHeaders)
         SessionManager.installComponents(this)
         routing {
             singlePageApplication {
