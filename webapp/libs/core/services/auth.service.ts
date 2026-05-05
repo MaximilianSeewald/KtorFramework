@@ -36,10 +36,10 @@ export class AuthService {
       }
   }
 
-  logout() {
+  logout(redirectTo: string[] = ['landing']) {
     localStorage.removeItem('token');
     this.isLoggedIn = false
-    this.router.navigate(['landing']);
+    this.router.navigate(redirectTo);
   }
 
   login(username: string, password: string) {

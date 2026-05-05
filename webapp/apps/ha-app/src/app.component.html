@@ -5,36 +5,54 @@
     <div class="px-4 py-3 flex justify-between items-center">
       <h1 class="text-lg font-semibold text-gray-900">Home</h1>
       <div class="flex items-center gap-2">
-        <button *ngIf="authService.isLoggedIn" (click)="toggleMenu()"
-                class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+        <button type="button" (click)="toggleMenu()" aria-label="Open navigation menu"
+                class="p-2 rounded-xl hover:bg-gray-100 transition-colors">
           <mat-icon class="text-gray-600">menu</mat-icon>
         </button>
       </div>
     </div>
 
     <!-- Mobile Menu -->
-    <nav *ngIf="menuOpen && authService.isLoggedIn" class="px-4 py-2 border-t border-gray-200 bg-gray-50">
-      <ul class="space-y-1">
+    <nav *ngIf="menuOpen"
+         class="absolute right-3 top-full mt-2 w-64 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
+      <ul *ngIf="authService.isLoggedIn" class="space-y-1">
         <li>
           <a routerLink="/dashboard" (click)="menuOpen = false"
-             class="block px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-200 transition-colors">
-            <mat-icon class="inline-block w-5 h-5 mr-2">shopping_cart</mat-icon>
+             class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
+            <mat-icon class="text-gray-500">shopping_cart</mat-icon>
             Shopping List
           </a>
         </li>
         <li>
           <a routerLink="/recipe" (click)="menuOpen = false"
-             class="block px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-200 transition-colors">
-            <mat-icon class="inline-block w-5 h-5 mr-2">restaurant</mat-icon>
+             class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
+            <mat-icon class="text-gray-500">restaurant</mat-icon>
             Recipes
           </a>
         </li>
         <li>
           <button (click)="logout()"
-                  class="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors">
-            <mat-icon class="inline-block w-5 h-5 mr-2">logout</mat-icon>
+                  class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
+            <mat-icon>logout</mat-icon>
             Sign Out
           </button>
+        </li>
+      </ul>
+
+      <ul *ngIf="!authService.isLoggedIn" class="space-y-1">
+        <li>
+          <a routerLink="/login" (click)="menuOpen = false"
+             class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
+            <mat-icon class="text-gray-500">login</mat-icon>
+            Sign In
+          </a>
+        </li>
+        <li>
+          <a routerLink="/register" (click)="menuOpen = false"
+             class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
+            <mat-icon class="text-gray-500">person_add</mat-icon>
+            Register
+          </a>
         </li>
       </ul>
     </nav>
@@ -44,17 +62,5 @@
   <main class="flex-grow overflow-y-auto">
     <router-outlet></router-outlet>
   </main>
-
-  <!-- Auth Page Navigation -->
-  <div *ngIf="!authService.isLoggedIn" class="sticky bottom-0 bg-white border-t border-gray-200">
-    <div class="flex gap-2 p-4">
-      <a routerLink="/login" class="flex-grow px-4 py-2 rounded-lg text-center text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-        Sign In
-      </a>
-      <a routerLink="/register" class="flex-grow px-4 py-2 rounded-lg text-center text-sm font-medium border border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors">
-        Register
-      </a>
-    </div>
-  </div>
 </div>
 
