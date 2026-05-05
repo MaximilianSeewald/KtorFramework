@@ -76,8 +76,23 @@ jobs:
           title: Bump add-on version to ${{ steps.bump.outputs.new_version }}
           branch: version-bump
           delete-branch: true
-
       - name: Enable Auto Merge
-        run: gh pr merge version-bump --auto --squash
+        run: |
+          PR=${{ steps.cpr.outputs.pull-request-number }}
+          
+          for i in {1..30}; do
+            STATE=$(gh pr view $PR --json mergeStateStatus -q .mergeStateStatus)
+            echo "State: $STATE"
+          
+            if [ "$STATE" = "CLEAN" ]; then
+              gh pr merge $PR --auto --squash
+              exit 0
+            fi
+          
+            sleep 10
+          done
+          
+          echo "PR never became mergeable"
+          exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
