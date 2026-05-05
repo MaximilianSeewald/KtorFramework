@@ -9,6 +9,7 @@ import {JoinUserGroupRequestModel} from '../models/joinUserGroupRequest.model';
 import {RouterLink} from '@angular/router';
 import {ErrorService} from '../error.service';
 import {MatIcon} from '@angular/material/icon';
+import {environment} from '../../environments/environment';
 
 @Component({
   selector: 'app-userinfo',
@@ -26,7 +27,7 @@ export class UserinfoComponent implements OnInit {
 
   user: User | null = null
   isAdmin: boolean = false
-  apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8080' : window.location.origin;
+  apiUrl = environment.apiUrl;
   newGroupName: string = ""
   newGroupPassword: string = ""
 

@@ -3,12 +3,13 @@ import {HttpClient, HttpHeaders} from '@angular/common/http';
 import {Router} from '@angular/router';
 import {firstValueFrom} from 'rxjs';
 import {ErrorService} from './error.service';
+import {environment} from '../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8080' : window.location.origin;
+  apiUrl = environment.apiUrl;
   isLoggedIn: boolean = false;
   isRegistered: boolean = false;
 

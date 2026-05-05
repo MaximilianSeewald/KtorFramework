@@ -7,6 +7,7 @@ import {AuthService} from '../auth.service';
 import {User} from '../models/user.model';
 import {MatIconModule} from '@angular/material/icon';
 import {ErrorService} from '../error.service';
+import {environment} from '../../environments/environment';
 
 @Component({
   selector: 'app-change-password',
@@ -22,7 +23,7 @@ import {ErrorService} from '../error.service';
 export class ChangePasswordComponent implements OnInit{
 
   user: User | null = null
-  apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8080' : window.location.origin;
+  apiUrl = environment.apiUrl;
   username: string = '';
   oldPassword: string = '';
   newPassword: string = '';
