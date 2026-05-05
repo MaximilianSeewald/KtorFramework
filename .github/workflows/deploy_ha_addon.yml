@@ -38,7 +38,7 @@ jobs:
       - name: Build FrontEnd
         run: |
           cd webapp
-          npm run build
+          npm run build -- --base-href ./ --deploy-url ./
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b
       - name: Build JAR
