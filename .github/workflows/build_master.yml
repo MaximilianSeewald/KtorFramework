@@ -55,7 +55,10 @@ jobs:
               kill "$(cat ktor.pid)" || true
               rm -f ktor.pid
             fi
-            pkill -f 'java -jar ktor.jar' || true
+            existing_pid="$(pgrep -f '[j]ava -jar ktor.jar' || true)"
+            if [ -n "$existing_pid" ]; then
+              kill $existing_pid || true
+            fi
             chmod +x ktor.jar
             nohup java -jar ktor.jar > ktor.log 2>&1 &
             echo $! > ktor.pid
