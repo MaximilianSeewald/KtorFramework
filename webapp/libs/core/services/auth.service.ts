@@ -18,10 +18,15 @@ export class AuthService {
 
 
   async verifyToken(): Promise<boolean> {
+      if (environment.haAutoLogin) {
+        return this.loginHomeAssistantUser();
+      }
+
       const token = localStorage.getItem('token');
 
       if(!token) {
-        return environment.haAutoLogin ? this.loginHomeAssistantUser() : false
+        this.isLoggedIn = false
+        return false
       }
       const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
@@ -31,7 +36,8 @@ export class AuthService {
         return response.valid
       } catch (error) {
         localStorage.removeItem('token');
-        return environment.haAutoLogin ? this.loginHomeAssistantUser() : false
+        this.isLoggedIn = false
+        return false
       }
   }
 
