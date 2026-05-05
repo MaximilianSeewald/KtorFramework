@@ -1,0 +1,64 @@
+:host {
+  color: #1d1d1f;
+  display: block;
+}
+
+.setup-muted {
+  color: #6e6e73;
+}
+
+.setup-icon {
+  background: #eaf4ff;
+  color: #0071e3;
+}
+
+.setup-card {
+  background: #ffffff;
+  border: 1px solid #e8e8ed;
+  border-radius: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  padding: 1rem;
+}
+
+.setup-card-icon,
+.setup-link {
+  color: #0071e3;
+}
+
+.setup-link {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+pre {
+  background: #f5f5f7;
+  border-radius: 12px;
+  color: #1d1d1f;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  margin: 0;
+  overflow-x: auto;
+  padding: 0.875rem;
+}
+
+.setup-copy {
+  align-items: center;
+  background: #0071e3;
+  border-radius: 12px;
+  color: #ffffff;
+  display: flex;
+  font-size: 0.875rem;
+  font-weight: 600;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.875rem;
+  min-height: 2.75rem;
+  width: 100%;
+}
+
+.setup-copy mat-icon {
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+}

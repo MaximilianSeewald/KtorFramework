@@ -21,6 +21,7 @@ export class AppComponent implements OnInit {
   constructor(public authService: AuthService, private router: Router, private errorService: ErrorService) {}
 
   ngOnInit(): void {
+    this.applyWidgetUrl();
     this.authService.verifyToken().then((isLoggedIn) => {
       if (isLoggedIn && this.router.url.includes('/login')) {
         this.router.navigate(['shoppingList']);
@@ -40,9 +41,22 @@ export class AppComponent implements OnInit {
   }
 
   private updateWidgetMode(url: string) {
-    this.isWidgetRoute = url.includes('Widget');
+    const fullUrl = `${window.location.pathname}${window.location.search}${window.location.hash}${url}`.toLowerCase();
+    this.isWidgetRoute = fullUrl.includes('widget');
     if (this.isWidgetRoute) {
       this.menuOpen = false;
+    }
+  }
+
+  private applyWidgetUrl() {
+    const widget = new URLSearchParams(window.location.search).get('widget')?.toLowerCase();
+
+    if (widget === 'shoppinglist') {
+      this.router.navigateByUrl('/shoppingListWidget');
+    }
+
+    if (widget === 'recipelist') {
+      this.router.navigateByUrl('/recipeListWidget');
     }
   }
 }

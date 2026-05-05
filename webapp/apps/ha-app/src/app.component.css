@@ -48,6 +48,16 @@
   line-height: 1.75rem;
 }
 
+::ng-deep .ha-widget-shell app-shopping-list > .px-6.pt-10.pb-6,
+::ng-deep .ha-widget-shell app-recipe > .px-6.pt-10.pb-6 {
+  display: none;
+}
+
+::ng-deep .ha-widget-shell app-shopping-list > .max-w-2xl,
+::ng-deep .ha-widget-shell app-recipe > .max-w-4xl {
+  padding-top: 0.75rem;
+}
+
 ::ng-deep .ha-widget-shell h1 + p,
 ::ng-deep .ha-widget-shell .px-6.pt-10.pb-6 p {
   display: none;
