@@ -23,8 +23,8 @@ jobs:
       - name: Install Dependencies
         run: |
           cd webapp 
-          npm install
-      - name: Build FrontEnd
+          npm ci
+      - name: Build Web FrontEnd
         run: |
           cd webapp
           npm run build
@@ -40,7 +40,8 @@ jobs:
           password: ${{secrets.password}}
           port: 22
           uploads: |
-            deploy/ => ../var/www/html
+            deploy/app/ => ../var/www/html/app
+            deploy/ktor.jar => ../var/www/html/ktor.jar
       - name: stop and start ktor backend
         uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17
         continue-on-error: true

@@ -34,11 +34,11 @@ jobs:
       - name: Install Dependencies
         run: |
           cd webapp 
-          npm install
-      - name: Build FrontEnd
+          npm ci
+      - name: Build HA FrontEnd
         run: |
           cd webapp
-          npm run build -- --base-href ./ --deploy-url ./
+          npm run build:ha
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b
       - name: Build JAR
@@ -46,7 +46,8 @@ jobs:
       - name: Prepare add-on files
         run: |
           cp deploy/ktor.jar addons/ktor_app/
-          cp -r deploy/app addons/ktor_app/
+          rm -rf addons/ktor_app/app
+          cp -r deploy/ha-app addons/ktor_app/app
       - name: Get current version
         if: |
           github.actor != 'github-actions[bot]' &&

@@ -1,0 +1,15 @@
+/* Home Assistant mobile-first theme */
+:host {
+  --primary-color: #0071E3;
+  --text-color: #1D1D1F;
+  --bg-color: #F5F5F7;
+}
+
+/* Ensure full viewport usage */
+::ng-deep {
+  body {
+    margin: 0;
+    padding: 0;
+  }
+}
+

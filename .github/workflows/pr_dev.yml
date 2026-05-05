@@ -23,11 +23,11 @@ jobs:
       - name: Install Dependencies
         run: |
           cd webapp 
-          npm install
-      - name: Build FrontEnd
+          npm ci
+      - name: Build Frontends
         run: |
           cd webapp
-          npm run build
+          npm run build:all
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b
       - name: Deploy with Gradle
