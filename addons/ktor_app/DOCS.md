@@ -13,6 +13,40 @@ The easiest way to add widgets is from inside the add-on:
 
 The copied YAML already includes your current ingress URL, so you do not need to find the ingress id manually.
 
+## Native Lovelace custom cards
+
+The add-on also ships native Lovelace custom cards for the recipe list and shopping list.
+
+1. Open the add-on from the Home Assistant sidebar.
+2. Open the menu and select `Dashboard Setup`.
+3. Copy the `Lovelace resource` YAML and add it as a dashboard resource.
+4. Copy either native card YAML into your dashboard.
+
+Resource:
+
+```yaml
+url: /api/hassio_ingress/YOUR_INGRESS_ID/ktor-lovelace-cards.js
+type: module
+```
+
+Shopping List native card:
+
+```yaml
+type: custom:ktor-shopping-list-card
+title: Shopping List
+max_items: 8
+show_completed: true
+```
+
+Recipe List native card:
+
+```yaml
+type: custom:ktor-recipe-list-card
+title: Recipes
+max_recipes: 6
+show_ingredients: true
+```
+
 ## Manual examples
 
 Use these only if you want to create the cards by hand.
