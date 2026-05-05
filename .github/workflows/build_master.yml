@@ -52,12 +52,12 @@ jobs:
             set -e
             cd ../var/www/html
             if [ -f ktor.pid ]; then
-              kill "$(cat ktor.pid)" || true
+              old_pid="$(cat ktor.pid || true)"
+              if [ -n "$old_pid" ] && ps -p "$old_pid" -o args= | grep -q 'java -jar ktor.jar'; then
+                kill "$old_pid" || true
+                sleep 2
+              fi
               rm -f ktor.pid
-            fi
-            existing_pid="$(pgrep -f '[j]ava -jar ktor.jar' || true)"
-            if [ -n "$existing_pid" ]; then
-              kill $existing_pid || true
             fi
             chmod +x ktor.jar
             nohup java -jar ktor.jar > ktor.log 2>&1 &
