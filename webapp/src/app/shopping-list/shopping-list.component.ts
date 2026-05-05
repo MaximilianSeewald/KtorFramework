@@ -6,6 +6,7 @@ import {HttpClient} from '@angular/common/http';
 import { v4 as uuid } from 'uuid';
 import {MatIconModule} from '@angular/material/icon';
 import {ErrorService} from '../error.service';
+import {environment} from '../../environments/environment';
 
 @Component({
   selector: 'app-shopping-list',
@@ -21,8 +22,8 @@ import {ErrorService} from '../error.service';
 })
 export class ShoppingListComponent implements OnInit, OnDestroy {
 
-  apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8080' : window.location.origin;
-  wsUrl = window.location.hostname === 'localhost' ? 'ws://localhost:8080' : (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host;
+  apiUrl = environment.apiUrl;
+  wsUrl = environment.wsUrl;
   shoppingList: ShoppingListItemExtended[] = [];
   newItemName = '';
   socket: WebSocket | null = null
