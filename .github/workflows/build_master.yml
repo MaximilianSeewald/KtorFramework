@@ -43,15 +43,30 @@ jobs:
             deploy/ => ../var/www/html
       - name: stop and start ktor backend
         uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17
-        continue-on-error: true
         with:
           host: 92.205.163.207
           username: ${{secrets.username}}
           password: ${{ secrets.password }}
           port: 22
           script: |
+            set -e
             cd ../var/www/html
-            if [ -f ktor.pid ]; then kill $(cat ktor.pid) || true; fi
+            if [ -f ktor.pid ]; then
+              kill "$(cat ktor.pid)" || true
+              rm -f ktor.pid
+            fi
+            pkill -f 'java -jar ktor.jar' || true
             chmod +x ktor.jar
             nohup java -jar ktor.jar > ktor.log 2>&1 &
             echo $! > ktor.pid
+            sleep 5
+            if ! kill -0 "$(cat ktor.pid)" 2>/dev/null; then
+              echo "Ktor process exited during startup"
+              tail -n 200 ktor.log
+              exit 1
+            fi
+            if ! curl -fsS http://127.0.0.1:8080/ >/dev/null; then
+              echo "Ktor is running but not reachable on localhost:8080"
+              tail -n 200 ktor.log
+              exit 1
+            fi
