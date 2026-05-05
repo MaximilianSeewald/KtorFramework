@@ -1,8 +1,7 @@
 package com.loudless.users
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
-import com.loudless.SessionManager.secretJWTKey
+import com.loudless.HomeAssistantMode
+import com.loudless.auth.AuthTokenService
 import com.loudless.database.DatabaseManager
 import com.loudless.database.Users
 import com.loudless.models.JoinUserGroupRequest
@@ -13,13 +12,11 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.util.*
 
 class UserManager {
-    private val validityInMs = 1000000000
-
     fun initRouting(routing: Route) {
         routing.login()
+        routing.homeAssistantSession()
         routing.userSignUp()
     }
 
@@ -38,6 +35,10 @@ class UserManager {
 
     private fun Route.userSignUp() {
         post("/user") {
+            if (HomeAssistantMode.enabled) {
+                call.respond(HttpStatusCode.Forbidden, mapOf("message" to "User registration is disabled for Home Assistant"))
+                return@post
+            }
             val parameters = call.receiveParameters()
             val username: String = parameters["username"] ?: ""
             val password: String = parameters["password"] ?: ""
@@ -56,6 +57,10 @@ class UserManager {
 
     private fun Route.userChangePassword() {
         post("/user/{userName}/password") {
+            if (HomeAssistantMode.enabled) {
+                call.respond(HttpStatusCode.Forbidden, mapOf("message" to "Password changes are disabled for Home Assistant"))
+                return@post
+            }
             val user = UserService.retrieveAndHandleUsers(call)[0]
             val userNameFromRoute = call.parameters["userName"]!!
             val parameters = call.receiveParameters()
@@ -80,6 +85,10 @@ class UserManager {
 
     private fun Route.joinUserGroup() {
         post("/user/{userName}/groups") {
+            if (HomeAssistantMode.enabled) {
+                call.respond(HttpStatusCode.Forbidden, mapOf("message" to "User group changes are disabled for Home Assistant"))
+                return@post
+            }
             val user = UserService.retrieveAndHandleUsers(call)[0]
             val userFromRoute = call.parameters["userName"]!!
             val joinUserGroupRequest = call.receive<JoinUserGroupRequest>()
@@ -112,6 +121,10 @@ class UserManager {
 
     private fun Route.leaveUserGroup() {
         delete("/user/{userName}/groups/{groupName}") {
+            if (HomeAssistantMode.enabled) {
+                call.respond(HttpStatusCode.Forbidden, mapOf("message" to "User group changes are disabled for Home Assistant"))
+                return@delete
+            }
             val user = UserService.retrieveAndHandleUsers(call)[0]
             val userFromRoute = call.parameters["userName"]!!
             val userGroupName = call.parameters["groupName"]!!
@@ -139,6 +152,10 @@ class UserManager {
 
     private fun Route.login() {
         post("/login") {
+            if (HomeAssistantMode.enabled) {
+                call.respond(HttpStatusCode.Forbidden, mapOf("message" to "Password login is disabled for Home Assistant"))
+                return@post
+            }
             val parameters = call.receiveParameters()
             val username: String = parameters["username"] ?: ""
             val password: String = parameters["password"] ?: ""
@@ -150,16 +167,20 @@ class UserManager {
             }
 
             if (user != null && DatabaseManager.verifyPassword(password, user.first)) {
-                val token = JWT.create()
-                    .withAudience("ktor-app")
-                    .withIssuer("ktor-auth")
-                    .withClaim("username", username)
-                    .withExpiresAt(Date(System.currentTimeMillis() + validityInMs))
-                    .sign(Algorithm.HMAC256(secretJWTKey))
-                call.respond(HttpStatusCode.OK, mapOf("token" to token))
+                call.respond(HttpStatusCode.OK, mapOf("token" to AuthTokenService.createToken(username)))
             } else {
                 call.respond(HttpStatusCode.Unauthorized, mapOf("message" to "Login failed. Please check your credentials."))
             }
+        }
+    }
+
+    private fun Route.homeAssistantSession() {
+        get("/ha/session") {
+            if (!HomeAssistantMode.enabled) {
+                call.respond(HttpStatusCode.NotFound)
+                return@get
+            }
+            call.respond(HttpStatusCode.OK, mapOf("token" to AuthTokenService.createToken(HomeAssistantMode.userName)))
         }
     }
 }

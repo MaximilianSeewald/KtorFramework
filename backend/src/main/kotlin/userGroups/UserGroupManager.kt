@@ -1,5 +1,6 @@
 package com.loudless.userGroups
 
+import com.loudless.HomeAssistantMode
 import com.loudless.database.DatabaseManager
 import com.loudless.models.CreateUserGroupRequest
 import com.loudless.models.EditUserGroupRequest
@@ -22,6 +23,10 @@ class UserGroupManager {
 
     private fun Route.editPasswordUserGroup() {
         put("/usergroups") {
+            if (HomeAssistantMode.enabled) {
+                call.respond(HttpStatusCode.Forbidden, mapOf("message" to "User group changes are disabled for Home Assistant"))
+                return@put
+            }
             val editUserGroupRequest = call.receive<EditUserGroupRequest>()
             val user = UserService.retrieveAndHandleUsers(call)[0]
             if (!UserGroupService.checkIsAdmin(user)) {
@@ -35,6 +40,10 @@ class UserGroupManager {
 
     private fun Route.postUserGroup() {
         post("/usergroups") {
+            if (HomeAssistantMode.enabled) {
+                call.respond(HttpStatusCode.Forbidden, mapOf("message" to "User group changes are disabled for Home Assistant"))
+                return@post
+            }
             val createUserGroupRequest = call.receive<CreateUserGroupRequest>()
             val userId = UserService.retrieveAndHandleUsers(call)[0].id
             val userGroupName = createUserGroupRequest.userGroupName
@@ -56,6 +65,10 @@ class UserGroupManager {
 
     private fun Route.deleteUserGroup() {
         delete("/usergroups") {
+            if (HomeAssistantMode.enabled) {
+                call.respond(HttpStatusCode.Forbidden, mapOf("message" to "User group changes are disabled for Home Assistant"))
+                return@delete
+            }
             val userId = UserService.retrieveAndHandleUsers(call)[0].id
             val userGroupName = call.request.queryParameters["name"]!!
             if (!UserGroupService.userGroupExists(userGroupName)) {

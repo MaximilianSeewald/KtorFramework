@@ -17,6 +17,7 @@ data: true
 network: true
 environment:
   JWT_SECRET_KEY: "change-this-to-a-secure-key"
+  HA_MODE: "true"
 options:
   jwt_secret: "change-this-to-a-secure-key"
 schema:

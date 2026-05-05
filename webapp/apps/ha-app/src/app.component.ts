@@ -20,7 +20,11 @@ export class AppComponent implements OnInit {
   constructor(public authService: AuthService, private router: Router, private errorService: ErrorService) {}
 
   ngOnInit(): void {
-    this.authService.verifyToken().then()
+    this.authService.verifyToken().then((isLoggedIn) => {
+      if (isLoggedIn && this.router.url.includes('/login')) {
+        this.router.navigate(['shoppingList']);
+      }
+    })
     this.router.events.pipe(
       filter(event => event instanceof NavigationStart)
     ).subscribe(() => this.errorService.clearError());
@@ -28,11 +32,6 @@ export class AppComponent implements OnInit {
 
   toggleMenu() {
     this.menuOpen = !this.menuOpen;
-  }
-
-  logout() {
-    this.authService.logout(['login']);
-    this.menuOpen = false;
   }
 }
 

@@ -1,6 +1,7 @@
 package com.loudless.database
 
 import at.favre.lib.crypto.bcrypt.BCrypt
+import com.loudless.HomeAssistantMode
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.sql.*
@@ -17,6 +18,9 @@ object DatabaseManager {
         transaction {
             SchemaUtils.create(Users)
             SchemaUtils.create(UserGroups)
+            if (HomeAssistantMode.enabled) {
+                ensureHomeAssistantUserGroup()
+            }
             UserGroups.selectAll().map { it[UserGroups.name] }.forEach {
                 val shoppingList = ShoppingList(it)
                 SchemaUtils.create(shoppingList)
@@ -26,6 +30,35 @@ object DatabaseManager {
                 recipeMap[it] = recipe
             }
             migrateTablesIfMissing()
+        }
+    }
+
+    private fun ensureHomeAssistantUserGroup() {
+        val userId = Users
+            .selectAll()
+            .where { Users.name eq HomeAssistantMode.userName }
+            .map { it[Users.id] }
+            .firstOrNull() ?: Users.insert {
+                it[name] = HomeAssistantMode.userName
+                it[hashedPassword] = hashPassword(HomeAssistantMode.password)
+                it[group] = HomeAssistantMode.userGroupName
+            }[Users.id]
+
+        if (!UserGroups.selectAll().where { UserGroups.name eq HomeAssistantMode.userGroupName }.empty()) {
+            Users.update({ Users.id eq userId }) {
+                it[group] = HomeAssistantMode.userGroupName
+            }
+            return
+        }
+
+        UserGroups.insert {
+            it[name] = HomeAssistantMode.userGroupName
+            it[hashedPassword] = hashPassword(HomeAssistantMode.password)
+            it[adminUserId] = userId
+        }
+
+        Users.update({ Users.id eq userId }) {
+            it[group] = HomeAssistantMode.userGroupName
         }
     }
 
