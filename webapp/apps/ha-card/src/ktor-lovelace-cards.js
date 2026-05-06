@@ -574,28 +574,19 @@ if (!customElements.get('ktor-shopping-list-card')) {
   customElements.define('ktor-shopping-list-card', KtorShoppingListCard);
 }
 
-const customCardEntries = [
-  {
-    type: 'ktor-shopping-list-card',
-    name: 'Ktor Shopping List',
-    preview: false,
-    description: 'Native Lovelace card for the Ktor App shopping list.',
-  },
-  {
-    type: 'custom:ktor-shopping-list-card',
-    name: 'Ktor Shopping List',
-    preview: false,
-    description: 'Native Lovelace card for the Ktor App shopping list.',
-  },
-];
-
 window.customCards = (window.customCards || [])
   .filter((card) => !['ktor-shopping-list-card', 'custom:ktor-shopping-list-card', 'ktor-recipe-list-card'].includes(card.type));
-window.customCards.push(...customCardEntries);
+window.customCards.push({
+  type: 'ktor-shopping-list-card',
+  name: 'Ktor Shopping List',
+  preview: false,
+  description: 'Native Lovelace card for the Ktor App shopping list.',
+  documentationURL: 'https://github.com/Loudless/KtorFramework',
+});
 
 window.ktorLovelaceCards = {
   loaded: true,
-  types: customCardEntries.map((card) => card.type),
+  types: ['ktor-shopping-list-card'],
   version: CARD_VERSION,
 };
 
