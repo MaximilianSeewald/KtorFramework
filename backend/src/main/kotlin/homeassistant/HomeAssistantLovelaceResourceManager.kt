@@ -34,6 +34,8 @@ data class LovelaceResourceCheckResponse(
     val publishedPath: String,
     val served: Boolean,
     val servedStatus: Int?,
+    val frontendExtraModule: Boolean,
+    val frontendExtraModulePath: String,
     val resources: List<LovelaceResourceStatus>
 )
 
@@ -73,6 +75,8 @@ class HomeAssistantLovelaceResourceManager {
                     publishedPath = publishedCardResourceFile().absolutePath,
                     served = isPublishedResourceServed(token),
                     servedStatus = publishedResourceStatus(token),
+                    frontendExtraModule = isFrontendExtraModuleConfigured(),
+                    frontendExtraModulePath = HomeAssistantMode.configurationFilePath,
                     resources = listKtorResources(token)
                 )
             }.onSuccess { response ->
@@ -105,7 +109,9 @@ class HomeAssistantLovelaceResourceManager {
 
             runCatching {
                 publishCardResource(request.ingressBaseUrl)
-                installOrUpdateResource(HomeAssistantMode.localLovelaceResourceUrl, token)
+                val resourceResult = installOrUpdateResource(HomeAssistantMode.localLovelaceResourceUrl, token)
+                val frontendResult = ensureFrontendExtraModule()
+                "$resourceResult; $frontendResult"
             }.onSuccess { result ->
                 call.respond(HttpStatusCode.OK, mapOf("message" to result))
             }.onFailure { error ->
@@ -135,6 +141,7 @@ class HomeAssistantLovelaceResourceManager {
                 .replace("__KTOR_INGRESS_BASE_URL__", normalizedIngressBaseUrl),
             Charsets.UTF_8
         )
+        ensureFrontendExtraModule()
     }
 
     private fun publishedCardResourceFile(): File =
@@ -142,6 +149,85 @@ class HomeAssistantLovelaceResourceManager {
 
     private fun homeAssistantWwwDirectory(): File =
         File("/homeassistant/www")
+
+    private fun isFrontendExtraModuleConfigured(): Boolean {
+        val configuration = File(HomeAssistantMode.configurationFilePath)
+        if (!configuration.isFile) {
+            return false
+        }
+
+        return configuration.readLines(Charsets.UTF_8).any { line ->
+            line.trim().trim('"', '\'') == "- ${HomeAssistantMode.localLovelaceResourceUrl}" ||
+                line.trim().removePrefix("-").trim().trim('"', '\'') == HomeAssistantMode.localLovelaceResourceUrl
+        }
+    }
+
+    private fun ensureFrontendExtraModule(): String {
+        val configuration = File(HomeAssistantMode.configurationFilePath)
+        configuration.parentFile?.mkdirs()
+
+        if (!configuration.exists()) {
+            configuration.writeText(frontendExtraModuleSection().joinToString(System.lineSeparator()) + System.lineSeparator(), Charsets.UTF_8)
+            return "Frontend extra module configured"
+        }
+
+        val originalLines = configuration.readLines(Charsets.UTF_8)
+        if (isFrontendExtraModuleConfigured()) {
+            return "Frontend extra module already configured"
+        }
+
+        val lines = originalLines.toMutableList()
+        val frontendIndex = lines.indexOfFirst { line ->
+            line.matches(Regex("""^frontend:\s*.*$"""))
+        }
+
+        if (frontendIndex == -1) {
+            if (lines.isNotEmpty() && lines.last().isNotBlank()) {
+                lines.add("")
+            }
+            lines.addAll(frontendExtraModuleSection())
+            configuration.writeText(lines.joinToString(System.lineSeparator()) + System.lineSeparator(), Charsets.UTF_8)
+            return "Frontend extra module configured"
+        }
+
+        if (!lines[frontendIndex].matches(Regex("""^frontend:\s*(#.*)?$"""))) {
+            return "Frontend extra module needs manual configuration"
+        }
+
+        val sectionEnd = lines.indexOfFirstAfter(frontendIndex + 1) { line ->
+            line.isNotBlank() && !line.startsWith(" ") && !line.startsWith("#")
+        }.takeUnless { it == -1 } ?: lines.size
+
+        val extraModuleIndex = (frontendIndex + 1 until sectionEnd).firstOrNull { index ->
+            lines[index].matches(Regex("""^\s{2}extra_module_url:\s*(#.*)?$"""))
+        }
+
+        if (extraModuleIndex == null) {
+            lines.add(frontendIndex + 1, "  extra_module_url:")
+            lines.add(frontendIndex + 2, "    - ${HomeAssistantMode.localLovelaceResourceUrl}")
+        } else {
+            lines.add(extraModuleIndex + 1, "    - ${HomeAssistantMode.localLovelaceResourceUrl}")
+        }
+
+        configuration.writeText(lines.joinToString(System.lineSeparator()) + System.lineSeparator(), Charsets.UTF_8)
+        return "Frontend extra module configured"
+    }
+
+    private fun frontendExtraModuleSection(): List<String> =
+        listOf(
+            "frontend:",
+            "  extra_module_url:",
+            "    - ${HomeAssistantMode.localLovelaceResourceUrl}"
+        )
+
+    private inline fun List<String>.indexOfFirstAfter(startIndex: Int, predicate: (String) -> Boolean): Int {
+        for (index in startIndex until size) {
+            if (predicate(this[index])) {
+                return index
+            }
+        }
+        return -1
+    }
 
     private fun isPublishedResourceServed(token: String): Boolean =
         publishedResourceStatus(token) == 200

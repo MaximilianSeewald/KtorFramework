@@ -1,4 +1,4 @@
-const CARD_VERSION = '1.1.3';
+const CARD_VERSION = '1.1.4';
 const TOKEN_STORAGE_KEY = 'ktor-lovelace-token';
 const KTOR_INGRESS_BASE_URL = '__KTOR_INGRESS_BASE_URL__';
 
@@ -174,7 +174,7 @@ function resolveIngressWebSocketUrl(path) {
 
 function resolveKtorBaseUrl() {
   if (!KTOR_INGRESS_BASE_URL.startsWith('__')) {
-    return KTOR_INGRESS_BASE_URL;
+    return new URL(KTOR_INGRESS_BASE_URL, window.location.origin).toString();
   }
 
   return new URL('./', import.meta.url).toString();

@@ -6,6 +6,7 @@ object HomeAssistantMode {
     const val password = "home-assistant-instance-user"
     const val localLovelaceResourceUrl = "/local/ktor-lovelace-cards.js"
     const val lovelaceCardFileName = "ktor-lovelace-cards.js"
+    const val configurationFilePath = "/homeassistant/configuration.yaml"
 
     val enabled: Boolean
         get() = System.getenv("HA_MODE")?.equals("true", ignoreCase = true) == true
