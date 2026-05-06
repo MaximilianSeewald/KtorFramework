@@ -6,6 +6,8 @@ type LovelaceResourceStatus = {
   url: string;
 };
 
+const LOVELACE_LOCAL_RESOURCE_URL = '/local/ktor-lovelace-cards.js';
+
 @Component({
   selector: 'app-dashboard-setup',
   standalone: true,
@@ -65,7 +67,9 @@ export class DashboardSetupComponent {
       const resourceMessage = resources.length
         ? `Resource: ${resources.map((resource: LovelaceResourceStatus) => resource.url).join(', ')}`
         : 'No Ktor Lovelace resource found';
-      this.resourceInstallStatus = `${body.published ? 'Home Assistant www file exists' : 'Home Assistant www file missing'} - ${resourceMessage}`;
+      const localResponse = await fetch(LOVELACE_LOCAL_RESOURCE_URL, {cache: 'no-store'});
+      const localMessage = localResponse.ok ? 'Browser can load /local file' : `/local returns ${localResponse.status}`;
+      this.resourceInstallStatus = `${body.published ? 'Home Assistant www file exists' : 'Home Assistant www file missing'} - ${localMessage} - ${resourceMessage}`;
     } catch (error) {
       this.resourceInstallStatus = error instanceof Error ? error.message : 'Could not read Lovelace resource';
     } finally {

@@ -5,6 +5,7 @@ object HomeAssistantMode {
     const val userGroupName = "ha-instance"
     const val password = "home-assistant-instance-user"
     const val localLovelaceResourceUrl = "/local/ktor-lovelace-cards.js"
+    const val lovelaceCardFileName = "ktor-lovelace-cards.js"
 
     val enabled: Boolean
         get() = System.getenv("HA_MODE")?.equals("true", ignoreCase = true) == true
@@ -20,4 +21,7 @@ object HomeAssistantMode {
         )
             .firstNotNullOfOrNull { name -> System.getenv(name)?.takeIf { it.isNotBlank() } }
             ?.replace(Regex("/?$"), "/")
+
+    val homeAssistantBaseUrl: String
+        get() = System.getenv("SUPERVISOR_URL")?.takeIf { it.isNotBlank() } ?: "http://supervisor"
 }
