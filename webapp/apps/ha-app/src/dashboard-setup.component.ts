@@ -41,13 +41,8 @@ export class DashboardSetupComponent {
       },
       this.createNativeCard('Shopping List Card', 'shopping_cart', 'ktor-shopping-list-card', [
         'title: Shopping List',
-        'max_items: 8',
+        'max_items: 12',
         'show_completed: true'
-      ]),
-      this.createNativeCard('Recipe List Card', 'restaurant', 'ktor-recipe-list-card', [
-        'title: Recipes',
-        'max_recipes: 6',
-        'show_ingredients: true'
       ])
     ];
   }
