@@ -24,6 +24,13 @@ data class LovelaceResourceRequest(val ingressBaseUrl: String)
 @Serializable
 data class LovelaceResourceStatus(val id: String, val type: String, val url: String)
 
+@Serializable
+data class LovelaceResourceCheckResponse(
+    val published: Boolean,
+    val publishedPath: String,
+    val resources: List<LovelaceResourceStatus>
+)
+
 class HomeAssistantLovelaceResourceManager {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -55,9 +62,13 @@ class HomeAssistantLovelaceResourceManager {
             }
 
             runCatching {
-                listKtorResources(token)
-            }.onSuccess { resources ->
-                call.respond(HttpStatusCode.OK, mapOf("resources" to resources))
+                LovelaceResourceCheckResponse(
+                    published = publishedCardResourceFile().isFile,
+                    publishedPath = publishedCardResourceFile().absolutePath,
+                    resources = listKtorResources(token)
+                )
+            }.onSuccess { response ->
+                call.respond(HttpStatusCode.OK, response)
             }.onFailure { error ->
                 call.respond(
                     HttpStatusCode.BadGateway,
@@ -109,7 +120,7 @@ class HomeAssistantLovelaceResourceManager {
             throw IllegalStateException("Could not create /config/www")
         }
 
-        val target = File(targetDirectory, "ktor-lovelace-cards.js")
+        val target = publishedCardResourceFile()
         val normalizedIngressBaseUrl = ingressBaseUrl.replace(Regex("/?$"), "/")
         target.writeText(
             source.readText()
@@ -117,6 +128,9 @@ class HomeAssistantLovelaceResourceManager {
             Charsets.UTF_8
         )
     }
+
+    private fun publishedCardResourceFile(): File =
+        File("/config/www/ktor-lovelace-cards.js")
 
     private suspend fun installOrUpdateResource(resourceUrl: String, token: String): String = withContext(Dispatchers.IO) {
         val connection = HomeAssistantCoreWebSocket(token, json)
