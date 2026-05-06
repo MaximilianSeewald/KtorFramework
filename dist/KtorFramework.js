@@ -1,4 +1,4 @@
-const CARD_VERSION = '1.1.7';
+const CARD_VERSION = '1.1.8';
 const TOKEN_STORAGE_KEY = 'ktor-shopping-list-token';
 const DEFAULT_ADDON_SLUG = 'ktor_app';
 
@@ -90,6 +90,10 @@ const cardStyles = `
       display: flex;
       flex-direction: column;
       gap: 8px;
+      max-height: min(50vh, 420px);
+      overflow-y: auto;
+      padding-right: 2px;
+      scrollbar-gutter: stable;
     }
 
     .item-row {
@@ -340,7 +344,6 @@ class KtorShoppingListCard extends HTMLElement {
         { name: 'title', selector: { text: {} } },
         { name: 'addon_slug', selector: { text: {} } },
         { name: 'backend_url', selector: { text: {} } },
-        { name: 'max_items', selector: { number: { min: 1, max: 50, mode: 'box' } } },
         { name: 'show_completed', selector: { boolean: {} } },
       ],
     };
@@ -350,7 +353,6 @@ class KtorShoppingListCard extends HTMLElement {
     return {
       title: 'Shopping List',
       addon_slug: DEFAULT_ADDON_SLUG,
-      max_items: 12,
       show_completed: true,
     };
   }
@@ -373,7 +375,6 @@ class KtorShoppingListCard extends HTMLElement {
   setConfig(config) {
     this.config = {
       addon_slug: DEFAULT_ADDON_SLUG,
-      max_items: 12,
       show_completed: true,
       ...config,
     };
@@ -449,13 +450,7 @@ class KtorShoppingListCard extends HTMLElement {
   visibleItems() {
     const showCompleted = this.config.show_completed !== false;
     return this.data
-      .filter((item) => showCompleted || !item.retrieved)
-      .slice(0, this.maxItems());
-  }
-
-  maxItems() {
-    const value = Number(this.config.max_items ?? 12);
-    return Number.isFinite(value) && value > 0 ? value : 12;
+      .filter((item) => showCompleted || !item.retrieved);
   }
 
   title() {
