@@ -1,6 +1,8 @@
-const CARD_VERSION = '1.1.11';
+const CARD_VERSION = '1.1.12';
 const TOKEN_STORAGE_KEY = 'ktor-shopping-list-token';
 const DEFAULT_ADDON_SLUG = 'ktor_app';
+const REFRESH_INTERVAL_MS = 5000;
+const RECONNECT_DELAY_MS = 1000;
 
 const cardStyles = `
   <style>
@@ -377,6 +379,10 @@ class KtorShoppingListCard extends HTMLElement {
   addName = '';
   _hass = undefined;
   backendBaseUrlPromise = undefined;
+  reconnectTimer = undefined;
+  refreshTimer = undefined;
+  loadingPromise = undefined;
+  disconnected = true;
 
   constructor() {
     super();
@@ -410,11 +416,16 @@ class KtorShoppingListCard extends HTMLElement {
   }
 
   connectedCallback() {
+    this.disconnected = false;
+    this.startRefreshTimer();
     this.load();
   }
 
   disconnectedCallback() {
-    this.socket?.close();
+    this.disconnected = true;
+    this.stopRefreshTimer();
+    this.clearReconnectTimer();
+    this.closeSocket();
   }
 
   setConfig(config) {
@@ -423,8 +434,8 @@ class KtorShoppingListCard extends HTMLElement {
       show_completed: true,
       ...config,
     };
-    this.socket?.close();
-    this.socket = undefined;
+    this.clearReconnectTimer();
+    this.closeSocket();
     this.backendBaseUrlPromise = undefined;
     sessionStorage.removeItem(this.tokenStorageKey());
     this.render();
@@ -445,6 +456,19 @@ class KtorShoppingListCard extends HTMLElement {
   }
 
   async load() {
+    if (this.loadingPromise) {
+      return this.loadingPromise;
+    }
+
+    this.loadingPromise = this.loadData();
+    try {
+      await this.loadingPromise;
+    } finally {
+      this.loadingPromise = undefined;
+    }
+  }
+
+  async loadData() {
     if (!this.backendUrlConfig() && !this._hass) {
       this.loading = true;
       this.render();
@@ -467,7 +491,10 @@ class KtorShoppingListCard extends HTMLElement {
   }
 
   async connectWebSocket() {
-    if (this.socket && this.socket.readyState !== WebSocket.CLOSED) {
+    if (
+      this.disconnected
+      || (this.socket && [WebSocket.CONNECTING, WebSocket.OPEN].includes(this.socket.readyState))
+    ) {
       return;
     }
 
@@ -480,12 +507,56 @@ class KtorShoppingListCard extends HTMLElement {
       this.render();
     };
     this.socket.onerror = () => {
-      this.error = 'Live updates are unavailable. Use refresh to retry.';
-      this.render();
+      this.scheduleReconnect();
     };
     this.socket.onclose = () => {
       this.socket = undefined;
+      this.scheduleReconnect();
     };
+  }
+
+  closeSocket() {
+    if (this.socket && [WebSocket.CONNECTING, WebSocket.OPEN].includes(this.socket.readyState)) {
+      this.socket.close();
+    }
+    this.socket = undefined;
+  }
+
+  clearReconnectTimer() {
+    if (this.reconnectTimer) {
+      window.clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
+    }
+  }
+
+  scheduleReconnect() {
+    if (this.disconnected || this.reconnectTimer) {
+      return;
+    }
+
+    this.reconnectTimer = window.setTimeout(() => {
+      this.reconnectTimer = undefined;
+      this.connectWebSocket().catch(() => this.scheduleReconnect());
+    }, RECONNECT_DELAY_MS);
+  }
+
+  startRefreshTimer() {
+    if (this.refreshTimer) {
+      return;
+    }
+
+    this.refreshTimer = window.setInterval(() => {
+      if (!document.hidden) {
+        this.load();
+      }
+    }, REFRESH_INTERVAL_MS);
+  }
+
+  stopRefreshTimer() {
+    if (this.refreshTimer) {
+      window.clearInterval(this.refreshTimer);
+      this.refreshTimer = undefined;
+    }
   }
 
   sortItems(items) {
@@ -711,12 +782,17 @@ if (!customElements.get('ktor-shopping-list-card')) {
 
 window.customCards = (window.customCards || [])
   .filter((card) => !['ktor-shopping-list-card', 'custom:ktor-shopping-list-card', 'ktor-recipe-list-card'].includes(card.type));
-window.customCards.push({
-  type: 'ktor-shopping-list-card',
-  name: `Ktor Shopping List ${CARD_VERSION}`,
-  preview: false,
-  description: `Native Lovelace card for the Ktor App shopping list. Version ${CARD_VERSION}.`,
-  documentationURL: 'https://github.com/Loudless/KtorFramework',
+[
+  'ktor-shopping-list-card',
+  'custom:ktor-shopping-list-card',
+].forEach((type) => {
+  window.customCards.push({
+    type,
+    name: `Ktor Shopping List ${CARD_VERSION}`,
+    preview: true,
+    description: `Native Lovelace card for the Ktor App shopping list. Version ${CARD_VERSION}.`,
+    documentationURL: 'https://github.com/Loudless/KtorFramework',
+  });
 });
 
 window.ktorLovelaceCards = {
