@@ -1,7 +1,6 @@
 package com.loudless
 
 import com.loudless.grades.GradeManager
-import com.loudless.homeassistant.HomeAssistantRoutes
 import com.loudless.recipes.RecipeManager
 import com.loudless.shoppingList.ShoppingListManager
 import com.loudless.userGroups.UserGroupManager
@@ -19,7 +18,6 @@ object SessionManager {
     private val gradeManager = GradeManager()
     private val userManager = UserManager()
     private val userGroupManager = UserGroupManager()
-    private val homeAssistantRoutes = HomeAssistantRoutes()
 
     fun initRouting(routing: Route) {
         gradeManager.initRouting(routing)
@@ -33,14 +31,9 @@ object SessionManager {
         recipeManager.initRoutes(route)
         userManager.initSafeRoutes(route)
         userGroupManager.initSafeRoutes(route)
-        homeAssistantRoutes.initRoutes(route)
     }
 
     fun installComponents(application: Application) {
         ktorManager.installComponents(application)
-    }
-
-    fun installStartupResources() {
-        homeAssistantRoutes.installStartupResources()
     }
 }
