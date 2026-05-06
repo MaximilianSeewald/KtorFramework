@@ -694,9 +694,9 @@ window.customCards = (window.customCards || [])
   .filter((card) => !['ktor-shopping-list-card', 'custom:ktor-shopping-list-card', 'ktor-recipe-list-card'].includes(card.type));
 window.customCards.push({
   type: 'ktor-shopping-list-card',
-  name: 'Ktor Shopping List',
+  name: `Ktor Shopping List ${CARD_VERSION}`,
   preview: false,
-  description: 'Native Lovelace card for the Ktor App shopping list.',
+  description: `Native Lovelace card for the Ktor App shopping list. Version ${CARD_VERSION}.`,
   documentationURL: 'https://github.com/Loudless/KtorFramework',
 });
 
