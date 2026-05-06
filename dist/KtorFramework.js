@@ -1,4 +1,4 @@
-const CARD_VERSION = '1.1.10';
+const CARD_VERSION = '1.1.11';
 const TOKEN_STORAGE_KEY = 'ktor-shopping-list-token';
 const DEFAULT_ADDON_SLUG = 'ktor_app';
 
@@ -188,7 +188,8 @@ function inferIngressBaseUrl() {
 }
 
 function unwrapSupervisorResponse(response) {
-  return response?.data ?? response?.result ?? response;
+  const unwrapped = response?.body ?? response?.data ?? response?.result ?? response;
+  return unwrapped?.data ?? unwrapped?.result ?? unwrapped;
 }
 
 async function callSupervisorApi(hass, endpoint, method = 'get') {
@@ -215,6 +216,14 @@ async function ensureIngressSession(hass) {
   document.cookie = `ingress_session=${encodeURIComponent(response.session)}; path=/; SameSite=Strict${secure}`;
 }
 
+function findAddonSlug(addons, configuredSlug) {
+  const normalizedSlug = String(configuredSlug || '').trim();
+  const installedAddons = Array.isArray(addons) ? addons : [];
+  return installedAddons.find((addon) => addon?.slug === normalizedSlug)?.slug
+    || installedAddons.find((addon) => String(addon?.slug || '').endsWith(`_${normalizedSlug}`))?.slug
+    || normalizedSlug;
+}
+
 async function resolveAddonIngressBaseUrl(hass, addonSlug) {
   const normalizedSlug = String(addonSlug || DEFAULT_ADDON_SLUG).trim();
   const inferredIngressBaseUrl = inferIngressBaseUrl();
@@ -222,9 +231,19 @@ async function resolveAddonIngressBaseUrl(hass, addonSlug) {
     return inferredIngressBaseUrl;
   }
 
+  let resolvedSlug = normalizedSlug;
+  try {
+    const addonsResponse = await callSupervisorApi(hass, '/addons');
+    resolvedSlug = findAddonSlug(addonsResponse?.addons, normalizedSlug);
+  } catch (error) {
+    // Older/mobile frontends may block this call; fall back to the configured slug.
+  }
+
   const endpoints = [
-    `addons/${normalizedSlug}/info`,
+    `/addons/${resolvedSlug}/info`,
+    `addons/${resolvedSlug}/info`,
     `/addons/${normalizedSlug}/info`,
+    `addons/${normalizedSlug}/info`,
   ];
   let lastError;
 
@@ -245,7 +264,7 @@ async function resolveAddonIngressBaseUrl(hass, addonSlug) {
   }
 
   throw new Error(
-    `Could not resolve ingress URL for add-on "${normalizedSlug}"${lastError instanceof Error ? `: ${lastError.message}` : ''}`
+    `Could not resolve ingress URL for add-on "${normalizedSlug}"${resolvedSlug !== normalizedSlug ? ` (${resolvedSlug})` : ''}${lastError instanceof Error ? `: ${lastError.message}` : ''}`
   );
 }
 
@@ -693,7 +712,7 @@ if (!customElements.get('ktor-shopping-list-card')) {
 window.customCards = (window.customCards || [])
   .filter((card) => !['ktor-shopping-list-card', 'custom:ktor-shopping-list-card', 'ktor-recipe-list-card'].includes(card.type));
 window.customCards.push({
-  type: 'custom:ktor-shopping-list-card',
+  type: 'ktor-shopping-list-card',
   name: `Ktor Shopping List ${CARD_VERSION}`,
   preview: false,
   description: `Native Lovelace card for the Ktor App shopping list. Version ${CARD_VERSION}.`,
