@@ -80,8 +80,8 @@ class HomeAssistantLovelaceResourceManager {
 
             runCatching {
                 LovelaceResourceCheckResponse(
-                    published = publishedCardResourceFile().isFile,
-                    publishedPath = publishedCardResourceFile().absolutePath,
+                    published = versionedPublishedCardResourceFile().isFile,
+                    publishedPath = versionedPublishedCardResourceFile().absolutePath,
                     served = isPublishedResourceServed(token),
                     servedStatus = publishedResourceStatus(token),
                     frontendExtraModule = isFrontendExtraModuleConfigured(),
@@ -143,20 +143,23 @@ class HomeAssistantLovelaceResourceManager {
             throw IllegalStateException("Could not create /homeassistant/www")
         }
 
-        val target = publishedCardResourceFile()
         val cardModule = source.readText()
-        val normalizedIngressBaseUrl = ingressBaseUrl?.replace(Regex("/?$"), "/")
+        val normalizedIngressBaseUrl = ingressBaseUrl?.replace(Regex("/+$"), "/")
         val publishedCardModule = if (normalizedIngressBaseUrl == null) {
             cardModule
         } else {
             cardModule.replace("__KTOR_INGRESS_BASE_URL__", normalizedIngressBaseUrl)
         }
-        target.writeText(publishedCardModule, Charsets.UTF_8)
+        publishedCardResourceFile().writeText(publishedCardModule, Charsets.UTF_8)
+        versionedPublishedCardResourceFile().writeText(publishedCardModule, Charsets.UTF_8)
         ensureFrontendExtraModule()
     }
 
     private fun publishedCardResourceFile(): File =
         File(homeAssistantWwwDirectory(), HomeAssistantMode.lovelaceCardFileName)
+
+    private fun versionedPublishedCardResourceFile(): File =
+        File(homeAssistantWwwDirectory(), HomeAssistantMode.versionedLovelaceCardFileName)
 
     private fun homeAssistantWwwDirectory(): File =
         File("/homeassistant/www")
@@ -168,8 +171,7 @@ class HomeAssistantLovelaceResourceManager {
         }
 
         return configuration.readLines(Charsets.UTF_8).any { line ->
-            line.trim().trim('"', '\'') == "- ${HomeAssistantMode.localLovelaceResourceUrl}" ||
-                line.trim().removePrefix("-").trim().trim('"', '\'') == HomeAssistantMode.localLovelaceResourceUrl
+            line.trim().removePrefix("-").trim().trim('"', '\'') == HomeAssistantMode.localLovelaceResourceUrl
         }
     }
 
@@ -187,7 +189,9 @@ class HomeAssistantLovelaceResourceManager {
             return "Frontend extra module already configured"
         }
 
-        val lines = originalLines.toMutableList()
+        val lines = originalLines
+            .filterNot { line -> line.contains("ktor-lovelace-cards") }
+            .toMutableList()
         val frontendIndex = lines.indexOfFirst { line ->
             line.matches(Regex("""^frontend:\s*.*$"""))
         }
@@ -245,7 +249,7 @@ class HomeAssistantLovelaceResourceManager {
 
     private fun publishedResourceStatus(token: String): Int? = runCatching {
         val request = HttpRequest.newBuilder()
-            .uri(URI.create("${HomeAssistantMode.homeAssistantBaseUrl}/local/${HomeAssistantMode.lovelaceCardFileName}"))
+            .uri(URI.create("${HomeAssistantMode.homeAssistantBaseUrl}/local/${HomeAssistantMode.versionedLovelaceCardFileName}"))
             .header("Authorization", "Bearer $token")
             .GET()
             .build()
@@ -259,17 +263,20 @@ class HomeAssistantLovelaceResourceManager {
         try {
             connection.connect()
             val resources = connection.listLovelaceResources()
-
-            val existing = resources.firstOrNull { resource ->
-                val url = resource.jsonObject["url"]?.jsonPrimitive?.contentOrNull ?: return@firstOrNull false
-                url.contains("ktor-lovelace-cards.js")
-            }
+            val existingKtorResources = resources.filter(::isKtorLovelaceResource)
+            val existing = existingKtorResources.firstOrNull { resource ->
+                resource.jsonObject["url"]?.jsonPrimitive?.contentOrNull == resourceUrl
+            } ?: existingKtorResources.firstOrNull()
 
             if (existing == null) {
                 createResource(connection, resourceUrl)
                 "Lovelace resource installed"
             } else {
-                updateExistingResource(connection, existing, resourceUrl)
+                val result = updateExistingResource(connection, existing, resourceUrl)
+                existingKtorResources
+                    .filter { resource -> resource !== existing }
+                    .forEach { resource -> deleteResource(connection, resource) }
+                result
             }
         } finally {
             connection.close()
@@ -282,7 +289,7 @@ class HomeAssistantLovelaceResourceManager {
             connection.connect()
             connection.listLovelaceResources()
                 .filter { resource ->
-                    resource.jsonObject["url"]?.jsonPrimitive?.contentOrNull?.contains("ktor-lovelace-cards.js") == true
+                    isKtorLovelaceResource(resource)
                 }
                 .map { resource ->
                     LovelaceResourceStatus(
@@ -301,6 +308,11 @@ class HomeAssistantLovelaceResourceManager {
             .jsonObject["result"]
             ?.jsonArray
             ?: JsonArray(emptyList())
+
+    private fun isKtorLovelaceResource(resource: JsonElement): Boolean {
+        val url = resource.jsonObject["url"]?.jsonPrimitive?.contentOrNull ?: return false
+        return url.contains("ktor-lovelace-cards")
+    }
 
     private fun createResource(connection: HomeAssistantCoreWebSocket, resourceUrl: String) {
         connection.command(
@@ -333,5 +345,14 @@ class HomeAssistantLovelaceResourceManager {
             )
         )
         return "Lovelace resource updated"
+    }
+
+    private fun deleteResource(connection: HomeAssistantCoreWebSocket, existing: JsonElement) {
+        val resourceId = existing.jsonObject["id"] ?: existing.jsonObject["resource_id"]
+            ?: return
+        connection.command(
+            "lovelace/resources/delete",
+            mapOf("resource_id" to resourceId)
+        )
     }
 }

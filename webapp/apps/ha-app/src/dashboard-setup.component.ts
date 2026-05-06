@@ -6,7 +6,7 @@ type LovelaceResourceStatus = {
   url: string;
 };
 
-const LOVELACE_LOCAL_RESOURCE_URL = '/local/ktor-lovelace-cards.js';
+const LOVELACE_LOCAL_RESOURCE_URL = '/local/ktor-lovelace-cards-1.1.6.js';
 const LOVELACE_INGRESS_STORAGE_KEY = 'ktor-lovelace-ingress-base';
 
 @Component({
