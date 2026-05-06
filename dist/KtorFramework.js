@@ -1,4 +1,4 @@
-const CARD_VERSION = '1.1.9';
+const CARD_VERSION = '1.1.10';
 const TOKEN_STORAGE_KEY = 'ktor-shopping-list-token';
 const DEFAULT_ADDON_SLUG = 'ktor_app';
 
@@ -175,6 +175,18 @@ function normalizeIngressEntry(entry) {
   return normalizedEntry ? `/api/hassio_ingress/${normalizedEntry}/` : '';
 }
 
+function inferIngressBaseUrl() {
+  const paths = [
+    window.location.pathname,
+    window.location.href,
+    document.referrer,
+  ];
+  const ingressPattern = /\/api\/hassio_ingress\/[^/?#]+\/?/;
+  const matchingPath = paths.find((path) => ingressPattern.test(path));
+  const match = matchingPath?.match(ingressPattern)?.[0];
+  return match ? normalizeBaseUrl(match) : '';
+}
+
 function unwrapSupervisorResponse(response) {
   return response?.data ?? response?.result ?? response;
 }
@@ -205,6 +217,11 @@ async function ensureIngressSession(hass) {
 
 async function resolveAddonIngressBaseUrl(hass, addonSlug) {
   const normalizedSlug = String(addonSlug || DEFAULT_ADDON_SLUG).trim();
+  const inferredIngressBaseUrl = inferIngressBaseUrl();
+  if (inferredIngressBaseUrl) {
+    return inferredIngressBaseUrl;
+  }
+
   const endpoints = [
     `addons/${normalizedSlug}/info`,
     `/addons/${normalizedSlug}/info`,
