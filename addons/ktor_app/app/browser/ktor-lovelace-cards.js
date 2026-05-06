@@ -1,4 +1,4 @@
-const CARD_VERSION = '1.1.5';
+const CARD_VERSION = '1.1.6';
 const TOKEN_STORAGE_KEY = 'ktor-lovelace-token';
 const INGRESS_STORAGE_KEY = 'ktor-lovelace-ingress-base';
 const KTOR_INGRESS_BASE_URL = '__KTOR_INGRESS_BASE_URL__';
@@ -600,3 +600,4 @@ window.ktorLovelaceCards = {
 };
 
 console.info(`Ktor Lovelace cards ${CARD_VERSION} loaded`, window.ktorLovelaceCards);
+console.info('Ktor Lovelace cards source', import.meta.url);

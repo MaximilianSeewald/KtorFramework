@@ -4,8 +4,10 @@ object HomeAssistantMode {
     const val userName = "ha-user"
     const val userGroupName = "ha-instance"
     const val password = "home-assistant-instance-user"
-    const val localLovelaceResourceUrl = "/local/ktor-lovelace-cards.js"
+    const val lovelaceCardVersion = "1.1.6"
+    const val localLovelaceResourceUrl = "/local/ktor-lovelace-cards-$lovelaceCardVersion.js"
     const val lovelaceCardFileName = "ktor-lovelace-cards.js"
+    const val versionedLovelaceCardFileName = "ktor-lovelace-cards-$lovelaceCardVersion.js"
     const val configurationFilePath = "/homeassistant/configuration.yaml"
 
     val enabled: Boolean
