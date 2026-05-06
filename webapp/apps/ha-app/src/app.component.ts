@@ -7,6 +7,8 @@ import {MatIconModule} from '@angular/material/icon';
 import {ErrorService} from '@core/services/error.service';
 import {filter} from 'rxjs';
 
+const LOVELACE_INGRESS_STORAGE_KEY = 'ktor-lovelace-ingress-base';
+
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, FormsModule, RouterLink, NgIf, MatIconModule],
@@ -39,6 +41,8 @@ export class AppComponent implements OnInit {
 
   private syncLovelaceResource() {
     const token = localStorage.getItem('token');
+    const ingressBaseUrl = window.location.pathname.replace(/\/?$/, '/');
+    localStorage.setItem(LOVELACE_INGRESS_STORAGE_KEY, ingressBaseUrl);
     fetch('api/ha/lovelace-resource', {
       method: 'POST',
       headers: {
@@ -46,7 +50,7 @@ export class AppComponent implements OnInit {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        ingressBaseUrl: window.location.pathname.replace(/\/?$/, '/')
+        ingressBaseUrl
       })
     }).catch(() => {
       // Dashboard Setup exposes a manual repair action and detailed status.
