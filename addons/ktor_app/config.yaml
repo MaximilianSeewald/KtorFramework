@@ -16,6 +16,8 @@ panel_icon: "mdi:chef-hat"
 panel_title: "Recipes & Shopping"
 data: true
 network: true
+map:
+  - config:rw
 environment:
   JWT_SECRET_KEY: "change-this-to-a-secure-key"
   HA_MODE: "true"
