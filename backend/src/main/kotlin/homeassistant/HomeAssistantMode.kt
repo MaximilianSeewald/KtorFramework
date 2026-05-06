@@ -6,6 +6,8 @@ object HomeAssistantMode {
     const val password = "home-assistant-instance-user"
     const val lovelaceCardVersion = "1.1.7"
     const val localLovelaceResourceUrl = "/local/ktor-lovelace-cards-$lovelaceCardVersion.js"
+    const val fallbackLovelaceResourceUrl = "/local/ktor-lovelace-cards.js"
+    const val fallbackLovelaceCardFileName = "ktor-lovelace-cards.js"
     const val versionedLovelaceCardFileName = "ktor-lovelace-cards-$lovelaceCardVersion.js"
     const val configurationFilePath = "/homeassistant/configuration.yaml"
 
@@ -14,6 +16,9 @@ object HomeAssistantMode {
 
     val supervisorToken: String?
         get() = System.getenv("SUPERVISOR_TOKEN")?.takeIf { it.isNotBlank() }
+
+    fun requireSupervisorToken(): String =
+        supervisorToken ?: throw IllegalStateException("SUPERVISOR_TOKEN is not available")
 
     val ingressBaseUrl: String?
         get() = listOf(

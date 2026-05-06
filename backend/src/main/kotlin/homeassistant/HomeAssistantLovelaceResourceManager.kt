@@ -10,30 +10,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 
 @Serializable
 data class LovelaceResourceRequest(val ingressBaseUrl: String)
 
 @Serializable
-data class LovelaceResourceStatus(val id: String, val type: String, val url: String)
+data class LovelaceResourceStatus(val url: String)
 
 @Serializable
 data class LovelaceResourceCheckResponse(
     val published: Boolean,
-    val publishedPath: String,
-    val served: Boolean,
-    val servedStatus: Int?,
     val frontendExtraModule: Boolean,
     val frontendExtraModulePath: String,
     val resourceUrl: String,
@@ -42,26 +34,25 @@ data class LovelaceResourceCheckResponse(
 
 class HomeAssistantLovelaceResourceManager {
     private val json = Json { ignoreUnknownKeys = true }
+    private val wwwDirectory = File("/homeassistant/www")
+    private val configurationFile = File(HomeAssistantMode.configurationFilePath)
+    private val publishedCardFile = File(wwwDirectory, HomeAssistantMode.versionedLovelaceCardFileName)
+    private val fallbackCardFile = File(wwwDirectory, HomeAssistantMode.fallbackLovelaceCardFileName)
+    private val resourceUrls = listOf(
+        HomeAssistantMode.localLovelaceResourceUrl,
+        HomeAssistantMode.fallbackLovelaceResourceUrl
+    )
 
     suspend fun installOrUpdateFromEnvironment(): String {
-        if (!HomeAssistantMode.enabled) {
-            return "Home Assistant mode is disabled"
-        }
-
-        val token = HomeAssistantMode.supervisorToken
-            ?: throw IllegalStateException("SUPERVISOR_TOKEN is not available")
+        val token = HomeAssistantMode.requireSupervisorToken()
         val ingressBaseUrl = HomeAssistantMode.ingressBaseUrl
             ?: throw IllegalStateException("Home Assistant ingress URL is not available")
 
         publishCardResource(ingressBaseUrl)
-        return installOrUpdateResource(HomeAssistantMode.localLovelaceResourceUrl, token)
+        return syncLovelaceResource(token)
     }
 
     fun publishCardResourceFromEnvironment(): String {
-        if (!HomeAssistantMode.enabled) {
-            return "Home Assistant mode is disabled"
-        }
-
         publishCardResource(HomeAssistantMode.ingressBaseUrl)
         return "Lovelace card resource published"
     }
@@ -73,22 +64,13 @@ class HomeAssistantLovelaceResourceManager {
                 return@get
             }
 
-            val token = HomeAssistantMode.supervisorToken
-            if (token == null) {
-                call.respond(HttpStatusCode.ServiceUnavailable, mapOf("message" to "SUPERVISOR_TOKEN is not available"))
-                return@get
-            }
-
             runCatching {
                 LovelaceResourceCheckResponse(
-                    published = versionedPublishedCardResourceFile().isFile,
-                    publishedPath = versionedPublishedCardResourceFile().absolutePath,
-                    served = isPublishedResourceServed(token),
-                    servedStatus = publishedResourceStatus(token),
+                    published = publishedCardFile.isFile,
                     frontendExtraModule = isFrontendExtraModuleConfigured(),
-                    frontendExtraModulePath = HomeAssistantMode.configurationFilePath,
+                    frontendExtraModulePath = configurationFile.absolutePath,
                     resourceUrl = HomeAssistantMode.localLovelaceResourceUrl,
-                    resources = listKtorResources(token)
+                    resources = listKtorResources(HomeAssistantMode.requireSupervisorToken())
                 )
             }.onSuccess { response ->
                 call.respond(HttpStatusCode.OK, response)
@@ -112,17 +94,9 @@ class HomeAssistantLovelaceResourceManager {
                 return@post
             }
 
-            val token = HomeAssistantMode.supervisorToken
-            if (token == null) {
-                call.respond(HttpStatusCode.ServiceUnavailable, mapOf("message" to "SUPERVISOR_TOKEN is not available"))
-                return@post
-            }
-
             runCatching {
                 publishCardResource(request.ingressBaseUrl)
-                val resourceResult = installOrUpdateResource(HomeAssistantMode.localLovelaceResourceUrl, token)
-                val frontendResult = ensureFrontendExtraModule()
-                "$resourceResult; $frontendResult"
+                syncLovelaceResource(HomeAssistantMode.requireSupervisorToken())
             }.onSuccess { result ->
                 call.respond(HttpStatusCode.OK, mapOf("message" to result))
             }.onFailure { error ->
@@ -139,107 +113,100 @@ class HomeAssistantLovelaceResourceManager {
         if (!source.isFile) {
             throw IllegalStateException("Lovelace card module was not found in the add-on")
         }
-
-        val targetDirectory = homeAssistantWwwDirectory()
-        if (!targetDirectory.exists() && !targetDirectory.mkdirs()) {
+        if (!wwwDirectory.exists() && !wwwDirectory.mkdirs()) {
             throw IllegalStateException("Could not create /homeassistant/www")
         }
 
-        val cardModule = source.readText()
-        val normalizedIngressBaseUrl = ingressBaseUrl?.replace(Regex("/+$"), "/")
-        val publishedCardModule = if (normalizedIngressBaseUrl == null) {
-            cardModule
-        } else {
-            cardModule.replace("__KTOR_INGRESS_BASE_URL__", normalizedIngressBaseUrl)
-        }
         removeStalePublishedCardFiles()
-        versionedPublishedCardResourceFile().writeText(publishedCardModule, Charsets.UTF_8)
+        val cardModule = source.readText().withIngressBaseUrl(ingressBaseUrl)
+        publishedCardFile.writeText(cardModule, Charsets.UTF_8)
+        fallbackCardFile.writeText(cardModule, Charsets.UTF_8)
         ensureFrontendExtraModule()
     }
 
-    private fun versionedPublishedCardResourceFile(): File =
-        File(homeAssistantWwwDirectory(), HomeAssistantMode.versionedLovelaceCardFileName)
-
-    private fun homeAssistantWwwDirectory(): File =
-        File("/homeassistant/www")
+    private fun String.withIngressBaseUrl(ingressBaseUrl: String?): String {
+        val normalizedIngressBaseUrl = ingressBaseUrl?.replace(Regex("/+$"), "/") ?: return this
+        return replace("__KTOR_INGRESS_BASE_URL__", normalizedIngressBaseUrl)
+    }
 
     private fun removeStalePublishedCardFiles() {
-        homeAssistantWwwDirectory()
+        wwwDirectory
             .listFiles { file -> file.name.startsWith("ktor-lovelace-cards") && file.name.endsWith(".js") }
-            ?.filterNot { file -> file.name == HomeAssistantMode.versionedLovelaceCardFileName }
+            ?.filterNot { file ->
+                file.name in setOf(
+                    HomeAssistantMode.versionedLovelaceCardFileName,
+                    HomeAssistantMode.fallbackLovelaceCardFileName
+                )
+            }
             ?.forEach { file -> file.delete() }
     }
 
-    private fun isFrontendExtraModuleConfigured(): Boolean {
-        val configuration = File(HomeAssistantMode.configurationFilePath)
-        if (!configuration.isFile) {
-            return false
-        }
-
-        return configuration.readLines(Charsets.UTF_8).any { line ->
-            line.trim().removePrefix("-").trim().trim('"', '\'') == HomeAssistantMode.localLovelaceResourceUrl
-        }
-    }
+    private fun isFrontendExtraModuleConfigured(): Boolean =
+        configurationFile.isFile && configurationFile.readLines(Charsets.UTF_8).containsAllCurrentResourceEntries()
 
     private fun ensureFrontendExtraModule(): String {
-        val configuration = File(HomeAssistantMode.configurationFilePath)
-        configuration.parentFile?.mkdirs()
+        configurationFile.parentFile?.mkdirs()
 
-        if (!configuration.exists()) {
-            configuration.writeText(frontendExtraModuleSection().joinToString(System.lineSeparator()) + System.lineSeparator(), Charsets.UTF_8)
-            return "Frontend extra module configured"
-        }
-
-        val originalLines = configuration.readLines(Charsets.UTF_8)
-        if (isFrontendExtraModuleConfigured()) {
+        val originalLines = configurationFile.takeIf { it.isFile }?.readLines(Charsets.UTF_8).orEmpty()
+        if (originalLines.containsAllCurrentResourceEntries()) {
             return "Frontend extra module already configured"
         }
 
         val lines = originalLines
             .filterNot { line -> line.contains("ktor-lovelace-cards") }
             .toMutableList()
-        val frontendIndex = lines.indexOfFirst { line ->
-            line.matches(Regex("""^frontend:\s*.*$"""))
+        val frontendIndex = lines.indexOfFirst { line -> line.matches(Regex("""^frontend:\s*.*$""")) }
+
+        when {
+            frontendIndex == -1 -> appendFrontendSection(lines)
+            !lines[frontendIndex].matches(Regex("""^frontend:\s*(#.*)?$""")) ->
+                return "Frontend extra module needs manual configuration"
+            else -> addResourceToFrontendSection(lines, frontendIndex)
         }
 
-        if (frontendIndex == -1) {
-            if (lines.isNotEmpty() && lines.last().isNotBlank()) {
-                lines.add("")
-            }
-            lines.addAll(frontendExtraModuleSection())
-            configuration.writeText(lines.joinToString(System.lineSeparator()) + System.lineSeparator(), Charsets.UTF_8)
-            return "Frontend extra module configured"
-        }
+        configurationFile.writeText(lines.joinToString(System.lineSeparator()) + System.lineSeparator(), Charsets.UTF_8)
+        return "Frontend extra module configured"
+    }
 
-        if (!lines[frontendIndex].matches(Regex("""^frontend:\s*(#.*)?$"""))) {
-            return "Frontend extra module needs manual configuration"
-        }
+    private fun isCurrentResourceEntry(line: String): Boolean =
+        line.resourceEntryValue() in resourceUrls
 
+    private fun List<String>.containsAllCurrentResourceEntries(): Boolean {
+        val entries = map { line -> line.resourceEntryValue() }.toSet()
+        return resourceUrls.all(entries::contains)
+    }
+
+    private fun String.resourceEntryValue(): String =
+        trim().removePrefix("-").trim().trim('"', '\'')
+
+    private fun appendFrontendSection(lines: MutableList<String>) {
+        if (lines.isNotEmpty() && lines.last().isNotBlank()) {
+            lines.add("")
+        }
+        lines.add("frontend:")
+        lines.add("  extra_module_url:")
+        resourceUrls.forEach { resourceUrl -> lines.add("    - $resourceUrl") }
+    }
+
+    private fun addResourceToFrontendSection(lines: MutableList<String>, frontendIndex: Int) {
         val sectionEnd = lines.indexOfFirstAfter(frontendIndex + 1) { line ->
             line.isNotBlank() && !line.startsWith(" ") && !line.startsWith("#")
         }.takeUnless { it == -1 } ?: lines.size
-
         val extraModuleIndex = (frontendIndex + 1 until sectionEnd).firstOrNull { index ->
             lines[index].matches(Regex("""^\s{2}extra_module_url:\s*(#.*)?$"""))
         }
 
         if (extraModuleIndex == null) {
             lines.add(frontendIndex + 1, "  extra_module_url:")
-            lines.add(frontendIndex + 2, "    - ${HomeAssistantMode.localLovelaceResourceUrl}")
+            resourceUrls.reversed().forEach { resourceUrl ->
+                lines.add(frontendIndex + 2, "    - $resourceUrl")
+            }
         } else {
-            lines.add(extraModuleIndex + 1, "    - ${HomeAssistantMode.localLovelaceResourceUrl}")
+            resourceUrls.reversed().forEach { resourceUrl ->
+                lines.add(extraModuleIndex + 1, "    - $resourceUrl")
+            }
         }
-
-        configuration.writeText(lines.joinToString(System.lineSeparator()) + System.lineSeparator(), Charsets.UTF_8)
-        return "Frontend extra module configured"
     }
-
-    private fun frontendExtraModuleSection(): List<String> =
-        listOf(
-            "frontend:",
-            "  extra_module_url:",
-            "    - ${HomeAssistantMode.localLovelaceResourceUrl}"
-        )
 
     private inline fun List<String>.indexOfFirstAfter(startIndex: Int, predicate: (String) -> Boolean): Int {
         for (index in startIndex until size) {
@@ -250,40 +217,24 @@ class HomeAssistantLovelaceResourceManager {
         return -1
     }
 
-    private fun isPublishedResourceServed(token: String): Boolean =
-        publishedResourceStatus(token) == 200
-
-    private fun publishedResourceStatus(token: String): Int? = runCatching {
-        val request = HttpRequest.newBuilder()
-            .uri(URI.create("${HomeAssistantMode.homeAssistantBaseUrl}/local/${HomeAssistantMode.versionedLovelaceCardFileName}"))
-            .header("Authorization", "Bearer $token")
-            .GET()
-            .build()
-        HttpClient.newHttpClient()
-            .send(request, HttpResponse.BodyHandlers.discarding())
-            .statusCode()
-    }.getOrNull()
-
-    private suspend fun installOrUpdateResource(resourceUrl: String, token: String): String = withContext(Dispatchers.IO) {
+    private suspend fun syncLovelaceResource(token: String): String = withContext(Dispatchers.IO) {
         val connection = HomeAssistantCoreWebSocket(token, json)
         try {
             connection.connect()
-            val resources = connection.listLovelaceResources()
-            val existingKtorResources = resources.filter(::isKtorLovelaceResource)
-            val existing = existingKtorResources.firstOrNull { resource ->
-                resource.jsonObject["url"]?.jsonPrimitive?.contentOrNull == resourceUrl
-            } ?: existingKtorResources.firstOrNull()
-
-            if (existing == null) {
-                createResource(connection, resourceUrl)
-                "Lovelace resource installed"
-            } else {
-                val result = updateExistingResource(connection, existing, resourceUrl)
-                existingKtorResources
-                    .filter { resource -> resource !== existing }
-                    .forEach { resource -> deleteResource(connection, resource) }
-                result
+            val resources = connection.listLovelaceResources().filter(::isKtorLovelaceResource)
+            resourceUrls.forEach { resourceUrl ->
+                val existing = resources.firstOrNull { resource -> resource.url == resourceUrl }
+                if (existing == null) {
+                    connection.createResource(resourceUrl)
+                }
             }
+
+            resources
+                .filterNot { resource -> resource.url in resourceUrls }
+                .forEach { resource ->
+                    connection.deleteResource(resource)
+                }
+            "Lovelace resource synced; ${ensureFrontendExtraModule()}"
         } finally {
             connection.close()
         }
@@ -294,34 +245,28 @@ class HomeAssistantLovelaceResourceManager {
         try {
             connection.connect()
             connection.listLovelaceResources()
-                .filter { resource ->
-                    isKtorLovelaceResource(resource)
-                }
-                .map { resource ->
-                    LovelaceResourceStatus(
-                        id = (resource.jsonObject["id"] ?: resource.jsonObject["resource_id"]).toString(),
-                        type = (resource.jsonObject["type"] ?: resource.jsonObject["res_type"]).toString(),
-                        url = resource.jsonObject["url"]?.jsonPrimitive?.contentOrNull ?: ""
-                    )
-                }
+                .filter(::isKtorLovelaceResource)
+                .map { resource -> LovelaceResourceStatus(resource.url) }
         } finally {
             connection.close()
         }
     }
 
-    private fun HomeAssistantCoreWebSocket.listLovelaceResources(): JsonArray =
+    private fun HomeAssistantCoreWebSocket.listLovelaceResources(): List<JsonElement> =
         command("lovelace/resources")
             .jsonObject["result"]
             ?.jsonArray
-            ?: JsonArray(emptyList())
+            ?.toList()
+            .orEmpty()
 
-    private fun isKtorLovelaceResource(resource: JsonElement): Boolean {
-        val url = resource.jsonObject["url"]?.jsonPrimitive?.contentOrNull ?: return false
-        return url.contains("ktor-lovelace-cards")
-    }
+    private val JsonElement.url: String
+        get() = jsonObject["url"]?.jsonPrimitive?.contentOrNull.orEmpty()
 
-    private fun createResource(connection: HomeAssistantCoreWebSocket, resourceUrl: String) {
-        connection.command(
+    private fun isKtorLovelaceResource(resource: JsonElement): Boolean =
+        resource.url.contains("ktor-lovelace-cards")
+
+    private fun HomeAssistantCoreWebSocket.createResource(resourceUrl: String) {
+        command(
             "lovelace/resources/create",
             mapOf(
                 "res_type" to "module",
@@ -330,35 +275,11 @@ class HomeAssistantLovelaceResourceManager {
         )
     }
 
-    private fun updateExistingResource(
-        connection: HomeAssistantCoreWebSocket,
-        existing: JsonElement,
-        resourceUrl: String
-    ): String {
-        val existingUrl = existing.jsonObject["url"]?.jsonPrimitive?.contentOrNull
-        if (existingUrl == resourceUrl) {
-            return "Lovelace resource is already installed"
-        }
-
-        val resourceId = existing.jsonObject["id"] ?: existing.jsonObject["resource_id"]
-            ?: throw IllegalStateException("Existing Lovelace resource has no id")
-        connection.command(
-            "lovelace/resources/update",
-            mapOf(
-                "resource_id" to resourceId,
-                "res_type" to "module",
-                "url" to resourceUrl
-            )
-        )
-        return "Lovelace resource updated"
+    private fun HomeAssistantCoreWebSocket.deleteResource(resource: JsonElement) {
+        command("lovelace/resources/delete", mapOf("resource_id" to resource.resourceId()))
     }
 
-    private fun deleteResource(connection: HomeAssistantCoreWebSocket, existing: JsonElement) {
-        val resourceId = existing.jsonObject["id"] ?: existing.jsonObject["resource_id"]
-            ?: return
-        connection.command(
-            "lovelace/resources/delete",
-            mapOf("resource_id" to resourceId)
-        )
-    }
+    private fun JsonElement.resourceId(): JsonElement =
+        jsonObject["id"] ?: jsonObject["resource_id"]
+        ?: throw IllegalStateException("Existing Lovelace resource has no id")
 }

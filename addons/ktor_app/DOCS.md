@@ -14,10 +14,13 @@ After the resource is loaded, the card is registered in Home Assistant's card pi
 The add-on automatically publishes and registers the Lovelace resource during startup when Home Assistant provides the ingress URL, and also whenever the add-on UI is opened. If the card does not appear, open the add-on from the Home Assistant sidebar, select `Dashboard Setup`, and select `Install or update resource`.
 If the `www` folder was created for the first time, restart Home Assistant once so `/local` resources are served.
 
-The installer copies the card module to Home Assistant's `www` folder and registers a versioned local resource as:
+The installer copies the card module to Home Assistant's `www` folder and registers a versioned local resource plus a stable fallback resource for the Home Assistant mobile app:
 
 ```yaml
 url: /local/ktor-lovelace-cards-1.1.7.js
+type: module
+---
+url: /local/ktor-lovelace-cards.js
 type: module
 ```
 
@@ -27,6 +30,7 @@ To make the card picker discover the card reliably, the installer also keeps thi
 frontend:
   extra_module_url:
     - /local/ktor-lovelace-cards-1.1.7.js
+    - /local/ktor-lovelace-cards.js
 ```
 
 Manual card YAML:
