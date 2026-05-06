@@ -1,5 +1,6 @@
 const CARD_VERSION = '1.1.3';
 const TOKEN_STORAGE_KEY = 'ktor-lovelace-token';
+const KTOR_INGRESS_BASE_URL = '__KTOR_INGRESS_BASE_URL__';
 
 const cardStyles = `
   <style>
@@ -162,13 +163,21 @@ const cardStyles = `
 `;
 
 function resolveIngressUrl(path) {
-  return new URL(path.replace(/^\/+/, ''), import.meta.url).toString();
+  return new URL(path.replace(/^\/+/, ''), resolveKtorBaseUrl()).toString();
 }
 
 function resolveIngressWebSocketUrl(path) {
-  const url = new URL(path.replace(/^\/+/, ''), import.meta.url);
+  const url = new URL(path.replace(/^\/+/, ''), resolveKtorBaseUrl());
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   return url.toString();
+}
+
+function resolveKtorBaseUrl() {
+  if (!KTOR_INGRESS_BASE_URL.startsWith('__')) {
+    return KTOR_INGRESS_BASE_URL;
+  }
+
+  return new URL('./', import.meta.url).toString();
 }
 
 async function requestKtorToken() {
@@ -572,15 +581,6 @@ window.customCards.push({
   name: 'Ktor Shopping List',
   preview: false,
   description: 'Native Lovelace card for the Ktor App shopping list.',
-  documentationURL: 'https://github.com/Loudless/KtorFramework',
-  version: CARD_VERSION,
 });
-
-window.dispatchEvent(new CustomEvent('ktor-lovelace-cards-loaded', {
-  detail: {
-    cards: window.customCards.filter((card) => card.type === 'ktor-shopping-list-card'),
-    version: CARD_VERSION,
-  },
-}));
 
 console.info(`Ktor Lovelace cards ${CARD_VERSION} loaded`);

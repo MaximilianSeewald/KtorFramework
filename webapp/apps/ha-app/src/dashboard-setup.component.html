@@ -5,7 +5,7 @@
     </div>
     <div>
       <h2 class="text-xl font-semibold tracking-tight">Native Lovelace card</h2>
-      <p class="setup-muted text-sm">Add the resource once, then add the shopping list card.</p>
+      <p class="setup-muted text-sm">The add-on keeps the Lovelace resource installed automatically.</p>
     </div>
   </div>
 
@@ -27,26 +27,6 @@
       </button>
 
       <p *ngIf="resourceInstallStatus" class="setup-status">{{ resourceInstallStatus }}</p>
-    </article>
-
-    <article *ngFor="let card of nativeCards" class="setup-card">
-      <div class="mb-4 flex items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <mat-icon class="setup-card-icon">{{ card.icon }}</mat-icon>
-          <h2 class="text-base font-semibold">{{ card.title }}</h2>
-        </div>
-
-        <a *ngIf="card.url" [href]="card.url" target="_blank" rel="noreferrer" class="setup-link">
-          Open
-        </a>
-      </div>
-
-      <pre>{{ card.yaml }}</pre>
-
-      <button type="button" class="setup-copy" (click)="copy(card)">
-        <mat-icon>{{ copiedTitle === card.title ? 'check' : 'content_copy' }}</mat-icon>
-        {{ copiedTitle === card.title ? 'Copied' : card.actionLabel }}
-      </button>
     </article>
   </div>
 </section>

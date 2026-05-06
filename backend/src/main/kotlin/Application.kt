@@ -13,6 +13,7 @@ import io.ktor.server.auth.*
 
 fun main() {
     DatabaseManager.init()
+    SessionManager.installStartupResources()
     val host = System.getenv("KTOR_HOST") ?: "0.0.0.0"
     val port = System.getenv("KTOR_PORT")?.toIntOrNull() ?: 8080
 

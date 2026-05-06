@@ -16,12 +16,30 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.io.File
 
 @Serializable
-data class LovelaceResourceRequest(val url: String)
+data class LovelaceResourceRequest(val ingressBaseUrl: String)
+
+@Serializable
+data class LovelaceResourceStatus(val id: String, val type: String, val url: String)
 
 class HomeAssistantLovelaceResourceManager {
     private val json = Json { ignoreUnknownKeys = true }
+
+    suspend fun installOrUpdateFromEnvironment(): String {
+        if (!HomeAssistantMode.enabled) {
+            return "Home Assistant mode is disabled"
+        }
+
+        val token = HomeAssistantMode.supervisorToken
+            ?: throw IllegalStateException("SUPERVISOR_TOKEN is not available")
+        val ingressBaseUrl = HomeAssistantMode.ingressBaseUrl
+            ?: throw IllegalStateException("Home Assistant ingress URL is not available")
+
+        publishCardResource(ingressBaseUrl)
+        return installOrUpdateResource(HomeAssistantMode.localLovelaceResourceUrl, token)
+    }
 
     fun initRoutes(route: Route) {
         route.get("/ha/lovelace-resource") {
@@ -30,8 +48,8 @@ class HomeAssistantLovelaceResourceManager {
                 return@get
             }
 
-            val token = System.getenv("SUPERVISOR_TOKEN")
-            if (token.isNullOrBlank()) {
+            val token = HomeAssistantMode.supervisorToken
+            if (token == null) {
                 call.respond(HttpStatusCode.ServiceUnavailable, mapOf("message" to "SUPERVISOR_TOKEN is not available"))
                 return@get
             }
@@ -55,19 +73,20 @@ class HomeAssistantLovelaceResourceManager {
             }
 
             val request = call.receive<LovelaceResourceRequest>()
-            if (!request.url.contains("ktor-lovelace-cards.js")) {
-                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Unsupported Lovelace resource URL"))
+            if (!request.ingressBaseUrl.contains("/api/hassio_ingress/")) {
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Unsupported ingress URL"))
                 return@post
             }
 
-            val token = System.getenv("SUPERVISOR_TOKEN")
-            if (token.isNullOrBlank()) {
+            val token = HomeAssistantMode.supervisorToken
+            if (token == null) {
                 call.respond(HttpStatusCode.ServiceUnavailable, mapOf("message" to "SUPERVISOR_TOKEN is not available"))
                 return@post
             }
 
             runCatching {
-                installOrUpdateResource(request.url, token)
+                publishCardResource(request.ingressBaseUrl)
+                installOrUpdateResource(HomeAssistantMode.localLovelaceResourceUrl, token)
             }.onSuccess { result ->
                 call.respond(HttpStatusCode.OK, mapOf("message" to result))
             }.onFailure { error ->
@@ -79,6 +98,26 @@ class HomeAssistantLovelaceResourceManager {
         }
     }
 
+    private fun publishCardResource(ingressBaseUrl: String) {
+        val source = File("app/browser/ktor-lovelace-cards.js")
+        if (!source.isFile) {
+            throw IllegalStateException("Lovelace card module was not found in the add-on")
+        }
+
+        val targetDirectory = File("/config/www")
+        if (!targetDirectory.exists() && !targetDirectory.mkdirs()) {
+            throw IllegalStateException("Could not create /config/www")
+        }
+
+        val target = File(targetDirectory, "ktor-lovelace-cards.js")
+        val normalizedIngressBaseUrl = ingressBaseUrl.replace(Regex("/?$"), "/")
+        target.writeText(
+            source.readText()
+                .replace("__KTOR_INGRESS_BASE_URL__", normalizedIngressBaseUrl),
+            Charsets.UTF_8
+        )
+    }
+
     private suspend fun installOrUpdateResource(resourceUrl: String, token: String): String = withContext(Dispatchers.IO) {
         val connection = HomeAssistantCoreWebSocket(token, json)
         try {
@@ -87,7 +126,7 @@ class HomeAssistantLovelaceResourceManager {
 
             val existing = resources.firstOrNull { resource ->
                 val url = resource.jsonObject["url"]?.jsonPrimitive?.contentOrNull ?: return@firstOrNull false
-                url.substringBefore("?") == resourceUrl.substringBefore("?")
+                url.contains("ktor-lovelace-cards.js")
             }
 
             if (existing == null) {
@@ -101,7 +140,7 @@ class HomeAssistantLovelaceResourceManager {
         }
     }
 
-    private suspend fun listKtorResources(token: String): List<Map<String, String>> = withContext(Dispatchers.IO) {
+    private suspend fun listKtorResources(token: String): List<LovelaceResourceStatus> = withContext(Dispatchers.IO) {
         val connection = HomeAssistantCoreWebSocket(token, json)
         try {
             connection.connect()
@@ -110,10 +149,10 @@ class HomeAssistantLovelaceResourceManager {
                     resource.jsonObject["url"]?.jsonPrimitive?.contentOrNull?.contains("ktor-lovelace-cards.js") == true
                 }
                 .map { resource ->
-                    mapOf(
-                        "id" to (resource.jsonObject["id"] ?: resource.jsonObject["resource_id"]).toString(),
-                        "type" to (resource.jsonObject["type"] ?: resource.jsonObject["res_type"]).toString(),
-                        "url" to (resource.jsonObject["url"]?.jsonPrimitive?.contentOrNull ?: "")
+                    LovelaceResourceStatus(
+                        id = (resource.jsonObject["id"] ?: resource.jsonObject["resource_id"]).toString(),
+                        type = (resource.jsonObject["type"] ?: resource.jsonObject["res_type"]).toString(),
+                        url = resource.jsonObject["url"]?.jsonPrimitive?.contentOrNull ?: ""
                     )
                 }
         } finally {

@@ -20,26 +20,8 @@
   padding: 1rem;
 }
 
-.setup-card-icon,
-.setup-link {
+.setup-card-icon {
   color: #0071e3;
-}
-
-.setup-link {
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-pre {
-  background: #f5f5f7;
-  border-radius: 12px;
-  color: #1d1d1f;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  margin: 0;
-  overflow-x: auto;
-  padding: 0.875rem;
 }
 
 .setup-copy {

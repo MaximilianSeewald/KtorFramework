@@ -39,4 +39,8 @@ object SessionManager {
     fun installComponents(application: Application) {
         ktorManager.installComponents(application)
     }
+
+    fun installStartupResources() {
+        homeAssistantRoutes.installStartupResources()
+    }
 }
