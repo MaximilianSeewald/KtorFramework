@@ -588,7 +588,7 @@ window.customCards = (window.customCards || [])
 window.customCards.push({
   type: 'ktor-shopping-list-card',
   name: 'Ktor Shopping List',
-  preview: true,
+  preview: false,
   description: 'Native Lovelace card for the Ktor App shopping list.',
   documentationURL: 'https://github.com/Loudless/KtorFramework',
 });
