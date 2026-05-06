@@ -1,12 +1,11 @@
-const CARD_VERSION = '1.0.0';
+const CARD_VERSION = '1.1.0';
 const TOKEN_STORAGE_KEY = 'ktor-lovelace-token';
-const DEFAULT_REFRESH_INTERVAL = 30000;
 
 const cardStyles = `
   <style>
     :host {
-      display: block;
       color: var(--primary-text-color);
+      display: block;
     }
 
     ha-card {
@@ -20,10 +19,17 @@ const cardStyles = `
       padding: 16px;
     }
 
+    .header,
+    .add-row,
+    .item-row,
+    .actions {
+      align-items: center;
+      display: flex;
+      gap: 8px;
+    }
+
     .header {
       align-items: flex-start;
-      display: flex;
-      gap: 12px;
       justify-content: space-between;
     }
 
@@ -41,7 +47,7 @@ const cardStyles = `
       margin-top: 3px;
     }
 
-    .refresh {
+    .icon-button {
       align-items: center;
       background: transparent;
       border: 0;
@@ -56,56 +62,78 @@ const cardStyles = `
       width: 36px;
     }
 
-    .refresh:hover {
+    .icon-button:hover,
+    .icon-button:focus-visible {
       background: var(--secondary-background-color);
       color: var(--primary-text-color);
+      outline: none;
     }
 
-    .refresh svg {
+    .icon-button.danger:hover,
+    .icon-button.danger:focus-visible {
+      color: var(--error-color);
+    }
+
+    svg {
       height: 20px;
       width: 20px;
+    }
+
+    .add-row {
+      background: var(--secondary-background-color);
+      border-radius: 8px;
+      padding: 8px;
     }
 
     .list {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      margin: 0;
-      padding: 0;
     }
 
-    .row {
-      align-items: center;
+    .item-row {
       background: var(--secondary-background-color);
       border-radius: 8px;
-      display: flex;
-      gap: 10px;
-      min-height: 42px;
-      padding: 8px 10px;
+      min-height: 46px;
+      padding: 8px;
     }
 
-    .row-main {
+    .item-fields {
+      display: grid;
       flex: 1 1 auto;
+      gap: 6px;
+      grid-template-columns: minmax(0, 1.4fr) minmax(72px, 0.8fr);
       min-width: 0;
     }
 
-    .row-title {
-      font-size: 14px;
-      font-weight: 500;
-      line-height: 1.25;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    input[type="text"] {
+      background: var(--card-background-color);
+      border: 1px solid var(--divider-color);
+      border-radius: 6px;
+      box-sizing: border-box;
+      color: var(--primary-text-color);
+      font: inherit;
+      min-height: 34px;
+      min-width: 0;
+      padding: 6px 8px;
+      width: 100%;
     }
 
-    .row-detail {
-      color: var(--secondary-text-color);
-      font-size: 12px;
-      line-height: 1.35;
-      margin-top: 2px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    input[type="text"]:focus {
+      border-color: var(--primary-color);
+      outline: none;
+    }
+
+    .shopping-check {
+      accent-color: var(--primary-color);
+      flex: 0 0 auto;
+      height: 18px;
+      width: 18px;
+    }
+
+    .retrieved input[type="text"] {
+      opacity: 0.65;
+      text-decoration: line-through;
     }
 
     .empty,
@@ -122,35 +150,31 @@ const cardStyles = `
       color: var(--error-color);
     }
 
-    .shopping-check {
-      accent-color: var(--primary-color);
-      flex: 0 0 auto;
-      height: 18px;
-      width: 18px;
-    }
+    @media (max-width: 420px) {
+      .item-fields {
+        grid-template-columns: minmax(0, 1fr);
+      }
 
-    .retrieved .row-title,
-    .retrieved .row-detail {
-      opacity: 0.62;
-      text-decoration: line-through;
-    }
+      .add-row {
+        align-items: stretch;
+        flex-direction: column;
+      }
 
-    .count-pill {
-      background: var(--primary-color);
-      border-radius: 999px;
-      color: var(--text-primary-color);
-      flex: 0 0 auto;
-      font-size: 12px;
-      font-weight: 600;
-      min-width: 24px;
-      padding: 4px 8px;
-      text-align: center;
+      .add-row .icon-button {
+        align-self: flex-end;
+      }
     }
   </style>
 `;
 
 function resolveIngressUrl(path) {
   return new URL(path.replace(/^\/+/, ''), import.meta.url).toString();
+}
+
+function resolveIngressWebSocketUrl(path) {
+  const url = new URL(path.replace(/^\/+/, ''), import.meta.url);
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+  return url.toString();
 }
 
 async function requestKtorToken() {
@@ -172,14 +196,19 @@ async function requestKtorToken() {
   return body.token;
 }
 
-async function fetchKtorJson(path) {
+async function ktorRequest(path, options = {}) {
   const token = await requestKtorToken();
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/json',
+    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+    ...options.headers,
+  };
+
   const response = await fetch(resolveIngressUrl(path), {
     credentials: 'include',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-    },
+    ...options,
+    headers,
   });
 
   if (!response.ok) {
@@ -189,24 +218,32 @@ async function fetchKtorJson(path) {
     throw new Error(`Request failed (${response.status})`);
   }
 
+  return response;
+}
+
+async function fetchShoppingList() {
+  const response = await ktorRequest('api/shoppingList');
   return response.json();
 }
 
-async function sendKtorJson(path, method, body) {
-  const token = await requestKtorToken();
-  const response = await fetch(resolveIngressUrl(path), {
-    body: JSON.stringify(body),
-    credentials: 'include',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    method,
+async function saveShoppingItem(item) {
+  await ktorRequest('api/shoppingList', {
+    body: JSON.stringify(item),
+    method: 'PUT',
   });
+}
 
-  if (!response.ok) {
-    throw new Error(`Request failed (${response.status})`);
-  }
+async function addShoppingItem(item) {
+  await ktorRequest('api/shoppingList', {
+    body: JSON.stringify(item),
+    method: 'POST',
+  });
+}
+
+async function deleteShoppingItem(id) {
+  await ktorRequest(`api/shoppingList?id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
 }
 
 function escapeHtml(value) {
@@ -218,100 +255,48 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
-function refreshIcon() {
-  return `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="currentColor" d="M17.7 6.3A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.47 10.86 1 1 0 1 0-1.87-.72A6 6 0 1 1 16.24 7.76L14 10h6V4l-2.3 2.3Z"></path>
-    </svg>
-  `;
+function createId() {
+  if (crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const random = Math.random() * 16 | 0;
+    const value = char === 'x' ? random : (random & 0x3 | 0x8);
+    return value.toString(16);
+  });
 }
 
-class KtorBaseCard extends HTMLElement {
+function icon(path) {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="${path}"></path></svg>`;
+}
+
+const icons = {
+  add: icon('M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2Z'),
+  refresh: icon('M17.7 6.3A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.47 10.86 1 1 0 1 0-1.87-.72A6 6 0 1 1 16.24 7.76L14 10h6V4l-2.3 2.3Z'),
+  trash: icon('M9 3h6l1 2h4v2H4V5h4l1-2Zm1 6h2v9h-2V9Zm4 0h2v9h-2V9ZM7 9h2v10h6V9h2v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9Z'),
+};
+
+class KtorShoppingListCard extends HTMLElement {
   config = {};
   data = [];
   error = '';
   loading = true;
-  refreshTimer = undefined;
+  socket = undefined;
+  addName = '';
+  addAmount = '';
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
   }
 
-  connectedCallback() {
-    this.load();
-  }
-
-  disconnectedCallback() {
-    window.clearTimeout(this.refreshTimer);
-  }
-
-  setConfig(config) {
-    this.config = {
-      refresh_interval: DEFAULT_REFRESH_INTERVAL,
-      ...config,
-    };
-    this.render();
-    this.load();
-  }
-
-  getCardSize() {
-    return Math.min(Math.max(this.data.length + 1, 2), 6);
-  }
-
-  getGridOptions() {
-    return {
-      columns: 6,
-      min_columns: 3,
-      rows: Math.min(Math.max(this.data.length + 1, 2), 6),
-      min_rows: 2,
-    };
-  }
-
-  scheduleRefresh() {
-    window.clearTimeout(this.refreshTimer);
-    const interval = Number(this.config.refresh_interval ?? DEFAULT_REFRESH_INTERVAL);
-    if (interval > 0) {
-      this.refreshTimer = window.setTimeout(() => this.load(), interval);
-    }
-  }
-
-  async load() {
-    window.clearTimeout(this.refreshTimer);
-    try {
-      this.error = '';
-      this.loading = this.data.length === 0;
-      this.render();
-      this.data = await fetchKtorJson(this.endpoint);
-    } catch (error) {
-      this.error = error instanceof Error ? error.message : 'Could not load data';
-    } finally {
-      this.loading = false;
-      this.render();
-      this.scheduleRefresh();
-    }
-  }
-
-  title(defaultTitle) {
-    return escapeHtml(this.config.title || defaultTitle);
-  }
-
-  maxItems(defaultValue) {
-    const value = Number(this.config.max_items ?? this.config.max_recipes ?? defaultValue);
-    return Number.isFinite(value) && value > 0 ? value : defaultValue;
-  }
-}
-
-class KtorShoppingListCard extends KtorBaseCard {
-  endpoint = 'api/shoppingList';
-
   static getConfigForm() {
     return {
       schema: [
         { name: 'title', selector: { text: {} } },
-        { name: 'max_items', selector: { number: { min: 1, max: 20, mode: 'box' } } },
+        { name: 'max_items', selector: { number: { min: 1, max: 50, mode: 'box' } } },
         { name: 'show_completed', selector: { boolean: {} } },
-        { name: 'refresh_interval', selector: { number: { min: 0, max: 300000, mode: 'box' } } },
       ],
     };
   }
@@ -319,43 +304,184 @@ class KtorShoppingListCard extends KtorBaseCard {
   static getStubConfig() {
     return {
       title: 'Shopping List',
-      max_items: 8,
+      max_items: 12,
       show_completed: true,
     };
+  }
+
+  connectedCallback() {
+    this.load();
+  }
+
+  disconnectedCallback() {
+    this.socket?.close();
   }
 
   setConfig(config) {
-    super.setConfig({
-      max_items: 8,
+    this.config = {
+      max_items: 12,
       show_completed: true,
       ...config,
-    });
+    };
+    this.render();
+    this.load();
   }
 
-  async toggleItem(item) {
-    const nextItem = {
-      ...item,
-      retrieved: !item.retrieved,
+  getCardSize() {
+    return Math.min(Math.max(this.data.length + 2, 3), 8);
+  }
+
+  getGridOptions() {
+    return {
+      columns: 6,
+      min_columns: 3,
+      rows: Math.min(Math.max(this.data.length + 2, 3), 8),
+      min_rows: 3,
     };
-    this.data = this.data.map((entry) => entry.id === item.id ? nextItem : entry);
+  }
+
+  async load() {
+    try {
+      this.error = '';
+      this.loading = this.data.length === 0;
+      this.render();
+      this.data = this.sortItems(await fetchShoppingList());
+      await this.connectWebSocket();
+    } catch (error) {
+      this.error = error instanceof Error ? error.message : 'Could not load shopping list';
+    } finally {
+      this.loading = false;
+      this.render();
+    }
+  }
+
+  async connectWebSocket() {
+    if (this.socket && this.socket.readyState !== WebSocket.CLOSED) {
+      return;
+    }
+
+    const token = await requestKtorToken();
+    this.socket = new WebSocket(resolveIngressWebSocketUrl(`api/shoppingListWS?token=${encodeURIComponent(token)}`));
+    this.socket.onmessage = (event) => {
+      this.data = this.sortItems(JSON.parse(event.data));
+      this.error = '';
+      this.loading = false;
+      this.render();
+    };
+    this.socket.onerror = () => {
+      this.error = 'Live updates are unavailable. Use refresh to retry.';
+      this.render();
+    };
+    this.socket.onclose = () => {
+      this.socket = undefined;
+    };
+  }
+
+  sortItems(items) {
+    return [...items].sort((a, b) => Number(a.retrieved) - Number(b.retrieved));
+  }
+
+  visibleItems() {
+    const showCompleted = this.config.show_completed !== false;
+    return this.data
+      .filter((item) => showCompleted || !item.retrieved)
+      .slice(0, this.maxItems());
+  }
+
+  maxItems() {
+    const value = Number(this.config.max_items ?? 12);
+    return Number.isFinite(value) && value > 0 ? value : 12;
+  }
+
+  title() {
+    return escapeHtml(this.config.title || 'Shopping List');
+  }
+
+  async addItem() {
+    const name = this.addName.trim();
+    const amount = this.addAmount.trim();
+    if (!name) {
+      return;
+    }
+
+    const item = {
+      amount,
+      id: createId(),
+      name,
+      retrieved: false,
+    };
+    const previous = this.data;
+    this.data = this.sortItems([...this.data, item]);
+    this.addName = '';
+    this.addAmount = '';
     this.render();
 
     try {
-      await sendKtorJson('api/shoppingList', 'PUT', nextItem);
-      await this.load();
+      await addShoppingItem(item);
     } catch (error) {
+      this.data = previous;
+      this.error = error instanceof Error ? error.message : 'Could not add item';
+      this.render();
+    }
+  }
+
+  async toggleItem(id) {
+    const item = this.data.find((entry) => entry.id === id);
+    if (!item) {
+      return;
+    }
+
+    await this.updateItem({
+      ...item,
+      retrieved: !item.retrieved,
+    });
+  }
+
+  async editItem(id, field, value) {
+    const item = this.data.find((entry) => entry.id === id);
+    if (!item || item[field] === value) {
+      return;
+    }
+
+    await this.updateItem({
+      ...item,
+      [field]: value,
+    });
+  }
+
+  async updateItem(item) {
+    const previous = this.data;
+    this.data = this.sortItems(this.data.map((entry) => entry.id === item.id ? item : entry));
+    this.error = '';
+    this.render();
+
+    try {
+      await saveShoppingItem(item);
+    } catch (error) {
+      this.data = previous;
       this.error = error instanceof Error ? error.message : 'Could not update item';
-      await this.load();
+      this.render();
+    }
+  }
+
+  async removeItem(id) {
+    const previous = this.data;
+    this.data = this.data.filter((entry) => entry.id !== id);
+    this.error = '';
+    this.render();
+
+    try {
+      await deleteShoppingItem(id);
+    } catch (error) {
+      this.data = previous;
+      this.error = error instanceof Error ? error.message : 'Could not remove item';
+      this.render();
     }
   }
 
   render() {
-    const showCompleted = this.config.show_completed !== false;
-    const visible = this.data
-      .filter((item) => showCompleted || !item.retrieved)
-      .sort((a, b) => Number(a.retrieved) - Number(b.retrieved))
-      .slice(0, this.maxItems(8));
     const openCount = this.data.filter((item) => !item.retrieved).length;
+    const items = this.visibleItems();
 
     this.shadowRoot.innerHTML = `
       ${cardStyles}
@@ -363,34 +489,35 @@ class KtorShoppingListCard extends KtorBaseCard {
         <div class="card">
           <div class="header">
             <div>
-              <h2 class="title">${this.title('Shopping List')}</h2>
-              <div class="meta">${openCount} open${this.data.length ? ` · ${this.data.length} total` : ''}</div>
+              <h2 class="title">${this.title()}</h2>
+              <div class="meta">${openCount} open${this.data.length ? ` - ${this.data.length} total` : ''}</div>
             </div>
-            <button class="refresh" type="button" title="Refresh" aria-label="Refresh">${refreshIcon()}</button>
+            <button class="icon-button" type="button" title="Refresh" aria-label="Refresh" data-action="refresh">${icons.refresh}</button>
           </div>
-          ${this.renderBody(visible)}
+
+          <form class="add-row">
+            <input type="text" name="name" placeholder="Item" autocomplete="off" value="${escapeHtml(this.addName)}">
+            <input type="text" name="amount" placeholder="Amount" autocomplete="off" value="${escapeHtml(this.addAmount)}">
+            <button class="icon-button" type="submit" title="Add item" aria-label="Add item">${icons.add}</button>
+          </form>
+
+          ${this.renderBody(items)}
         </div>
       </ha-card>
     `;
 
-    this.shadowRoot.querySelector('.refresh')?.addEventListener('click', () => this.load());
-    this.shadowRoot.querySelectorAll('.shopping-check').forEach((input) => {
-      input.addEventListener('change', () => {
-        const item = this.data.find((entry) => entry.id === input.dataset.id);
-        if (item) {
-          this.toggleItem(item);
-        }
-      });
-    });
+    this.bindEvents();
   }
 
   renderBody(items) {
     if (this.loading) {
       return '<div class="empty">Loading shopping list...</div>';
     }
+
     if (this.error) {
       return `<div class="error">${escapeHtml(this.error)}</div>`;
     }
+
     if (items.length === 0) {
       return '<div class="empty">No shopping items.</div>';
     }
@@ -398,124 +525,64 @@ class KtorShoppingListCard extends KtorBaseCard {
     return `
       <div class="list">
         ${items.map((item) => `
-          <label class="row ${item.retrieved ? 'retrieved' : ''}">
-            <input class="shopping-check" type="checkbox" data-id="${escapeHtml(item.id)}" ${item.retrieved ? 'checked' : ''}>
-            <span class="row-main">
-              <span class="row-title">${escapeHtml(item.name)}</span>
-              ${item.amount ? `<span class="row-detail">${escapeHtml(item.amount)}</span>` : ''}
-            </span>
-          </label>
+          <div class="item-row ${item.retrieved ? 'retrieved' : ''}" data-id="${escapeHtml(item.id)}">
+            <input class="shopping-check" type="checkbox" aria-label="Toggle ${escapeHtml(item.name)}" ${item.retrieved ? 'checked' : ''}>
+            <div class="item-fields">
+              <input type="text" data-field="name" aria-label="Item name" value="${escapeHtml(item.name)}">
+              <input type="text" data-field="amount" aria-label="Item amount" value="${escapeHtml(item.amount)}">
+            </div>
+            <div class="actions">
+              <button class="icon-button danger" type="button" title="Remove item" aria-label="Remove item" data-action="delete">${icons.trash}</button>
+            </div>
+          </div>
         `).join('')}
       </div>
     `;
   }
-}
 
-class KtorRecipeListCard extends KtorBaseCard {
-  endpoint = 'api/recipe';
+  bindEvents() {
+    this.shadowRoot.querySelector('[data-action="refresh"]')?.addEventListener('click', () => this.load());
 
-  static getConfigForm() {
-    return {
-      schema: [
-        { name: 'title', selector: { text: {} } },
-        { name: 'max_recipes', selector: { number: { min: 1, max: 20, mode: 'box' } } },
-        { name: 'show_ingredients', selector: { boolean: {} } },
-        { name: 'refresh_interval', selector: { number: { min: 0, max: 300000, mode: 'box' } } },
-      ],
-    };
-  }
-
-  static getStubConfig() {
-    return {
-      title: 'Recipes',
-      max_recipes: 6,
-      show_ingredients: true,
-    };
-  }
-
-  setConfig(config) {
-    super.setConfig({
-      max_recipes: 6,
-      show_ingredients: true,
-      ...config,
+    const addForm = this.shadowRoot.querySelector('.add-row');
+    addForm?.addEventListener('input', (event) => {
+      const target = event.target;
+      if (target.name === 'name') {
+        this.addName = target.value;
+      }
+      if (target.name === 'amount') {
+        this.addAmount = target.value;
+      }
     });
-  }
+    addForm?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      this.addItem();
+    });
 
-  render() {
-    const recipes = [...this.data]
-      .sort((a, b) => String(a.name).localeCompare(String(b.name)))
-      .slice(0, this.maxItems(6));
-    const ingredientCount = this.data.reduce((sum, recipe) => sum + (recipe.items?.length ?? 0), 0);
-
-    this.shadowRoot.innerHTML = `
-      ${cardStyles}
-      <ha-card>
-        <div class="card">
-          <div class="header">
-            <div>
-              <h2 class="title">${this.title('Recipes')}</h2>
-              <div class="meta">${this.data.length} recipes${ingredientCount ? ` · ${ingredientCount} ingredients` : ''}</div>
-            </div>
-            <button class="refresh" type="button" title="Refresh" aria-label="Refresh">${refreshIcon()}</button>
-          </div>
-          ${this.renderBody(recipes)}
-        </div>
-      </ha-card>
-    `;
-
-    this.shadowRoot.querySelector('.refresh')?.addEventListener('click', () => this.load());
-  }
-
-  renderBody(recipes) {
-    if (this.loading) {
-      return '<div class="empty">Loading recipes...</div>';
-    }
-    if (this.error) {
-      return `<div class="error">${escapeHtml(this.error)}</div>`;
-    }
-    if (recipes.length === 0) {
-      return '<div class="empty">No recipes yet.</div>';
-    }
-
-    const showIngredients = this.config.show_ingredients !== false;
-
-    return `
-      <div class="list">
-        ${recipes.map((recipe) => {
-          const items = recipe.items ?? [];
-          const preview = items.slice(0, 3).map((item) => `${item.name}${item.value ? ` ${item.value}` : ''}`).join(', ');
-          return `
-            <div class="row">
-              <div class="row-main">
-                <div class="row-title">${escapeHtml(recipe.name)}</div>
-                ${showIngredients && preview ? `<div class="row-detail">${escapeHtml(preview)}</div>` : ''}
-              </div>
-              <div class="count-pill">${items.length}</div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
+    this.shadowRoot.querySelectorAll('.item-row').forEach((row) => {
+      const id = row.dataset.id;
+      row.querySelector('.shopping-check')?.addEventListener('change', () => this.toggleItem(id));
+      row.querySelector('[data-action="delete"]')?.addEventListener('click', () => this.removeItem(id));
+      row.querySelectorAll('[data-field]').forEach((input) => {
+        input.addEventListener('change', () => this.editItem(id, input.dataset.field, input.value.trim()));
+        input.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            input.blur();
+          }
+        });
+      });
+    });
   }
 }
 
 customElements.define('ktor-shopping-list-card', KtorShoppingListCard);
-customElements.define('ktor-recipe-list-card', KtorRecipeListCard);
 
 window.customCards = window.customCards || [];
-window.customCards.push(
-  {
-    type: 'ktor-shopping-list-card',
-    name: 'Ktor Shopping List',
-    preview: true,
-    description: 'Native Lovelace card for the Ktor App shopping list.',
-  },
-  {
-    type: 'ktor-recipe-list-card',
-    name: 'Ktor Recipes',
-    preview: true,
-    description: 'Native Lovelace card for the Ktor App recipe list.',
-  },
-);
+window.customCards.push({
+  type: 'ktor-shopping-list-card',
+  name: 'Ktor Shopping List',
+  preview: true,
+  description: 'Native Lovelace card for the Ktor App shopping list.',
+});
 
 console.info(`Ktor Lovelace cards ${CARD_VERSION} loaded`);
