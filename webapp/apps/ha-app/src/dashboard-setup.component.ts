@@ -62,9 +62,10 @@ export class DashboardSetupComponent {
         throw new Error(body.message || 'Could not read Lovelace resource');
       }
       const resources = body.resources ?? [];
-      this.resourceInstallStatus = resources.length
-        ? `Installed resource: ${resources.map((resource: LovelaceResourceStatus) => resource.url).join(', ')}`
+      const resourceMessage = resources.length
+        ? `Resource: ${resources.map((resource: LovelaceResourceStatus) => resource.url).join(', ')}`
         : 'No Ktor Lovelace resource found';
+      this.resourceInstallStatus = `${body.published ? 'Published file exists' : 'Published file missing'} - ${resourceMessage}`;
     } catch (error) {
       this.resourceInstallStatus = error instanceof Error ? error.message : 'Could not read Lovelace resource';
     } finally {
