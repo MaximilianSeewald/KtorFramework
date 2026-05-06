@@ -18,6 +18,8 @@ type: module
 
 After the resource is loaded, add `Ktor Shopping List` from the dashboard card picker.
 
+If the card works when added manually but does not appear in the picker, add it with the `Manual` card. Some Home Assistant frontend versions do not list every HACS-served custom card in the picker even when the card module is loaded correctly.
+
 Manual card YAML:
 
 ```yaml
@@ -28,6 +30,16 @@ show_completed: true
 ```
 
 `addon_slug` is the stable Home Assistant add-on slug from `config.yaml`. The card uses it to resolve the current dynamic ingress URL, such as `/api/hassio_ingress/<generated-token>/`, at runtime. Do not hardcode that generated ingress URL for normal usage.
+
+Optional picker fallback:
+
+```yaml
+frontend:
+  extra_module_url:
+    - /hacsfiles/KtorFramework/KtorFramework.js
+```
+
+This makes Home Assistant load the module as a frontend extra module, which can help card picker discovery on frontend versions that miss HACS dashboard resources.
 
 For troubleshooting or custom deployments, you can bypass add-on lookup with an explicit backend URL:
 

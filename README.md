@@ -23,3 +23,11 @@ show_completed: true
 ```
 
 `addon_slug` is stable. The card uses it to resolve the current Home Assistant ingress URL at runtime.
+
+If the card works through manual YAML but does not appear in the card picker, use the `Manual` card or load it as an extra frontend module:
+
+```yaml
+frontend:
+  extra_module_url:
+    - /hacsfiles/KtorFramework/KtorFramework.js
+```

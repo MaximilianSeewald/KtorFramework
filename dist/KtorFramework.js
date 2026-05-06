@@ -1,4 +1,4 @@
-const CARD_VERSION = '1.1.12';
+const CARD_VERSION = '1.1.13';
 const TOKEN_STORAGE_KEY = 'ktor-shopping-list-token';
 const DEFAULT_ADDON_SLUG = 'ktor_app';
 const REFRESH_INTERVAL_MS = 5000;
@@ -782,17 +782,12 @@ if (!customElements.get('ktor-shopping-list-card')) {
 
 window.customCards = (window.customCards || [])
   .filter((card) => !['ktor-shopping-list-card', 'custom:ktor-shopping-list-card', 'ktor-recipe-list-card'].includes(card.type));
-[
-  'ktor-shopping-list-card',
-  'custom:ktor-shopping-list-card',
-].forEach((type) => {
-  window.customCards.push({
-    type,
-    name: `Ktor Shopping List ${CARD_VERSION}`,
-    preview: true,
-    description: `Native Lovelace card for the Ktor App shopping list. Version ${CARD_VERSION}.`,
-    documentationURL: 'https://github.com/Loudless/KtorFramework',
-  });
+window.customCards.push({
+  type: 'ktor-shopping-list-card',
+  name: `Ktor Shopping List ${CARD_VERSION}`,
+  preview: true,
+  description: `Native Lovelace card for the Ktor App shopping list. Version ${CARD_VERSION}.`,
+  documentationURL: 'https://github.com/Loudless/KtorFramework',
 });
 
 window.ktorLovelaceCards = {
