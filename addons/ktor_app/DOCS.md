@@ -19,16 +19,19 @@ The add-on also ships a native Lovelace custom card for the shopping list.
 
 1. Open the add-on from the Home Assistant sidebar.
 2. Open the menu and select `Dashboard Setup`.
-3. Copy the `Lovelace resource` YAML and add it as a dashboard resource.
+3. Select `Install or update resource`.
 4. Reload the Home Assistant frontend.
 5. Add `Ktor Shopping List` from the dashboard card picker, or copy the native card YAML into your dashboard.
 
 After the resource is loaded, the card is registered in Home Assistant's card picker as `Ktor Shopping List`.
+When updating the add-on, update the `v=` value in the resource URL so Home Assistant loads the newest card module.
+
+If automatic resource installation fails, add the resource manually:
 
 Resource:
 
 ```yaml
-url: /api/hassio_ingress/YOUR_INGRESS_ID/ktor-lovelace-cards.js
+url: /api/hassio_ingress/YOUR_INGRESS_ID/ktor-lovelace-cards.js?v=1.1.1
 type: module
 ```
 

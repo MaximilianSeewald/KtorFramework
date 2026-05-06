@@ -42,6 +42,20 @@
   </div>
 
   <div class="grid gap-4">
+    <article class="setup-card">
+      <div class="mb-4 flex items-center gap-3">
+        <mat-icon class="setup-card-icon">extension</mat-icon>
+        <h2 class="text-base font-semibold">Install card resource</h2>
+      </div>
+
+      <button type="button" class="setup-copy" (click)="installLovelaceResource()" [disabled]="installingResource">
+        <mat-icon>{{ installingResource ? 'hourglass_empty' : 'add_to_home_screen' }}</mat-icon>
+        {{ installingResource ? 'Installing' : 'Install or update resource' }}
+      </button>
+
+      <p *ngIf="resourceInstallStatus" class="setup-status">{{ resourceInstallStatus }}</p>
+    </article>
+
     <article *ngFor="let card of nativeCards" class="setup-card">
       <div class="mb-4 flex items-center justify-between gap-3">
         <div class="flex items-center gap-3">

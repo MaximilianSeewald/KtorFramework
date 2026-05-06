@@ -57,8 +57,19 @@ pre {
   width: 100%;
 }
 
+.setup-copy:disabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+
 .setup-copy mat-icon {
   font-size: 18px;
   height: 18px;
   width: 18px;
+}
+
+.setup-status {
+  color: #6e6e73;
+  font-size: 0.875rem;
+  margin: 0.75rem 0 0;
 }
