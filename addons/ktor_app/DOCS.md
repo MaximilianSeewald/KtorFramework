@@ -2,40 +2,26 @@
 
 This add-on provides a Home Assistant focused shopping list and recipe list.
 
-## Dashboard widgets
+## Native Lovelace card
 
-The easiest way to add widgets is from inside the add-on:
-
-1. Open the add-on from the Home Assistant sidebar.
-2. Open the menu and select `Dashboard Setup`.
-3. Copy the card YAML for `Shopping List` or `Recipes`.
-4. Edit your Home Assistant dashboard, add a manual card, and paste the YAML.
-
-The copied YAML already includes your current ingress URL, so you do not need to find the ingress id manually.
-
-## Native Lovelace custom card
-
-The add-on also ships a native Lovelace custom card for the shopping list.
+The add-on ships a native Lovelace custom card for the shopping list.
 
 1. Open the add-on from the Home Assistant sidebar.
 2. Open the menu and select `Dashboard Setup`.
 3. Select `Install or update resource`.
 4. Reload the Home Assistant frontend.
-5. Add `Ktor Shopping List` from the dashboard card picker, or copy the native card YAML into your dashboard.
+5. Add `Ktor Shopping List` from the dashboard card picker.
 
 After the resource is loaded, the card is registered in Home Assistant's card picker as `Ktor Shopping List`.
-When updating the add-on, update the `v=` value in the resource URL so Home Assistant loads the newest card module.
 
 If automatic resource installation fails, add the resource manually:
 
-Resource:
-
 ```yaml
-url: /api/hassio_ingress/YOUR_INGRESS_ID/ktor-lovelace-cards.js?v=1.1.1
+url: /api/hassio_ingress/YOUR_INGRESS_ID/ktor-lovelace-cards.js?v=1.1.2
 type: module
 ```
 
-Shopping List native card:
+Manual card YAML:
 
 ```yaml
 type: custom:ktor-shopping-list-card
@@ -44,30 +30,4 @@ max_items: 12
 show_completed: true
 ```
 
-## Manual examples
-
-Use these only if you want to create the cards by hand.
-
-Shopping List:
-
-```yaml
-type: iframe
-title: Shopping List
-url: /api/hassio_ingress/YOUR_INGRESS_ID/?widget=shoppingList
-aspect_ratio: 125%
-hide_background: true
-```
-
-Recipes:
-
-```yaml
-type: iframe
-title: Recipes
-url: /api/hassio_ingress/YOUR_INGRESS_ID/?widget=recipeList
-aspect_ratio: 125%
-hide_background: true
-```
-
-Replace `/api/hassio_ingress/YOUR_INGRESS_ID/` with the actual ingress URL for your add-on instance.
-
-Use the `/api/hassio_ingress/...` URL, not the full sidebar or panel URL. The full panel URL embeds Home Assistant's own navigation around the add-on.
+Replace `/api/hassio_ingress/YOUR_INGRESS_ID/` with the actual ingress URL for your add-on instance when adding the resource manually.

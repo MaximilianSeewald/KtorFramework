@@ -2,7 +2,7 @@ import {Component} from '@angular/core';
 import {NgForOf, NgIf} from '@angular/common';
 import {MatIconModule} from '@angular/material/icon';
 
-type WidgetConfig = {
+type CardSetupConfig = {
   title: string;
   icon: string;
   yaml: string;
@@ -10,7 +10,7 @@ type WidgetConfig = {
   actionLabel: string;
 };
 
-const LOVELACE_CARD_VERSION = '1.1.1';
+const LOVELACE_CARD_VERSION = '1.1.2';
 
 @Component({
   selector: 'app-dashboard-setup',
@@ -23,15 +23,10 @@ export class DashboardSetupComponent {
   copiedTitle = '';
   resourceInstallStatus = '';
   installingResource = false;
-  readonly widgets: WidgetConfig[];
-  readonly nativeCards: WidgetConfig[];
+  readonly nativeCards: CardSetupConfig[];
 
   constructor() {
     const basePath = window.location.pathname.replace(/\/?$/, '/');
-    this.widgets = [
-      this.createWidget('Shopping List', 'shopping_cart', `${basePath}?widget=shoppingList`, '125%'),
-      this.createWidget('Recipes', 'restaurant', `${basePath}?widget=recipeList`, '125%')
-    ];
     const lovelaceResourceUrl = `${basePath}ktor-lovelace-cards.js?v=${LOVELACE_CARD_VERSION}`;
     this.nativeCards = [
       {
@@ -52,11 +47,11 @@ export class DashboardSetupComponent {
     ];
   }
 
-  async copy(widget: WidgetConfig) {
-    await navigator.clipboard.writeText(widget.yaml);
-    this.copiedTitle = widget.title;
+  async copy(card: CardSetupConfig) {
+    await navigator.clipboard.writeText(card.yaml);
+    this.copiedTitle = card.title;
     window.setTimeout(() => {
-      if (this.copiedTitle === widget.title) {
+      if (this.copiedTitle === card.title) {
         this.copiedTitle = '';
       }
     }, 1800);
@@ -89,23 +84,7 @@ export class DashboardSetupComponent {
     }
   }
 
-  private createWidget(title: string, icon: string, url: string, aspectRatio: string): WidgetConfig {
-    return {
-      title,
-      icon,
-      url,
-      actionLabel: 'Copy card YAML',
-      yaml: [
-        'type: iframe',
-        `title: ${title}`,
-        `url: ${url}`,
-        `aspect_ratio: ${aspectRatio}`,
-        'hide_background: true'
-      ].join('\n')
-    };
-  }
-
-  private createNativeCard(title: string, icon: string, type: string, configLines: string[]): WidgetConfig {
+  private createNativeCard(title: string, icon: string, type: string, configLines: string[]): CardSetupConfig {
     return {
       title,
       icon,
