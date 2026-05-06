@@ -17,7 +17,8 @@ panel_title: "Recipes & Shopping"
 data: true
 network: true
 map:
-  - homeassistant_config:rw
+  - type: homeassistant_config
+    read_only: false
 environment:
   JWT_SECRET_KEY: "change-this-to-a-secure-key"
   HA_MODE: "true"

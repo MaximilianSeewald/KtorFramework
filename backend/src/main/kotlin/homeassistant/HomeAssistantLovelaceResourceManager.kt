@@ -17,6 +17,10 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 
 @Serializable
 data class LovelaceResourceRequest(val ingressBaseUrl: String)
@@ -28,6 +32,8 @@ data class LovelaceResourceStatus(val id: String, val type: String, val url: Str
 data class LovelaceResourceCheckResponse(
     val published: Boolean,
     val publishedPath: String,
+    val served: Boolean,
+    val servedStatus: Int?,
     val resources: List<LovelaceResourceStatus>
 )
 
@@ -65,6 +71,8 @@ class HomeAssistantLovelaceResourceManager {
                 LovelaceResourceCheckResponse(
                     published = publishedCardResourceFile().isFile,
                     publishedPath = publishedCardResourceFile().absolutePath,
+                    served = isPublishedResourceServed(token),
+                    servedStatus = publishedResourceStatus(token),
                     resources = listKtorResources(token)
                 )
             }.onSuccess { response ->
@@ -115,7 +123,7 @@ class HomeAssistantLovelaceResourceManager {
             throw IllegalStateException("Lovelace card module was not found in the add-on")
         }
 
-        val targetDirectory = File("/homeassistant/www")
+        val targetDirectory = homeAssistantWwwDirectory()
         if (!targetDirectory.exists() && !targetDirectory.mkdirs()) {
             throw IllegalStateException("Could not create /homeassistant/www")
         }
@@ -130,7 +138,24 @@ class HomeAssistantLovelaceResourceManager {
     }
 
     private fun publishedCardResourceFile(): File =
-        File("/homeassistant/www/ktor-lovelace-cards.js")
+        File(homeAssistantWwwDirectory(), HomeAssistantMode.lovelaceCardFileName)
+
+    private fun homeAssistantWwwDirectory(): File =
+        File("/homeassistant/www")
+
+    private fun isPublishedResourceServed(token: String): Boolean =
+        publishedResourceStatus(token) == 200
+
+    private fun publishedResourceStatus(token: String): Int? = runCatching {
+        val request = HttpRequest.newBuilder()
+            .uri(URI.create("${HomeAssistantMode.homeAssistantBaseUrl}/local/${HomeAssistantMode.lovelaceCardFileName}"))
+            .header("Authorization", "Bearer $token")
+            .GET()
+            .build()
+        HttpClient.newHttpClient()
+            .send(request, HttpResponse.BodyHandlers.discarding())
+            .statusCode()
+    }.getOrNull()
 
     private suspend fun installOrUpdateResource(resourceUrl: String, token: String): String = withContext(Dispatchers.IO) {
         val connection = HomeAssistantCoreWebSocket(token, json)
