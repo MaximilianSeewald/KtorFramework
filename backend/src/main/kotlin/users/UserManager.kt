@@ -1,9 +1,9 @@
 package com.loudless.users
 
-import com.loudless.HomeAssistantMode
 import com.loudless.auth.AuthTokenService
 import com.loudless.database.DatabaseManager
 import com.loudless.database.Users
+import com.loudless.homeassistant.HomeAssistantMode
 import com.loudless.models.JoinUserGroupRequest
 import com.loudless.userGroups.UserGroupService
 import io.ktor.http.*

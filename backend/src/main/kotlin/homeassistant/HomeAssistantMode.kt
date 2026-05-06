@@ -1,4 +1,4 @@
-package com.loudless
+package com.loudless.homeassistant
 
 object HomeAssistantMode {
     const val userName = "ha-user"

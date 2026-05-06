@@ -17,7 +17,7 @@ After the resource is loaded, the card is registered in Home Assistant's card pi
 If automatic resource installation fails, add the resource manually:
 
 ```yaml
-url: /api/hassio_ingress/YOUR_INGRESS_ID/ktor-lovelace-cards.js?v=1.1.2
+url: /api/hassio_ingress/YOUR_INGRESS_ID/ktor-lovelace-cards.js
 type: module
 ```
 
