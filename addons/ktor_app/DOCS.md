@@ -24,7 +24,6 @@ Manual card YAML:
 type: custom:ktor-shopping-list-card
 title: Shopping List
 addon_slug: ktor_app
-max_items: 12
 show_completed: true
 ```
 
@@ -36,6 +35,5 @@ For troubleshooting or custom deployments, you can bypass add-on lookup with an 
 type: custom:ktor-shopping-list-card
 title: Shopping List
 backend_url: /api/hassio_ingress/CURRENT_GENERATED_INGRESS_PATH/
-max_items: 12
 show_completed: true
 ```
