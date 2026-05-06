@@ -76,21 +76,23 @@ jobs:
         id: cpr
         uses: peter-evans/create-pull-request@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
           commit-message: "Bump add-on version to ${{ steps.bump.outputs.new_version }} [skip ci]"
           title: Bump add-on version to ${{ steps.bump.outputs.new_version }}
           branch: version-bump
           delete-branch: true
       - name: Enable Auto Merge
+        if: steps.cpr.outputs.pull-request-number != ''
         run: |
           PR=${{ steps.cpr.outputs.pull-request-number }}
+          gh auth status --hostname github.com
           
           for i in {1..30}; do
-            STATE=$(gh pr view $PR --json mergeStateStatus -q .mergeStateStatus)
+            STATE=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json mergeStateStatus -q .mergeStateStatus)
             echo "State: $STATE"
           
             if [ "$STATE" = "CLEAN" ]; then
-              gh pr merge $PR --auto --squash
+              gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --auto --squash
               exit 0
             fi
           
@@ -100,4 +102,5 @@ jobs:
           echo "PR never became mergeable"
           exit 1
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
