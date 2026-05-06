@@ -12,9 +12,9 @@ The add-on ships a native Lovelace custom card for the shopping list.
 
 After the resource is loaded, the card is registered in Home Assistant's card picker as `Ktor Shopping List`.
 The add-on automatically publishes and registers the Lovelace resource during startup when Home Assistant provides the ingress URL, and also whenever the add-on UI is opened. If the card does not appear, open the add-on from the Home Assistant sidebar, select `Dashboard Setup`, and select `Install or update resource`.
-If `/config/www` was created for the first time, restart Home Assistant once so `/local` resources are served.
+If the `www` folder was created for the first time, restart Home Assistant once so `/local` resources are served.
 
-The installer copies the card module to Home Assistant's `/config/www/ktor-lovelace-cards.js` and registers it as:
+The installer copies the card module to Home Assistant's `www/ktor-lovelace-cards.js` and registers it as:
 
 ```yaml
 url: /local/ktor-lovelace-cards.js

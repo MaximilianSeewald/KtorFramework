@@ -65,7 +65,7 @@ export class DashboardSetupComponent {
       const resourceMessage = resources.length
         ? `Resource: ${resources.map((resource: LovelaceResourceStatus) => resource.url).join(', ')}`
         : 'No Ktor Lovelace resource found';
-      this.resourceInstallStatus = `${body.published ? 'Published file exists' : 'Published file missing'} - ${resourceMessage}`;
+      this.resourceInstallStatus = `${body.published ? 'Home Assistant www file exists' : 'Home Assistant www file missing'} - ${resourceMessage}`;
     } catch (error) {
       this.resourceInstallStatus = error instanceof Error ? error.message : 'Could not read Lovelace resource';
     } finally {

@@ -115,9 +115,9 @@ class HomeAssistantLovelaceResourceManager {
             throw IllegalStateException("Lovelace card module was not found in the add-on")
         }
 
-        val targetDirectory = File("/config/www")
+        val targetDirectory = File("/homeassistant/www")
         if (!targetDirectory.exists() && !targetDirectory.mkdirs()) {
-            throw IllegalStateException("Could not create /config/www")
+            throw IllegalStateException("Could not create /homeassistant/www")
         }
 
         val target = publishedCardResourceFile()
@@ -130,7 +130,7 @@ class HomeAssistantLovelaceResourceManager {
     }
 
     private fun publishedCardResourceFile(): File =
-        File("/config/www/ktor-lovelace-cards.js")
+        File("/homeassistant/www/ktor-lovelace-cards.js")
 
     private suspend fun installOrUpdateResource(resourceUrl: String, token: String): String = withContext(Dispatchers.IO) {
         val connection = HomeAssistantCoreWebSocket(token, json)
