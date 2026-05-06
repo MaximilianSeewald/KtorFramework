@@ -15,7 +15,13 @@ class HomeAssistantRoutes {
             return
         }
         if (HomeAssistantMode.ingressBaseUrl == null) {
-            println("Home Assistant Lovelace resource startup sync skipped: ingress URL is not available yet")
+            runCatching {
+                lovelaceResourceManager.publishCardResourceFromEnvironment()
+            }.onSuccess { result ->
+                println("Home Assistant Lovelace resource startup sync: $result; ingress URL is not available yet")
+            }.onFailure { error ->
+                println("Home Assistant Lovelace resource startup sync failed: ${error.message}")
+            }
             return
         }
 

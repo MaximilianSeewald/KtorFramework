@@ -7,6 +7,7 @@ type LovelaceResourceStatus = {
 };
 
 const LOVELACE_LOCAL_RESOURCE_URL = '/local/ktor-lovelace-cards.js';
+const LOVELACE_INGRESS_STORAGE_KEY = 'ktor-lovelace-ingress-base';
 
 @Component({
   selector: 'app-dashboard-setup',
@@ -26,6 +27,8 @@ export class DashboardSetupComponent {
     this.resourceInstallStatus = '';
 
     try {
+      const ingressBaseUrl = window.location.pathname.replace(/\/?$/, '/');
+      localStorage.setItem(LOVELACE_INGRESS_STORAGE_KEY, ingressBaseUrl);
       const response = await fetch('api/ha/lovelace-resource', {
         method: 'POST',
         headers: {
@@ -33,7 +36,7 @@ export class DashboardSetupComponent {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          ingressBaseUrl: window.location.pathname.replace(/\/?$/, '/')
+          ingressBaseUrl
         })
       });
       const body = await response.json().catch(() => ({}));

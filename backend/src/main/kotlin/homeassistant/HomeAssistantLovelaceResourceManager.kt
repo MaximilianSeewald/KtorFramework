@@ -56,6 +56,15 @@ class HomeAssistantLovelaceResourceManager {
         return installOrUpdateResource(HomeAssistantMode.localLovelaceResourceUrl, token)
     }
 
+    fun publishCardResourceFromEnvironment(): String {
+        if (!HomeAssistantMode.enabled) {
+            return "Home Assistant mode is disabled"
+        }
+
+        publishCardResource(HomeAssistantMode.ingressBaseUrl)
+        return "Lovelace card resource published"
+    }
+
     fun initRoutes(route: Route) {
         route.get("/ha/lovelace-resource") {
             if (!HomeAssistantMode.enabled) {
@@ -123,7 +132,7 @@ class HomeAssistantLovelaceResourceManager {
         }
     }
 
-    private fun publishCardResource(ingressBaseUrl: String) {
+    private fun publishCardResource(ingressBaseUrl: String?) {
         val source = File("app/browser/ktor-lovelace-cards.js")
         if (!source.isFile) {
             throw IllegalStateException("Lovelace card module was not found in the add-on")
@@ -135,12 +144,14 @@ class HomeAssistantLovelaceResourceManager {
         }
 
         val target = publishedCardResourceFile()
-        val normalizedIngressBaseUrl = ingressBaseUrl.replace(Regex("/?$"), "/")
-        target.writeText(
-            source.readText()
-                .replace("__KTOR_INGRESS_BASE_URL__", normalizedIngressBaseUrl),
-            Charsets.UTF_8
-        )
+        val cardModule = source.readText()
+        val normalizedIngressBaseUrl = ingressBaseUrl?.replace(Regex("/?$"), "/")
+        val publishedCardModule = if (normalizedIngressBaseUrl == null) {
+            cardModule
+        } else {
+            cardModule.replace("__KTOR_INGRESS_BASE_URL__", normalizedIngressBaseUrl)
+        }
+        target.writeText(publishedCardModule, Charsets.UTF_8)
         ensureFrontendExtraModule()
     }
 
