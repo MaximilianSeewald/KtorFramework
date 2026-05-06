@@ -10,6 +10,8 @@ type WidgetConfig = {
   actionLabel: string;
 };
 
+const LOVELACE_CARD_VERSION = '1.1.1';
+
 @Component({
   selector: 'app-dashboard-setup',
   standalone: true,
@@ -19,6 +21,8 @@ type WidgetConfig = {
 })
 export class DashboardSetupComponent {
   copiedTitle = '';
+  resourceInstallStatus = '';
+  installingResource = false;
   readonly widgets: WidgetConfig[];
   readonly nativeCards: WidgetConfig[];
 
@@ -28,14 +32,15 @@ export class DashboardSetupComponent {
       this.createWidget('Shopping List', 'shopping_cart', `${basePath}?widget=shoppingList`, '125%'),
       this.createWidget('Recipes', 'restaurant', `${basePath}?widget=recipeList`, '125%')
     ];
+    const lovelaceResourceUrl = `${basePath}ktor-lovelace-cards.js?v=${LOVELACE_CARD_VERSION}`;
     this.nativeCards = [
       {
         title: 'Lovelace resource',
         icon: 'extension',
-        url: `${basePath}ktor-lovelace-cards.js`,
+        url: lovelaceResourceUrl,
         actionLabel: 'Copy resource YAML',
         yaml: [
-          'url: ' + `${basePath}ktor-lovelace-cards.js`,
+          'url: ' + lovelaceResourceUrl,
           'type: module'
         ].join('\n')
       },
@@ -55,6 +60,33 @@ export class DashboardSetupComponent {
         this.copiedTitle = '';
       }
     }, 1800);
+  }
+
+  async installLovelaceResource() {
+    const resource = this.nativeCards[0];
+    const token = localStorage.getItem('token');
+    this.installingResource = true;
+    this.resourceInstallStatus = '';
+
+    try {
+      const response = await fetch('api/ha/lovelace-resource', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token ?? ''}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({url: resource.url})
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body.message || 'Could not install Lovelace resource');
+      }
+      this.resourceInstallStatus = body.message || 'Lovelace resource installed';
+    } catch (error) {
+      this.resourceInstallStatus = error instanceof Error ? error.message : 'Could not install Lovelace resource';
+    } finally {
+      this.installingResource = false;
+    }
   }
 
   private createWidget(title: string, icon: string, url: string, aspectRatio: string): WidgetConfig {

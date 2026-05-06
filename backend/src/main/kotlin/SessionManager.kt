@@ -18,6 +18,7 @@ object SessionManager {
     private val gradeManager = GradeManager()
     private val userManager = UserManager()
     private val userGroupManager = UserGroupManager()
+    private val homeAssistantLovelaceResourceManager = HomeAssistantLovelaceResourceManager()
 
     fun initRouting(routing: Route) {
         gradeManager.initRouting(routing)
@@ -31,6 +32,7 @@ object SessionManager {
         recipeManager.initRoutes(route)
         userManager.initSafeRoutes(route)
         userGroupManager.initSafeRoutes(route)
+        homeAssistantLovelaceResourceManager.initRoutes(route)
     }
 
     fun installComponents(application: Application) {

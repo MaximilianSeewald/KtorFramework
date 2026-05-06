@@ -1,4 +1,4 @@
-const CARD_VERSION = '1.1.0';
+const CARD_VERSION = '1.1.1';
 const TOKEN_STORAGE_KEY = 'ktor-lovelace-token';
 
 const cardStyles = `
@@ -575,9 +575,12 @@ class KtorShoppingListCard extends HTMLElement {
   }
 }
 
-customElements.define('ktor-shopping-list-card', KtorShoppingListCard);
+if (!customElements.get('ktor-shopping-list-card')) {
+  customElements.define('ktor-shopping-list-card', KtorShoppingListCard);
+}
 
-window.customCards = window.customCards || [];
+window.customCards = (window.customCards || [])
+  .filter((card) => card.type !== 'ktor-shopping-list-card' && card.type !== 'ktor-recipe-list-card');
 window.customCards.push({
   type: 'ktor-shopping-list-card',
   name: 'Ktor Shopping List',
