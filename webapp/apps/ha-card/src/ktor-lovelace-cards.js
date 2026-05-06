@@ -1,4 +1,4 @@
-const CARD_VERSION = '1.1.1';
+const CARD_VERSION = '1.1.2';
 const TOKEN_STORAGE_KEY = 'ktor-lovelace-token';
 
 const cardStyles = `
@@ -586,6 +586,15 @@ window.customCards.push({
   name: 'Ktor Shopping List',
   preview: true,
   description: 'Native Lovelace card for the Ktor App shopping list.',
+  documentationURL: 'https://github.com/Loudless/KtorFramework',
+  version: CARD_VERSION,
 });
+
+window.dispatchEvent(new CustomEvent('ktor-lovelace-cards-loaded', {
+  detail: {
+    cards: window.customCards.filter((card) => card.type === 'ktor-shopping-list-card'),
+    version: CARD_VERSION,
+  },
+}));
 
 console.info(`Ktor Lovelace cards ${CARD_VERSION} loaded`);
