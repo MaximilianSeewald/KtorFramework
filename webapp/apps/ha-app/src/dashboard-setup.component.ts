@@ -6,8 +6,7 @@ type LovelaceResourceStatus = {
   url: string;
 };
 
-const LOVELACE_LOCAL_RESOURCE_URL = '/local/ktor-lovelace-cards-1.1.6.js';
-const LOVELACE_INGRESS_STORAGE_KEY = 'ktor-lovelace-ingress-base';
+const FALLBACK_LOVELACE_LOCAL_RESOURCE_URL = '/local/ktor-lovelace-cards-1.1.7.js';
 
 @Component({
   selector: 'app-dashboard-setup',
@@ -28,7 +27,6 @@ export class DashboardSetupComponent {
 
     try {
       const ingressBaseUrl = window.location.pathname.replace(/\/?$/, '/');
-      localStorage.setItem(LOVELACE_INGRESS_STORAGE_KEY, ingressBaseUrl);
       const response = await fetch('api/ha/lovelace-resource', {
         method: 'POST',
         headers: {
@@ -73,7 +71,8 @@ export class DashboardSetupComponent {
       const pickerMessage = body.frontendExtraModule
         ? 'Picker module configured'
         : `Picker module missing in ${body.frontendExtraModulePath ?? 'configuration.yaml'}`;
-      const localResponse = await fetch(LOVELACE_LOCAL_RESOURCE_URL, {cache: 'no-store'});
+      const resourceUrl = body.resourceUrl ?? FALLBACK_LOVELACE_LOCAL_RESOURCE_URL;
+      const localResponse = await fetch(resourceUrl, {cache: 'no-store'});
       const localMessage = localResponse.ok ? 'Browser can load /local file' : `/local returns ${localResponse.status}`;
       this.resourceInstallStatus = `${body.published ? 'Home Assistant www file exists' : 'Home Assistant www file missing'} - ${localMessage} - ${pickerMessage} - ${resourceMessage}`;
     } catch (error) {

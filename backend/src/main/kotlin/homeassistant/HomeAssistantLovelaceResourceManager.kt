@@ -36,6 +36,7 @@ data class LovelaceResourceCheckResponse(
     val servedStatus: Int?,
     val frontendExtraModule: Boolean,
     val frontendExtraModulePath: String,
+    val resourceUrl: String,
     val resources: List<LovelaceResourceStatus>
 )
 
@@ -86,6 +87,7 @@ class HomeAssistantLovelaceResourceManager {
                     servedStatus = publishedResourceStatus(token),
                     frontendExtraModule = isFrontendExtraModuleConfigured(),
                     frontendExtraModulePath = HomeAssistantMode.configurationFilePath,
+                    resourceUrl = HomeAssistantMode.localLovelaceResourceUrl,
                     resources = listKtorResources(token)
                 )
             }.onSuccess { response ->
@@ -150,19 +152,23 @@ class HomeAssistantLovelaceResourceManager {
         } else {
             cardModule.replace("__KTOR_INGRESS_BASE_URL__", normalizedIngressBaseUrl)
         }
-        publishedCardResourceFile().writeText(publishedCardModule, Charsets.UTF_8)
+        removeStalePublishedCardFiles()
         versionedPublishedCardResourceFile().writeText(publishedCardModule, Charsets.UTF_8)
         ensureFrontendExtraModule()
     }
-
-    private fun publishedCardResourceFile(): File =
-        File(homeAssistantWwwDirectory(), HomeAssistantMode.lovelaceCardFileName)
 
     private fun versionedPublishedCardResourceFile(): File =
         File(homeAssistantWwwDirectory(), HomeAssistantMode.versionedLovelaceCardFileName)
 
     private fun homeAssistantWwwDirectory(): File =
         File("/homeassistant/www")
+
+    private fun removeStalePublishedCardFiles() {
+        homeAssistantWwwDirectory()
+            .listFiles { file -> file.name.startsWith("ktor-lovelace-cards") && file.name.endsWith(".js") }
+            ?.filterNot { file -> file.name == HomeAssistantMode.versionedLovelaceCardFileName }
+            ?.forEach { file -> file.delete() }
+    }
 
     private fun isFrontendExtraModuleConfigured(): Boolean {
         val configuration = File(HomeAssistantMode.configurationFilePath)

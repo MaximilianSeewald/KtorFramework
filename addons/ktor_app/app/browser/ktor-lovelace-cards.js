@@ -1,6 +1,5 @@
-const CARD_VERSION = '1.1.6';
+const CARD_VERSION = '1.1.7';
 const TOKEN_STORAGE_KEY = 'ktor-lovelace-token';
-const INGRESS_STORAGE_KEY = 'ktor-lovelace-ingress-base';
 const KTOR_INGRESS_BASE_URL = '__KTOR_INGRESS_BASE_URL__';
 
 const cardStyles = `
@@ -174,16 +173,8 @@ function resolveIngressWebSocketUrl(path) {
 }
 
 function resolveKtorBaseUrl() {
-  const configuredBaseUrl = !KTOR_INGRESS_BASE_URL.startsWith('__')
-    ? KTOR_INGRESS_BASE_URL
-    : localStorage.getItem(INGRESS_STORAGE_KEY);
-
-  if (configuredBaseUrl) {
-    try {
-      return new URL(configuredBaseUrl.replace(/\/?$/, '/'), window.location.origin).toString();
-    } catch {
-      localStorage.removeItem(INGRESS_STORAGE_KEY);
-    }
+  if (!KTOR_INGRESS_BASE_URL.startsWith('__')) {
+    return new URL(KTOR_INGRESS_BASE_URL, window.location.origin).toString();
   }
 
   return new URL('./', import.meta.url).toString();
@@ -600,4 +591,3 @@ window.ktorLovelaceCards = {
 };
 
 console.info(`Ktor Lovelace cards ${CARD_VERSION} loaded`, window.ktorLovelaceCards);
-console.info('Ktor Lovelace cards source', import.meta.url);
