@@ -67,9 +67,12 @@ export class DashboardSetupComponent {
       const resourceMessage = resources.length
         ? `Resource: ${resources.map((resource: LovelaceResourceStatus) => resource.url).join(', ')}`
         : 'No Ktor Lovelace resource found';
+      const pickerMessage = body.frontendExtraModule
+        ? 'Picker module configured'
+        : `Picker module missing in ${body.frontendExtraModulePath ?? 'configuration.yaml'}`;
       const localResponse = await fetch(LOVELACE_LOCAL_RESOURCE_URL, {cache: 'no-store'});
       const localMessage = localResponse.ok ? 'Browser can load /local file' : `/local returns ${localResponse.status}`;
-      this.resourceInstallStatus = `${body.published ? 'Home Assistant www file exists' : 'Home Assistant www file missing'} - ${localMessage} - ${resourceMessage}`;
+      this.resourceInstallStatus = `${body.published ? 'Home Assistant www file exists' : 'Home Assistant www file missing'} - ${localMessage} - ${pickerMessage} - ${resourceMessage}`;
     } catch (error) {
       this.resourceInstallStatus = error instanceof Error ? error.message : 'Could not read Lovelace resource';
     } finally {

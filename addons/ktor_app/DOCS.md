@@ -7,7 +7,7 @@ This add-on provides a Home Assistant focused shopping list and recipe list.
 The add-on ships a native Lovelace custom card for the shopping list.
 
 1. Install or update the add-on.
-2. Reload the Home Assistant frontend.
+2. Restart Home Assistant once after the add-on has installed or updated the card module.
 3. Add `Ktor Shopping List` from the dashboard card picker.
 
 After the resource is loaded, the card is registered in Home Assistant's card picker as `Ktor Shopping List`.
@@ -19,6 +19,14 @@ The installer copies the card module to Home Assistant's `www/ktor-lovelace-card
 ```yaml
 url: /local/ktor-lovelace-cards.js
 type: module
+```
+
+To make the card picker discover the card reliably, the installer also keeps this Home Assistant frontend module entry in `configuration.yaml`:
+
+```yaml
+frontend:
+  extra_module_url:
+    - /local/ktor-lovelace-cards.js
 ```
 
 Manual card YAML:
