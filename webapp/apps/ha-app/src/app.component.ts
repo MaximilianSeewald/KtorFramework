@@ -24,6 +24,9 @@ export class AppComponent implements OnInit {
       if (isLoggedIn && this.router.url.includes('/login')) {
         this.router.navigate(['shoppingList']);
       }
+      if (isLoggedIn) {
+        this.syncLovelaceResource();
+      }
     })
     this.router.events.pipe(
       filter(event => event instanceof NavigationStart)
@@ -32,6 +35,22 @@ export class AppComponent implements OnInit {
 
   toggleMenu() {
     this.menuOpen = !this.menuOpen;
+  }
+
+  private syncLovelaceResource() {
+    const token = localStorage.getItem('token');
+    fetch('api/ha/lovelace-resource', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token ?? ''}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        ingressBaseUrl: window.location.pathname.replace(/\/?$/, '/')
+      })
+    }).catch(() => {
+      // Dashboard Setup exposes a manual repair action and detailed status.
+    });
   }
 }
 

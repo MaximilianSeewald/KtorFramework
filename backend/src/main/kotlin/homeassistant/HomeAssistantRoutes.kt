@@ -14,6 +14,10 @@ class HomeAssistantRoutes {
         if (!HomeAssistantMode.enabled) {
             return
         }
+        if (HomeAssistantMode.ingressBaseUrl == null) {
+            println("Home Assistant Lovelace resource startup sync skipped: ingress URL is not available yet")
+            return
+        }
 
         runCatching {
             runBlocking {
