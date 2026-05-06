@@ -33,6 +33,8 @@ bin/
 /nbproject/private/
 /nbbuild/
 /dist/
+!/dist/
+!/dist/KtorFramework.js
 /nbdist/
 /.nb-gradle/
 

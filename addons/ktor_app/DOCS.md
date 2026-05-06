@@ -2,42 +2,40 @@
 
 This add-on provides a Home Assistant focused shopping list and recipe list.
 
-## Native Lovelace card
+## Lovelace card through HACS
 
-The add-on ships a native Lovelace custom card for the shopping list.
+The shopping list Lovelace card is installed through HACS as a dashboard resource from this repository.
 
-1. Install or update the add-on.
-2. Restart Home Assistant once after the add-on has installed or updated the card module.
-3. Add `Ktor Shopping List` from the dashboard card picker.
-
-After the resource is loaded, the card is registered in Home Assistant's card picker as `Ktor Shopping List`.
-The add-on automatically publishes and registers the Lovelace resource during startup when Home Assistant provides the ingress URL, and also whenever the add-on UI is opened. If the card does not appear, open the add-on from the Home Assistant sidebar, select `Dashboard Setup`, and select `Install or update resource`.
-If the `www` folder was created for the first time, restart Home Assistant once so `/local` resources are served.
-
-The installer copies the card module to Home Assistant's `www` folder and registers a versioned local resource plus a stable fallback resource for the Home Assistant mobile app:
+1. Install and start the `Ktor App` Home Assistant add-on.
+2. In HACS, add this GitHub repository as a custom repository with the `Dashboard` category.
+3. Install `Ktor Shopping List Card` from HACS.
+4. Confirm the dashboard resource points to the HACS-served module:
 
 ```yaml
-url: /local/ktor-lovelace-cards-1.1.7.js
-type: module
----
-url: /local/ktor-lovelace-cards.js
+url: /hacsfiles/KtorFramework/KtorFramework.js
 type: module
 ```
 
-To make the card picker discover the card reliably, the installer also keeps this Home Assistant frontend module entry in `configuration.yaml`:
-
-```yaml
-frontend:
-  extra_module_url:
-    - /local/ktor-lovelace-cards-1.1.7.js
-    - /local/ktor-lovelace-cards.js
-```
+After the resource is loaded, add `Ktor Shopping List` from the dashboard card picker.
 
 Manual card YAML:
 
 ```yaml
 type: custom:ktor-shopping-list-card
 title: Shopping List
+addon_slug: ktor_app
+max_items: 12
+show_completed: true
+```
+
+`addon_slug` is the stable Home Assistant add-on slug from `config.yaml`. The card uses it to resolve the current dynamic ingress URL, such as `/api/hassio_ingress/<generated-token>/`, at runtime. Do not hardcode that generated ingress URL for normal usage.
+
+For troubleshooting or custom deployments, you can bypass add-on lookup with an explicit backend URL:
+
+```yaml
+type: custom:ktor-shopping-list-card
+title: Shopping List
+backend_url: /api/hassio_ingress/CURRENT_GENERATED_INGRESS_PATH/
 max_items: 12
 show_completed: true
 ```
