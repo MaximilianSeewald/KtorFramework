@@ -57,12 +57,30 @@ pre {
   width: 100%;
 }
 
-.setup-copy:disabled {
+.setup-secondary {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #d2d2d7;
+  border-radius: 12px;
+  color: #1d1d1f;
+  display: flex;
+  font-size: 0.875rem;
+  font-weight: 600;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.75rem;
+  min-height: 2.75rem;
+  width: 100%;
+}
+
+.setup-copy:disabled,
+.setup-secondary:disabled {
   cursor: progress;
   opacity: 0.72;
 }
 
-.setup-copy mat-icon {
+.setup-copy mat-icon,
+.setup-secondary mat-icon {
   font-size: 18px;
   height: 18px;
   width: 18px;

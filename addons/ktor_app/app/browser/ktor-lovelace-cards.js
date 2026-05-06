@@ -1,4 +1,4 @@
-const CARD_VERSION = '1.1.2';
+const CARD_VERSION = '1.1.3';
 const TOKEN_STORAGE_KEY = 'ktor-lovelace-token';
 
 const cardStyles = `
@@ -99,10 +99,8 @@ const cardStyles = `
     }
 
     .item-fields {
-      display: grid;
+      display: block;
       flex: 1 1 auto;
-      gap: 6px;
-      grid-template-columns: minmax(0, 1.4fr) minmax(72px, 0.8fr);
       min-width: 0;
     }
 
@@ -151,10 +149,6 @@ const cardStyles = `
     }
 
     @media (max-width: 420px) {
-      .item-fields {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
       .add-row {
         align-items: stretch;
         flex-direction: column;
@@ -284,7 +278,6 @@ class KtorShoppingListCard extends HTMLElement {
   loading = true;
   socket = undefined;
   addName = '';
-  addAmount = '';
 
   constructor() {
     super();
@@ -399,13 +392,12 @@ class KtorShoppingListCard extends HTMLElement {
 
   async addItem() {
     const name = this.addName.trim();
-    const amount = this.addAmount.trim();
     if (!name) {
       return;
     }
 
     const item = {
-      amount,
+      amount: '',
       id: createId(),
       name,
       retrieved: false,
@@ -413,7 +405,6 @@ class KtorShoppingListCard extends HTMLElement {
     const previous = this.data;
     this.data = this.sortItems([...this.data, item]);
     this.addName = '';
-    this.addAmount = '';
     this.render();
 
     try {
@@ -497,7 +488,6 @@ class KtorShoppingListCard extends HTMLElement {
 
           <form class="add-row">
             <input type="text" name="name" placeholder="Item" autocomplete="off" value="${escapeHtml(this.addName)}">
-            <input type="text" name="amount" placeholder="Amount" autocomplete="off" value="${escapeHtml(this.addAmount)}">
             <button class="icon-button" type="submit" title="Add item" aria-label="Add item">${icons.add}</button>
           </form>
 
@@ -529,7 +519,6 @@ class KtorShoppingListCard extends HTMLElement {
             <input class="shopping-check" type="checkbox" aria-label="Toggle ${escapeHtml(item.name)}" ${item.retrieved ? 'checked' : ''}>
             <div class="item-fields">
               <input type="text" data-field="name" aria-label="Item name" value="${escapeHtml(item.name)}">
-              <input type="text" data-field="amount" aria-label="Item amount" value="${escapeHtml(item.amount)}">
             </div>
             <div class="actions">
               <button class="icon-button danger" type="button" title="Remove item" aria-label="Remove item" data-action="delete">${icons.trash}</button>
@@ -548,9 +537,6 @@ class KtorShoppingListCard extends HTMLElement {
       const target = event.target;
       if (target.name === 'name') {
         this.addName = target.value;
-      }
-      if (target.name === 'amount') {
-        this.addAmount = target.value;
       }
     });
     addForm?.addEventListener('submit', (event) => {
@@ -584,7 +570,7 @@ window.customCards = (window.customCards || [])
 window.customCards.push({
   type: 'ktor-shopping-list-card',
   name: 'Ktor Shopping List',
-  preview: true,
+  preview: false,
   description: 'Native Lovelace card for the Ktor App shopping list.',
   documentationURL: 'https://github.com/Loudless/KtorFramework',
   version: CARD_VERSION,

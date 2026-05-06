@@ -1,7 +1,7 @@
 package com.loudless.database
 
 import at.favre.lib.crypto.bcrypt.BCrypt
-import com.loudless.HomeAssistantMode
+import com.loudless.homeassistant.HomeAssistantMode
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.sql.*

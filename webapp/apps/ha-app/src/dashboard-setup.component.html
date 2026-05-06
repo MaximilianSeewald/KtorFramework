@@ -1,14 +1,4 @@
 <section class="mx-auto max-w-3xl px-6 py-8">
-  <div class="mb-6 flex items-center gap-3">
-    <div class="setup-icon flex h-9 w-9 items-center justify-center rounded-xl">
-      <mat-icon>dashboard_customize</mat-icon>
-    </div>
-    <div>
-      <h1 class="text-2xl font-semibold tracking-tight">Dashboard setup</h1>
-      <p class="setup-muted text-sm">Install the native Home Assistant dashboard card.</p>
-    </div>
-  </div>
-
   <div class="mb-4 flex items-center gap-3">
     <div class="setup-icon flex h-9 w-9 items-center justify-center rounded-xl">
       <mat-icon>view_module</mat-icon>
@@ -29,6 +19,11 @@
       <button type="button" class="setup-copy" (click)="installLovelaceResource()" [disabled]="installingResource">
         <mat-icon>{{ installingResource ? 'hourglass_empty' : 'add_to_home_screen' }}</mat-icon>
         {{ installingResource ? 'Installing' : 'Install or update resource' }}
+      </button>
+
+      <button type="button" class="setup-secondary" (click)="checkLovelaceResource()" [disabled]="checkingResource">
+        <mat-icon>{{ checkingResource ? 'hourglass_empty' : 'fact_check' }}</mat-icon>
+        {{ checkingResource ? 'Checking' : 'Check resource' }}
       </button>
 
       <p *ngIf="resourceInstallStatus" class="setup-status">{{ resourceInstallStatus }}</p>

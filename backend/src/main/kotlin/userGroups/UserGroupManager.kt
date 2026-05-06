@@ -1,7 +1,7 @@
 package com.loudless.userGroups
 
-import com.loudless.HomeAssistantMode
 import com.loudless.database.DatabaseManager
+import com.loudless.homeassistant.HomeAssistantMode
 import com.loudless.models.CreateUserGroupRequest
 import com.loudless.models.EditUserGroupRequest
 import com.loudless.recipes.RecipeService

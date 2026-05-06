@@ -10,8 +10,6 @@ type CardSetupConfig = {
   actionLabel: string;
 };
 
-const LOVELACE_CARD_VERSION = '1.1.2';
-
 @Component({
   selector: 'app-dashboard-setup',
   standalone: true,
@@ -23,11 +21,12 @@ export class DashboardSetupComponent {
   copiedTitle = '';
   resourceInstallStatus = '';
   installingResource = false;
+  checkingResource = false;
   readonly nativeCards: CardSetupConfig[];
 
   constructor() {
     const basePath = window.location.pathname.replace(/\/?$/, '/');
-    const lovelaceResourceUrl = `${basePath}ktor-lovelace-cards.js?v=${LOVELACE_CARD_VERSION}`;
+    const lovelaceResourceUrl = `${basePath}ktor-lovelace-cards.js`;
     this.nativeCards = [
       {
         title: 'Lovelace resource',
@@ -81,6 +80,32 @@ export class DashboardSetupComponent {
       this.resourceInstallStatus = error instanceof Error ? error.message : 'Could not install Lovelace resource';
     } finally {
       this.installingResource = false;
+    }
+  }
+
+  async checkLovelaceResource() {
+    const token = localStorage.getItem('token');
+    this.checkingResource = true;
+    this.resourceInstallStatus = '';
+
+    try {
+      const response = await fetch('api/ha/lovelace-resource', {
+        headers: {
+          'Authorization': `Bearer ${token ?? ''}`
+        }
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(body.message || 'Could not read Lovelace resource');
+      }
+      const resources = body.resources ?? [];
+      this.resourceInstallStatus = resources.length
+        ? `Installed resource: ${resources.map((resource: {url: string}) => resource.url).join(', ')}`
+        : 'No Ktor Lovelace resource found';
+    } catch (error) {
+      this.resourceInstallStatus = error instanceof Error ? error.message : 'Could not read Lovelace resource';
+    } finally {
+      this.checkingResource = false;
     }
   }
 
