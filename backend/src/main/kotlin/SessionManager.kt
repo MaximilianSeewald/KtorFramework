@@ -7,8 +7,10 @@ import com.loudless.userGroups.UserGroupManager
 import com.loudless.users.UserManager
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
+import org.slf4j.LoggerFactory
 
 object SessionManager {
+    private val LOGGER = LoggerFactory.getLogger(SessionManager::class.java)
 
     val secretJWTKey = System.getenv("JWT_SECRET_KEY") ?: throw IllegalStateException("JWT_SECRET_KEY not set")
 
@@ -20,20 +22,25 @@ object SessionManager {
     private val userGroupManager = UserGroupManager()
 
     fun initRouting(routing: Route) {
+        LOGGER.info("Initializing public API routes")
         gradeManager.initRouting(routing)
         userManager.initRouting(routing)
         shoppingListManager.initQueryRoutes(routing)
         recipeManager.initQueryRoutes(routing)
+        LOGGER.info("Public API routes initialized")
     }
 
     fun initSafeRoutes(route: Route) {
+        LOGGER.info("Initializing authenticated API routes")
         shoppingListManager.initRoutes(route)
         recipeManager.initRoutes(route)
         userManager.initSafeRoutes(route)
         userGroupManager.initSafeRoutes(route)
+        LOGGER.info("Authenticated API routes initialized")
     }
 
     fun installComponents(application: Application) {
+        LOGGER.info("Installing session components")
         ktorManager.installComponents(application)
     }
 }

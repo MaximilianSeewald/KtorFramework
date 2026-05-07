@@ -12,26 +12,33 @@ import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.slf4j.LoggerFactory
 import java.util.*
 
 object RecipeService {
+    private val LOGGER = LoggerFactory.getLogger(RecipeService::class.java)
 
     fun retrieveRecipes(userGroup: String): List<RecipeModel> {
+        LOGGER.info("Retrieving recipes for group {}", userGroup)
         val recipeTable = DatabaseManager.recipeMap[userGroup]
         return transaction {
-            recipeTable?.selectAll()?.map {
+            val recipes = recipeTable?.selectAll()?.map {
                 RecipeModel(
                     id = it[recipeTable.id].toString(),
                     name = it[recipeTable.name],
                     items = parseItems(it[recipeTable.items])
                 )
             } ?: emptyList()
+            LOGGER.info("Retrieved {} recipes for group {}", recipes.size, userGroup)
+            recipes
         }
     }
 
     suspend fun addRecipe(call: RoutingCall, groupName: String): Boolean {
+        LOGGER.info("Adding recipe for group {}", groupName)
         val recipeTable = DatabaseManager.recipeMap[groupName]
         if (recipeTable == null) {
+            LOGGER.warn("Cannot add recipe because group {} has no recipe list", groupName)
             call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No recipe list found for this user"))
             return false
         }
@@ -48,20 +55,25 @@ object RecipeService {
                         it[name] = updateData.name
                         it[items] = serializeItems(updateData.items)
                     }
+                    LOGGER.info("Added recipe {} for group {}", updateData.id, groupName)
                     true
                 } else {
+                    LOGGER.warn("Did not add recipe {} for group {} because it already exists", updateData.id, groupName)
                     false
                 }
             }
         } catch (e: Exception) {
+            LOGGER.warn("Invalid recipe data while adding recipe for group {}", groupName, e)
             call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Invalid recipe data: ${e.message}"))
             false
         }
     }
 
     suspend fun editRecipe(call: RoutingCall, groupName: String): Boolean {
+        LOGGER.info("Editing recipe for group {}", groupName)
         val recipeTable = DatabaseManager.recipeMap[groupName]
         if (recipeTable == null) {
+            LOGGER.warn("Cannot edit recipe because group {} has no recipe list", groupName)
             call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No recipe list found for this user"))
             return false
         }
@@ -79,24 +91,32 @@ object RecipeService {
                         it[name] = updateData.name
                         it[items] = serializeItems(updateData.items)
                     }
+                    LOGGER.info("Edited recipe {} for group {}", updateData.id, groupName)
                     true
                 } else {
+                    LOGGER.warn("Did not edit recipe {} for group {} because match count was {}", updateData.id, groupName, count)
                     false
                 }
             }
         } catch (e: Exception) {
+            LOGGER.warn("Invalid recipe data while editing recipe for group {}", groupName, e)
             call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Invalid recipe data: ${e.message}"))
             false
         }
     }
 
     suspend fun deleteRecipe(call: RoutingCall, groupName: String): Boolean {
+        LOGGER.info("Deleting recipe for group {}", groupName)
         val recipeTable = DatabaseManager.recipeMap[groupName]
         if (recipeTable == null) {
+            LOGGER.warn("Cannot delete recipe because group {} has no recipe list", groupName)
             call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No recipe list found for this user"))
             return false
         }
-        val id = call.request.queryParameters["id"] ?: return false
+        val id = call.request.queryParameters["id"] ?: run {
+            LOGGER.warn("Cannot delete recipe because id query parameter is missing")
+            return false
+        }
 
         return transaction {
             val count = recipeTable
@@ -108,27 +128,35 @@ object RecipeService {
                 0L -> true
                 1L -> {
                     recipeTable.deleteWhere { recipeTable.id eq UUID.fromString(id) }
+                    LOGGER.info("Deleted recipe {} for group {}", id, groupName)
                     true
                 }
-                else -> false
+                else -> {
+                    LOGGER.warn("Did not delete recipe {} for group {} because match count was {}", id, groupName, count)
+                    false
+                }
             }
         }
     }
 
     fun addRecipeList(userGroup: String) {
+        LOGGER.info("Creating recipe table for group {}", userGroup)
         transaction {
             val recipe = Recipe(userGroup + "_recipe")
             SchemaUtils.create(recipe)
             DatabaseManager.recipeMap[userGroup] = recipe
         }
+        LOGGER.info("Created recipe table for group {}", userGroup)
     }
 
     fun deleteRecipeList(userGroup: String) {
+        LOGGER.info("Dropping recipe table for group {}", userGroup)
         transaction {
             val recipe = DatabaseManager.recipeMap[userGroup]
             SchemaUtils.drop(recipe!!)
             DatabaseManager.recipeMap.remove(userGroup)
         }
+        LOGGER.info("Dropped recipe table for group {}", userGroup)
     }
 
     private fun serializeItems(items: List<RecipeItem>): String {
@@ -138,7 +166,8 @@ object RecipeService {
     private fun parseItems(itemsJson: String): List<RecipeItem> {
         return try {
             Json.decodeFromString(itemsJson)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            LOGGER.warn("Could not parse stored recipe items JSON", e)
             emptyList()
         }
     }
