@@ -1,4 +1,5 @@
 import com.loudless.configureBackend
+import com.loudless.auth.JwtService
 import com.loudless.database.DatabaseManager
 import com.loudless.models.CreateUserGroupRequest
 import com.loudless.models.Recipe
@@ -27,6 +28,7 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.nio.file.Files
@@ -69,9 +71,39 @@ class BackendIntegrationTest {
             bearer(login.token)
         }
         assertEquals(HttpStatusCode.OK, verify.status)
+        val verifyBody = Json.parseToJsonElement(verify.bodyAsText()).jsonObject
+        assertEquals(true, verifyBody["valid"]?.jsonPrimitive?.boolean)
+        assertEquals(username, verifyBody["user"]?.jsonObject?.get("name")?.jsonPrimitive?.content)
 
         val missingTokenVerify = client.get("/api/verify")
         assertEquals(HttpStatusCode.Unauthorized, missingTokenVerify.status)
+    }
+
+    @Test
+    fun `verify rejects malformed expired and missing-user tokens`() = testApplication {
+        application { configureBackend() }
+        val client = createJsonClient()
+
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api/verify").status)
+
+        val malformed = client.get("/api/verify") {
+            bearer("not-a-token")
+        }
+        assertEquals(HttpStatusCode.Unauthorized, malformed.status)
+
+        System.setProperty("JWT_TOKEN_TTL_MS", "-1000")
+        val expiredToken = JwtService.createToken("expired-user")
+        System.clearProperty("JWT_TOKEN_TTL_MS")
+        val expired = client.get("/api/verify") {
+            bearer(expiredToken)
+        }
+        assertEquals(HttpStatusCode.Unauthorized, expired.status)
+
+        val missingUserToken = JwtService.createToken("missing-user")
+        val missingUser = client.get("/api/verify") {
+            bearer(missingUserToken)
+        }
+        assertEquals(HttpStatusCode.Unauthorized, missingUser.status)
     }
 
     @Test
@@ -191,6 +223,19 @@ class BackendIntegrationTest {
 
         val session = client.get("/api/ha/session")
         assertEquals(HttpStatusCode.OK, session.status)
+        val token = Json.parseToJsonElement(session.bodyAsText())
+            .jsonObject["token"]
+            ?.jsonPrimitive
+            ?.content
+        assertNotNull(token)
+
+        val verify = client.get("/api/verify") {
+            bearer(token)
+        }
+        assertEquals(HttpStatusCode.OK, verify.status)
+        val verifyBody = Json.parseToJsonElement(verify.bodyAsText()).jsonObject
+        assertEquals(true, verifyBody["valid"]?.jsonPrimitive?.boolean)
+        assertEquals("ha-user", verifyBody["user"]?.jsonObject?.get("name")?.jsonPrimitive?.content)
 
         val signup = signup(client, "ha_disabled_${UUID.randomUUID()}", "password")
         assertEquals(HttpStatusCode.Forbidden, signup.status)

@@ -1,6 +1,9 @@
 package com.loudless
 
 import com.loudless.database.DatabaseManager
+import com.loudless.models.VerifySessionResponse
+import com.loudless.users.UserService
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import java.io.File
 import io.ktor.server.application.install
@@ -36,8 +39,14 @@ fun Application.configureBackend() {
             SessionManager.initRouting(this)
             authenticate("auth-jwt") {
                 get("/verify") {
-                    LOGGER.info("Verified authenticated API session")
-                    call.respond(mapOf("valid" to true))
+                    val user = UserService.findAuthenticatedUser(call)
+                    if (user == null) {
+                        LOGGER.warn("Rejected authenticated API session because token user was not found")
+                        call.respond(HttpStatusCode.Unauthorized, mapOf("message" to "Invalid session"))
+                        return@get
+                    }
+                    LOGGER.info("Verified authenticated API session for user {}", user.id)
+                    call.respond(VerifySessionResponse(valid = true, user = user))
                 }
                 SessionManager.initSafeRoutes(this)
             }

@@ -28,6 +28,11 @@ jobs:
         run: |
           cd webapp
           npm run build:all
+      - name: Test Frontends
+        run: |
+          cd webapp
+          npx ng test web-app --watch=false --browsers=ChromeHeadless
+          npx ng test ha-app --watch=false --browsers=ChromeHeadless
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b
       - name: Test Backend
