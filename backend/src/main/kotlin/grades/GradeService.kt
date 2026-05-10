@@ -3,6 +3,7 @@ package com.loudless.grades
 import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
 import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
 import com.loudless.models.Student
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
@@ -10,6 +11,7 @@ import java.util.zip.ZipOutputStream
 import kotlin.math.ceil
 
 object GradeService {
+    private val LOGGER = LoggerFactory.getLogger(GradeService::class.java)
 
     private const val ONE = 0.96
     private const val TWO = 0.81
@@ -18,6 +20,7 @@ object GradeService {
     private const val FIVE = 0.25
 
     fun readFileAndWriteToStream(array: ByteArray, points: String?, outputStream: ByteArrayOutputStream) {
+        LOGGER.info("Processing grade CSV upload")
         val rows = csvReader().readAll(ByteArrayInputStream(array))
         val floatedPoints = points?.toFloat() ?: 0f
         val students = mutableListOf<Student>()
@@ -34,9 +37,11 @@ object GradeService {
         createSecondCSV(students,floatedPoints,gradeToStudentCSV)
 
         createZIP(outputStream,gradeCsv,gradeToStudentCSV)
+        LOGGER.info("Processed grade CSV with {} rows", students.size)
     }
 
     private fun createZIP(outputStream: ByteArrayOutputStream, gradeCsv: ByteArrayOutputStream, gradeToStudentCSV: ByteArrayOutputStream) {
+        LOGGER.info("Creating grade ZIP response")
         ZipOutputStream(outputStream).use { zipOut ->
             zipOut.putNextEntry(ZipEntry("grades.csv"))
             zipOut.write(gradeCsv.toByteArray())
@@ -46,6 +51,7 @@ object GradeService {
             zipOut.write(gradeToStudentCSV.toByteArray())
             zipOut.closeEntry()
         }
+        LOGGER.info("Created grade ZIP response")
     }
 
     private fun calcPoints(maxPoints: Float, points: Float): Int {

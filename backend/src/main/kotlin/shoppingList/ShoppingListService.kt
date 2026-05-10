@@ -10,14 +10,17 @@ import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.slf4j.LoggerFactory
 import java.util.*
 
 object ShoppingListService {
+    private val LOGGER = LoggerFactory.getLogger(ShoppingListService::class.java)
 
     fun retrieveItems(userGroup: String): List<ShoppingListItem> {
+        LOGGER.info("Retrieving shopping list items for group {}", userGroup)
         val shoppingListTable = DatabaseManager.shoppingListMap[userGroup]
         return transaction {
-            shoppingListTable?.selectAll()?.map {
+            val items = shoppingListTable?.selectAll()?.map {
                 ShoppingListItem(
                     name = it[shoppingListTable.name],
                     amount = it[shoppingListTable.amount],
@@ -25,12 +28,16 @@ object ShoppingListService {
                     retrieved = it[shoppingListTable.retrieved]
                 )
             } ?: emptyList()
+            LOGGER.info("Retrieved {} shopping list items for group {}", items.size, userGroup)
+            items
         }
     }
 
     suspend fun addItem(call: RoutingCall, groupName: String): Boolean {
+        LOGGER.info("Adding shopping list item for group {}", groupName)
         val shoppingListTable = DatabaseManager.shoppingListMap[groupName]
         if (shoppingListTable == null) {
+            LOGGER.warn("Cannot add shopping list item because group {} has no shopping list", groupName)
             call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No shopping list found for this user"))
             return false
         }
@@ -46,16 +53,20 @@ object ShoppingListService {
                     it[amount] = updateData.amount
                     it[retrieved] = false
                 }
+                LOGGER.info("Added shopping list item {} for group {}", updateData.id, groupName)
                 true
             } else {
+                LOGGER.warn("Did not add shopping list item {} for group {} because it already exists", updateData.id, groupName)
                 false
             }
         }
     }
 
     suspend fun editItem(call: RoutingCall, groupName: String): Boolean {
+        LOGGER.info("Editing shopping list item for group {}", groupName)
         val shoppingListTable = DatabaseManager.shoppingListMap[groupName]
         if (shoppingListTable == null) {
+            LOGGER.warn("Cannot edit shopping list item because group {} has no shopping list", groupName)
             call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No shopping list found for this user"))
             return false
         }
@@ -72,20 +83,27 @@ object ShoppingListService {
                     it[amount] = updateData.amount
                     it[retrieved] = updateData.retrieved
                 }
+                LOGGER.info("Edited shopping list item {} for group {}", updateData.id, groupName)
                 true
             } else {
+                LOGGER.warn("Did not edit shopping list item {} for group {} because match count was {}", updateData.id, groupName, count)
                 false
             }
         }
     }
 
     suspend fun deleteItem(call: RoutingCall, groupName: String): Boolean {
+        LOGGER.info("Deleting shopping list item for group {}", groupName)
         val shoppingListTable = DatabaseManager.shoppingListMap[groupName]
         if (shoppingListTable == null) {
+            LOGGER.warn("Cannot delete shopping list item because group {} has no shopping list", groupName)
             call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No shopping list found for this user"))
             return false
         }
-        val id = call.request.queryParameters["id"] ?: return false
+        val id = call.request.queryParameters["id"] ?: run {
+            LOGGER.warn("Cannot delete shopping list item because id query parameter is missing")
+            return false
+        }
 
         return transaction {
             val count = shoppingListTable
@@ -97,26 +115,34 @@ object ShoppingListService {
                 0L -> true
                 1L -> {
                     shoppingListTable.deleteWhere { shoppingListTable.id eq UUID.fromString(id) }
+                    LOGGER.info("Deleted shopping list item {} for group {}", id, groupName)
                     true
                 }
-                else -> false
+                else -> {
+                    LOGGER.warn("Did not delete shopping list item {} for group {} because match count was {}", id, groupName, count)
+                    false
+                }
             }
         }
     }
 
     fun addShoppingList(userGroup: String) {
+        LOGGER.info("Creating shopping list table for group {}", userGroup)
         transaction {
             val shoppingList = ShoppingList(userGroup)
             SchemaUtils.create(shoppingList)
             DatabaseManager.shoppingListMap[userGroup] = shoppingList
         }
+        LOGGER.info("Created shopping list table for group {}", userGroup)
     }
 
     fun deleteShoppingList(userGroup: String) {
+        LOGGER.info("Dropping shopping list table for group {}", userGroup)
         transaction {
             val shoppingList = DatabaseManager.shoppingListMap[userGroup]
             SchemaUtils.drop(shoppingList!!)
             DatabaseManager.shoppingListMap.remove(userGroup)
         }
+        LOGGER.info("Dropped shopping list table for group {}", userGroup)
     }
 }

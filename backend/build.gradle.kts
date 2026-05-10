@@ -12,6 +12,7 @@ val ktorVersion = "3.1.1"
 val exposedVersion = "0.59.0"
 val h2Version = "2.3.232"
 val hikariVersion = "6.2.1"
+val logbackVersion = "1.5.32"
 
 repositories {
     mavenCentral()
@@ -21,9 +22,6 @@ sourceSets {
     main {
         kotlin {
             srcDir("src/main/kotlin")
-        }
-        resources {
-            srcDir("src/main/resources")
         }
     }
 }
@@ -41,6 +39,7 @@ dependencies {
     implementation("io.ktor:ktor-server-auth-jwt:$ktorVersion")
     implementation("io.ktor:ktor-server-websockets:$ktorVersion")
     implementation("io.ktor:ktor-server-forwarded-header-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-call-logging:$ktorVersion")
 
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
@@ -48,6 +47,7 @@ dependencies {
 
     implementation("com.h2database:h2:$h2Version")
     implementation("com.zaxxer:HikariCP:$hikariVersion")
+    implementation("ch.qos.logback:logback-classic:$logbackVersion")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("com.jsoizo:kotlin-csv-jvm:1.10.0")
