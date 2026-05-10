@@ -45,13 +45,14 @@ object RecipeService {
 
         return try {
             val updateData = call.receive<RecipeModel>()
+            val recipeId = parseUuid(updateData.id) ?: return false
             transaction {
                 if (recipeTable
                         .selectAll()
-                        .where { recipeTable.id eq UUID.fromString(updateData.id) }
+                        .where { recipeTable.id eq recipeId }
                         .empty()) {
                     recipeTable.insert {
-                        it[id] = UUID.fromString(updateData.id)
+                        it[id] = recipeId
                         it[name] = updateData.name
                         it[items] = serializeItems(updateData.items)
                     }
@@ -80,14 +81,15 @@ object RecipeService {
 
         return try {
             val updateData = call.receive<RecipeModel>()
+            val recipeId = parseUuid(updateData.id) ?: return false
             transaction {
                 val count = recipeTable
                     .selectAll()
-                    .where { recipeTable.id eq UUID.fromString(updateData.id) }
+                    .where { recipeTable.id eq recipeId }
                     .count()
 
                 if (count == 1L) {
-                    recipeTable.update({ recipeTable.id eq UUID.fromString(updateData.id) }) {
+                    recipeTable.update({ recipeTable.id eq recipeId }) {
                         it[name] = updateData.name
                         it[items] = serializeItems(updateData.items)
                     }
@@ -117,17 +119,18 @@ object RecipeService {
             LOGGER.warn("Cannot delete recipe because id query parameter is missing")
             return false
         }
+        val recipeId = parseUuid(id) ?: return false
 
         return transaction {
             val count = recipeTable
                 .selectAll()
-                .where { recipeTable.id eq UUID.fromString(id) }
+                .where { recipeTable.id eq recipeId }
                 .count()
 
             when (count) {
                 0L -> true
                 1L -> {
-                    recipeTable.deleteWhere { recipeTable.id eq UUID.fromString(id) }
+                    recipeTable.deleteWhere { recipeTable.id eq recipeId }
                     LOGGER.info("Deleted recipe {} for group {}", id, groupName)
                     true
                 }
@@ -153,7 +156,11 @@ object RecipeService {
         LOGGER.info("Dropping recipe table for group {}", userGroup)
         transaction {
             val recipe = DatabaseManager.recipeMap[userGroup]
-            SchemaUtils.drop(recipe!!)
+            if (recipe == null) {
+                LOGGER.warn("Skipping recipe table drop because group {} has no table", userGroup)
+                return@transaction
+            }
+            SchemaUtils.drop(recipe)
             DatabaseManager.recipeMap.remove(userGroup)
         }
         LOGGER.info("Dropped recipe table for group {}", userGroup)
@@ -170,5 +177,11 @@ object RecipeService {
             LOGGER.warn("Could not parse stored recipe items JSON", e)
             emptyList()
         }
+    }
+
+    private fun parseUuid(id: String): UUID? {
+        return runCatching { UUID.fromString(id) }
+            .onFailure { LOGGER.warn("Rejected recipe because id {} is not a valid UUID", id) }
+            .getOrNull()
     }
 }

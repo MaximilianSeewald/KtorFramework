@@ -88,7 +88,12 @@ class UserGroupManager {
             val users = UserService.retrieveAndHandleUsers(call)
             if (users.isEmpty()) return@delete
             val userId = users[0].id
-            val userGroupName = call.request.queryParameters["name"]!!
+            val userGroupName = call.request.queryParameters["name"]
+            if (userGroupName.isNullOrBlank()) {
+                LOGGER.warn("Rejected delete user group because name query parameter was missing")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User group name is missing"))
+                return@delete
+            }
             if (!UserGroupService.userGroupExists(userGroupName)) {
                 LOGGER.warn("Rejected delete user group because group {} does not exist", userGroupName)
                 call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User group does not exist"))

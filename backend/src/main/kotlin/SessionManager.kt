@@ -12,8 +12,6 @@ import org.slf4j.LoggerFactory
 object SessionManager {
     private val LOGGER = LoggerFactory.getLogger(SessionManager::class.java)
 
-    val secretJWTKey = System.getenv("JWT_SECRET_KEY") ?: throw IllegalStateException("JWT_SECRET_KEY not set")
-
     private val ktorManager = KtorManager()
     private val shoppingListManager = ShoppingListManager()
     private val recipeManager = RecipeManager()

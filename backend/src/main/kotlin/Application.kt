@@ -1,6 +1,7 @@
 package com.loudless
 
 import com.loudless.database.DatabaseManager
+import io.ktor.server.application.Application
 import java.io.File
 import io.ktor.server.application.install
 import io.ktor.server.engine.*
@@ -21,26 +22,29 @@ fun main() {
     LOGGER.info("Backend configured to listen on {}:{}", host, port)
 
     val server = embeddedServer(Netty, host = host, port = port) {
-        install(io.ktor.server.plugins.forwardedheaders.XForwardedHeaders)
-        SessionManager.installComponents(this)
-        routing {
-
-            route("/api") {
-                SessionManager.initRouting(this)
-                authenticate("auth-jwt") {
-                    get("/verify") {
-                        LOGGER.info("Verified authenticated API session")
-                        call.respond(mapOf("valid" to true))
-                    }
-                    SessionManager.initSafeRoutes(this)
-                }
-            }
-
-            staticFiles("/", File("app/browser")) {
-                default("index.html")
-            }
-        }
+        configureBackend()
     }
     LOGGER.info("Starting backend server on {}:{}", host, port)
     server.start(wait = true)
+}
+
+fun Application.configureBackend() {
+    install(io.ktor.server.plugins.forwardedheaders.XForwardedHeaders)
+    SessionManager.installComponents(this)
+    routing {
+        route("/api") {
+            SessionManager.initRouting(this)
+            authenticate("auth-jwt") {
+                get("/verify") {
+                    LOGGER.info("Verified authenticated API session")
+                    call.respond(mapOf("valid" to true))
+                }
+                SessionManager.initSafeRoutes(this)
+            }
+        }
+
+        staticFiles("/", File("app/browser")) {
+            default("index.html")
+        }
+    }
 }

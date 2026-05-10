@@ -2,16 +2,9 @@ package com.loudless.recipes
 
 import com.loudless.models.Recipe
 import com.loudless.shared.GenericManager
-import com.loudless.shared.JwtUtil
-import com.loudless.users.UserService
 import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.websocket.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 
@@ -31,46 +24,12 @@ class RecipeManager : GenericManager<Recipe>() {
     }
 
     private fun Route.webSocketRecipes() {
-        webSocket("/recipeWS") {
-            LOGGER.info("Handling recipe websocket connection")
-            val token = call.request.queryParameters["token"]
-            val decodedJWT = JwtUtil.validateWebSocketToken(this, token) ?: return@webSocket
-            
-            val groups = UserService.getUserGroupsByQuery(decodedJWT)
-            val userName = JwtUtil.getUsername(decodedJWT)
-            
-            if (groups.isEmpty() || groups.contains("")) {
-                LOGGER.warn("Rejected recipe websocket because user has no group")
-                return@webSocket
-            }
-            
-            var flow = MutableSharedFlow<List<Recipe>>(replay = 1)
-            if (observerList[userName] == null) {
-                observerList[userName] = flow
-            } else {
-                flow = observerList[userName]!!
-            }
-            
-            val job = launch {
-                flow.collect { recipes ->
-                    send(Json.encodeToString(recipes))
-                }
-            }
-            
-            runCatching {
-                send(Json.encodeToString(RecipeService.retrieveRecipes(groups[0])))
-                incoming.consumeEach { }
-            }.onFailure {
-                LOGGER.error("Recipe websocket failed for user {}", userName, it)
-                observerList.remove(userName)
-                close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, it.message ?: ""))
-                job.cancel()
-            }.also {
-                observerList.remove(userName)
-                job.cancel()
-                LOGGER.info("Recipe websocket closed for user {}", userName)
-            }
-        }
+        webSocketResource(
+            path = "/recipeWS",
+            resourceName = "recipe",
+            retrieveData = { RecipeService.retrieveRecipes(it) },
+            serializeData = { Json.encodeToString(it) }
+        )
     }
 
     private fun Route.getRecipes() {
@@ -78,10 +37,7 @@ class RecipeManager : GenericManager<Recipe>() {
             LOGGER.info("Handling get recipes request")
             val groups = retrieveUserGroupsAndHandleErrors(call)
             if (groups.isEmpty()) return@get
-            call.respondText(
-                text = Json.encodeToString(RecipeService.retrieveRecipes(groups[0])),
-                contentType = ContentType.Application.Json
-            )
+            call.respond(RecipeService.retrieveRecipes(groups[0]))
             LOGGER.info("Returned recipes for group {}", groups[0])
         }
     }
@@ -129,6 +85,11 @@ class RecipeManager : GenericManager<Recipe>() {
             LOGGER.info("Handling delete recipe request")
             val groups = retrieveUserGroupsAndHandleErrors(call)
             if (groups.isEmpty()) return@delete
+            if (call.request.queryParameters["id"].isNullOrBlank()) {
+                LOGGER.warn("Rejected delete recipe because id query parameter was missing")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Recipe id is missing"))
+                return@delete
+            }
             when (RecipeService.deleteRecipe(call, groups[0])) {
                 true -> {
                     call.respond(HttpStatusCode.OK)

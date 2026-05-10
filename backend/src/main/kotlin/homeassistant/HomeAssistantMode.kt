@@ -7,4 +7,5 @@ object HomeAssistantMode {
 
     val enabled: Boolean
         get() = System.getenv("HA_MODE")?.equals("true", ignoreCase = true) == true
+            || System.getProperty("HA_MODE")?.equals("true", ignoreCase = true) == true
 }

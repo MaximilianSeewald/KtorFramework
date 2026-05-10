@@ -1,9 +1,7 @@
 package com.loudless.shared
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.interfaces.DecodedJWT
-import com.loudless.SessionManager.secretJWTKey
+import com.loudless.auth.JwtService
 import io.ktor.websocket.*
 import org.slf4j.LoggerFactory
 
@@ -12,11 +10,7 @@ object JwtUtil {
 
     fun verifyToken(token: String): DecodedJWT? {
         return try {
-            val verifier = JWT.require(Algorithm.HMAC256(secretJWTKey))
-                .withAudience("ktor-app")
-                .withIssuer("ktor-auth")
-                .build()
-            val decoded = verifier.verify(token)
+            val decoded = JwtService.verifyToken(token)
             LOGGER.debug("Verified websocket token")
             decoded
         } catch (e: Exception) {

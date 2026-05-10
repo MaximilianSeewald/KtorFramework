@@ -42,13 +42,14 @@ object ShoppingListService {
             return false
         }
         val updateData = call.receive<ShoppingListItem>()
+        val itemId = parseUuid(updateData.id) ?: return false
         return transaction {
             if (shoppingListTable
                     .selectAll()
-                    .where { shoppingListTable.id eq UUID.fromString(updateData.id) }
+                    .where { shoppingListTable.id eq itemId }
                     .empty()) {
                 shoppingListTable.insert {
-                    it[id] = UUID.fromString(updateData.id)
+                    it[id] = itemId
                     it[name] = updateData.name
                     it[amount] = updateData.amount
                     it[retrieved] = false
@@ -71,14 +72,15 @@ object ShoppingListService {
             return false
         }
         val updateData = call.receive<ShoppingListItem>()
+        val itemId = parseUuid(updateData.id) ?: return false
         return transaction {
             val count = shoppingListTable
                 .selectAll()
-                .where { shoppingListTable.id eq UUID.fromString(updateData.id) }
+                .where { shoppingListTable.id eq itemId }
                 .count()
 
             if (count == 1L) {
-                shoppingListTable.update({ shoppingListTable.id eq UUID.fromString(updateData.id) }) {
+                shoppingListTable.update({ shoppingListTable.id eq itemId }) {
                     it[name] = updateData.name
                     it[amount] = updateData.amount
                     it[retrieved] = updateData.retrieved
@@ -104,17 +106,18 @@ object ShoppingListService {
             LOGGER.warn("Cannot delete shopping list item because id query parameter is missing")
             return false
         }
+        val itemId = parseUuid(id) ?: return false
 
         return transaction {
             val count = shoppingListTable
                 .selectAll()
-                .where { shoppingListTable.id eq UUID.fromString(id) }
+                .where { shoppingListTable.id eq itemId }
                 .count()
 
             when (count) {
                 0L -> true
                 1L -> {
-                    shoppingListTable.deleteWhere { shoppingListTable.id eq UUID.fromString(id) }
+                    shoppingListTable.deleteWhere { shoppingListTable.id eq itemId }
                     LOGGER.info("Deleted shopping list item {} for group {}", id, groupName)
                     true
                 }
@@ -140,9 +143,19 @@ object ShoppingListService {
         LOGGER.info("Dropping shopping list table for group {}", userGroup)
         transaction {
             val shoppingList = DatabaseManager.shoppingListMap[userGroup]
-            SchemaUtils.drop(shoppingList!!)
+            if (shoppingList == null) {
+                LOGGER.warn("Skipping shopping list drop because group {} has no table", userGroup)
+                return@transaction
+            }
+            SchemaUtils.drop(shoppingList)
             DatabaseManager.shoppingListMap.remove(userGroup)
         }
         LOGGER.info("Dropped shopping list table for group {}", userGroup)
+    }
+
+    private fun parseUuid(id: String): UUID? {
+        return runCatching { UUID.fromString(id) }
+            .onFailure { LOGGER.warn("Rejected shopping list item because id {} is not a valid UUID", id) }
+            .getOrNull()
     }
 }
