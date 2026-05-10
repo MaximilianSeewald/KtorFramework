@@ -1,6 +1,5 @@
-package config
+package com.loudless.config
 
-import com.loudless.config.BackendConfig
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -44,5 +43,17 @@ class BackendConfigTest {
         System.setProperty("JWT_TOKEN_TTL_MS", "12345")
 
         assertEquals(12345L, BackendConfig.jwtTokenTtlMs)
+    }
+
+    @Test
+    fun `cors allowed origins defaults to permissive empty list`() {
+        assertEquals(emptyList(), BackendConfig.corsAllowedOrigins)
+    }
+
+    @Test
+    fun `jwt constants preserve public token contract`() {
+        assertEquals("ktor-app", BackendConfig.jwtAudience)
+        assertEquals("ktor-auth", BackendConfig.jwtIssuer)
+        assertEquals("Ktor Server", BackendConfig.jwtRealm)
     }
 }

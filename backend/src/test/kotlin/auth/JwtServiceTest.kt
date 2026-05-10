@@ -1,7 +1,7 @@
-package auth
+package com.loudless.auth
 
 import com.auth0.jwt.exceptions.JWTVerificationException
-import com.loudless.auth.JwtService
+import com.auth0.jwt.exceptions.TokenExpiredException
 import com.loudless.config.BackendConfig
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -38,5 +38,26 @@ class JwtServiceTest {
         assertFailsWith<JWTVerificationException> {
             JwtService.verifyToken(token)
         }
+    }
+
+    @Test
+    fun `token verifier rejects expired token`() {
+        System.setProperty("JWT_SECRET_KEY", "jwt-unit-secret")
+        System.setProperty("JWT_TOKEN_TTL_MS", "-1000")
+
+        val token = JwtService.createToken("alice")
+
+        assertFailsWith<TokenExpiredException> {
+            JwtService.verifyToken(token)
+        }
+    }
+
+    @Test
+    fun `auth token service creates jwt compatible with shared verifier`() {
+        System.setProperty("JWT_SECRET_KEY", "auth-token-secret")
+
+        val decoded = JwtService.verifyToken(AuthTokenService.createToken("bob"))
+
+        assertEquals("bob", decoded.getClaim("username").asString())
     }
 }
