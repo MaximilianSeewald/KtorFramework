@@ -6,6 +6,7 @@ on:
       - master
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
 
@@ -81,6 +82,12 @@ jobs:
           title: Bump add-on version to ${{ steps.bump.outputs.new_version }}
           branch: version-bump
           delete-branch: true
+      - name: Trigger PR build
+        if: steps.cpr.outputs.pull-request-number != ''
+        run: gh workflow run pr_dev.yml --repo "$GITHUB_REPOSITORY" --ref version-bump
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Enable Auto Merge
         if: steps.cpr.outputs.pull-request-number != ''
         run: |
