@@ -1,4 +1,4 @@
-const CARD_VERSION = '1.1.14';
+const CARD_VERSION = '1.1.15';
 const TOKEN_STORAGE_KEY = 'ktor-shopping-list-token';
 const DEFAULT_ADDON_SLUG = 'ktor_app';
 const REFRESH_INTERVAL_MS = 5000;
@@ -169,7 +169,17 @@ const cardStyles = `
 `;
 
 function normalizeBaseUrl(url) {
-  return new URL(String(url || '').replace(/\/?$/, '/'), window.location.origin).toString();
+  const normalized = new URL(String(url || '').replace(/\/?$/, '/'), window.location.origin);
+  if (!['http:', 'https:'].includes(normalized.protocol)) {
+    throw new Error('Backend URL must use http or https');
+  }
+  if (normalized.username || normalized.password) {
+    throw new Error('Backend URL must not include credentials');
+  }
+  if (normalized.origin !== window.location.origin) {
+    throw new Error('Backend URL must be on the same origin as Home Assistant');
+  }
+  return normalized.toString();
 }
 
 function normalizeIngressEntry(entry) {
@@ -316,7 +326,7 @@ async function ktorRequest(card, path, options = {}) {
 
 async function fetchShoppingList(card) {
   const response = await ktorRequest(card, 'api/shoppingList');
-  return response.json();
+  return normalizeShoppingItems(await response.json());
 }
 
 async function saveShoppingItem(card, item) {
@@ -339,15 +349,6 @@ async function deleteShoppingItem(card, id) {
   });
 }
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
 function createId() {
   if (crypto.randomUUID) {
     return crypto.randomUUID();
@@ -360,15 +361,104 @@ function createId() {
   });
 }
 
-function icon(path) {
-  return `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="${path}"></path></svg>`;
+const iconPaths = {
+  add: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2Z',
+  refresh: 'M17.7 6.3A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.47 10.86 1 1 0 1 0-1.87-.72A6 6 0 1 1 16.24 7.76L14 10h6V4l-2.3 2.3Z',
+  trash: 'M9 3h6l1 2h4v2H4V5h4l1-2Zm1 6h2v9h-2V9Zm4 0h2v9h-2V9ZM7 9h2v10h6V9h2v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9Z',
+};
+
+function safeText(value, maxLength = 255) {
+  return String(value ?? '').slice(0, maxLength);
 }
 
-const icons = {
-  add: icon('M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2Z'),
-  refresh: icon('M17.7 6.3A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.47 10.86 1 1 0 1 0-1.87-.72A6 6 0 1 1 16.24 7.76L14 10h6V4l-2.3 2.3Z'),
-  trash: icon('M9 3h6l1 2h4v2H4V5h4l1-2Zm1 6h2v9h-2V9Zm4 0h2v9h-2V9ZM7 9h2v10h6V9h2v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9Z'),
-};
+function safeBoolean(value) {
+  return value === true;
+}
+
+function normalizeShoppingItem(item) {
+  return {
+    amount: safeText(item?.amount),
+    id: safeText(item?.id, 128),
+    name: safeText(item?.name),
+    retrieved: safeBoolean(item?.retrieved),
+  };
+}
+
+function normalizeShoppingItems(items) {
+  return Array.isArray(items) ? items.map(normalizeShoppingItem) : [];
+}
+
+function parseShoppingItems(text) {
+  try {
+    return normalizeShoppingItems(JSON.parse(String(text || '[]')));
+  } catch (error) {
+    return [];
+  }
+}
+
+function buildShoppingListWebSocketPath(token) {
+  const params = new URLSearchParams();
+  params.set('token', safeText(token, 4096));
+  return `api/shoppingListWS?${params.toString()}`;
+}
+
+function appendChildren(parent, ...children) {
+  children.forEach((child) => {
+    if (child) {
+      parent.appendChild(child);
+    }
+  });
+  return parent;
+}
+
+function createElement(tagName, options = {}) {
+  const element = document.createElement(tagName);
+  if (options.className) {
+    element.className = options.className;
+  }
+  if (options.text !== undefined) {
+    element.textContent = String(options.text);
+  }
+  Object.entries(options.attributes || {}).forEach(([name, value]) => {
+    if (value !== undefined && value !== null) {
+      element.setAttribute(name, String(value));
+    }
+  });
+  return element;
+}
+
+function createIcon(name) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('fill', 'currentColor');
+  path.setAttribute('d', iconPaths[name]);
+  svg.appendChild(path);
+  return svg;
+}
+
+function createIconButton(iconName, label, action, extraClass = '') {
+  const button = createElement('button', {
+    className: `icon-button${extraClass ? ` ${extraClass}` : ''}`,
+    attributes: {
+      'aria-label': label,
+      title: label,
+      type: 'button',
+      ...(action ? { 'data-action': action } : {}),
+    },
+  });
+  button.appendChild(createIcon(iconName));
+  return button;
+}
+
+function createStyleElement() {
+  const style = document.createElement('style');
+  style.textContent = cardStyles
+    .replace(/^\s*<style>\s*/, '')
+    .replace(/\s*<\/style>\s*$/, '');
+  return style;
+}
 
 class KtorShoppingListCard extends HTMLElement {
   config = {};
@@ -479,7 +569,7 @@ class KtorShoppingListCard extends HTMLElement {
       this.error = '';
       this.loading = this.data.length === 0;
       this.render();
-      this.data = this.sortItems(await fetchShoppingList(this));
+      this.setItems(await fetchShoppingList(this));
       await this.connectWebSocket();
     } catch (error) {
       this.backendBaseUrlPromise = undefined;
@@ -498,10 +588,10 @@ class KtorShoppingListCard extends HTMLElement {
       return;
     }
 
-    const token = await requestKtorToken(this);
-    this.socket = new WebSocket(await this.resolveBackendWebSocketUrl(`api/shoppingListWS?token=${encodeURIComponent(token)}`));
+    const webSocketUrl = await this.resolveShoppingListWebSocketUrl(await requestKtorToken(this));
+    this.socket = new WebSocket(webSocketUrl);
     this.socket.onmessage = (event) => {
-      this.data = this.sortItems(JSON.parse(event.data));
+      this.setItems(parseShoppingItems(event.data));
       this.error = '';
       this.loading = false;
       this.render();
@@ -560,7 +650,11 @@ class KtorShoppingListCard extends HTMLElement {
   }
 
   sortItems(items) {
-    return [...items].sort((a, b) => Number(a.retrieved) - Number(b.retrieved));
+    return normalizeShoppingItems(items).sort((a, b) => Number(a.retrieved) - Number(b.retrieved));
+  }
+
+  setItems(items) {
+    this.data = this.sortItems(items);
   }
 
   visibleItems() {
@@ -570,7 +664,7 @@ class KtorShoppingListCard extends HTMLElement {
   }
 
   title() {
-    return escapeHtml(this.config.title || 'Shopping List');
+    return String(this.config.title || 'Shopping List');
   }
 
   tokenStorageKey() {
@@ -596,12 +690,19 @@ class KtorShoppingListCard extends HTMLElement {
   }
 
   async resolveBackendUrl(path) {
-    return new URL(path.replace(/^\/+/, ''), await this.resolveBackendBaseUrl()).toString();
+    return new URL(String(path || '').replace(/^\/+/, ''), await this.resolveBackendBaseUrl()).toString();
   }
 
-  async resolveBackendWebSocketUrl(path) {
-    const url = new URL(path.replace(/^\/+/, ''), await this.resolveBackendBaseUrl());
-    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+  async resolveShoppingListWebSocketUrl(token) {
+    const baseUrl = new URL(await this.resolveBackendBaseUrl());
+    if (!['http:', 'https:'].includes(baseUrl.protocol) || baseUrl.username || baseUrl.password) {
+      throw new Error('Backend WebSocket URL must be derived from a safe http or https URL');
+    }
+    if (baseUrl.origin !== window.location.origin) {
+      throw new Error('Backend WebSocket URL must stay on the Home Assistant origin');
+    }
+    const url = new URL(buildShoppingListWebSocketPath(token), baseUrl);
+    url.protocol = baseUrl.protocol === 'https:' ? 'wss:' : 'ws:';
     return url.toString();
   }
 
@@ -618,14 +719,14 @@ class KtorShoppingListCard extends HTMLElement {
       retrieved: false,
     };
     const previous = this.data;
-    this.data = this.sortItems([...this.data, item]);
+    this.setItems([...this.data, item]);
     this.addName = '';
     this.render();
 
     try {
       await addShoppingItem(this, item);
     } catch (error) {
-      this.data = previous;
+      this.setItems(previous);
       this.error = error instanceof Error ? error.message : 'Could not add item';
       this.render();
     }
@@ -657,14 +758,14 @@ class KtorShoppingListCard extends HTMLElement {
 
   async updateItem(item) {
     const previous = this.data;
-    this.data = this.sortItems(this.data.map((entry) => entry.id === item.id ? item : entry));
+    this.setItems(this.data.map((entry) => entry.id === item.id ? item : entry));
     this.error = '';
     this.render();
 
     try {
       await saveShoppingItem(this, item);
     } catch (error) {
-      this.data = previous;
+      this.setItems(previous);
       this.error = error instanceof Error ? error.message : 'Could not update item';
       this.render();
     }
@@ -672,14 +773,14 @@ class KtorShoppingListCard extends HTMLElement {
 
   async removeItem(id) {
     const previous = this.data;
-    this.data = this.data.filter((entry) => entry.id !== id);
+    this.setItems(this.data.filter((entry) => entry.id !== id));
     this.error = '';
     this.render();
 
     try {
       await deleteShoppingItem(this, id);
     } catch (error) {
-      this.data = previous;
+      this.setItems(previous);
       this.error = error instanceof Error ? error.message : 'Could not remove item';
       this.render();
     }
@@ -688,60 +789,93 @@ class KtorShoppingListCard extends HTMLElement {
   render() {
     const openCount = this.data.filter((item) => !item.retrieved).length;
     const items = this.visibleItems();
+    this.shadowRoot.replaceChildren();
+    const headerText = createElement('div');
+    appendChildren(
+      headerText,
+      createElement('h2', { className: 'title', text: this.title() }),
+      createElement('div', {
+        className: 'meta',
+        text: `${openCount} open${this.data.length ? ` - ${this.data.length} total` : ''}`,
+      })
+    );
 
-    this.shadowRoot.innerHTML = `
-      ${cardStyles}
-      <ha-card>
-        <div class="card">
-          <div class="header">
-            <div>
-              <h2 class="title">${this.title()}</h2>
-              <div class="meta">${openCount} open${this.data.length ? ` - ${this.data.length} total` : ''}</div>
-            </div>
-            <button class="icon-button" type="button" title="Refresh" aria-label="Refresh" data-action="refresh">${icons.refresh}</button>
-          </div>
+    const header = createElement('div', { className: 'header' });
+    appendChildren(header, headerText, createIconButton('refresh', 'Refresh', 'refresh'));
 
-          <form class="add-row">
-            <input type="text" name="name" placeholder="Item" autocomplete="off" value="${escapeHtml(this.addName)}">
-            <button class="icon-button" type="submit" title="Add item" aria-label="Add item">${icons.add}</button>
-          </form>
+    const nameInput = createElement('input', {
+      attributes: {
+        autocomplete: 'off',
+        name: 'name',
+        placeholder: 'Item',
+        type: 'text',
+      },
+    });
+    nameInput.value = this.addName;
 
-          ${this.renderBody(items)}
-        </div>
-      </ha-card>
-    `;
+    const addButton = createIconButton('add', 'Add item');
+    addButton.type = 'submit';
 
+    const addForm = createElement('form', { className: 'add-row' });
+    appendChildren(addForm, nameInput, addButton);
+
+    const cardBody = createElement('div', { className: 'card' });
+    appendChildren(cardBody, header, addForm, this.renderBody(items));
+
+    const haCard = createElement('ha-card');
+    haCard.appendChild(cardBody);
+    appendChildren(this.shadowRoot, createStyleElement(), haCard);
     this.bindEvents();
   }
 
   renderBody(items) {
     if (this.loading) {
-      return '<div class="empty">Loading shopping list...</div>';
+      return createElement('div', { className: 'empty', text: 'Loading shopping list...' });
     }
 
     if (this.error) {
-      return `<div class="error">${escapeHtml(this.error)}</div>`;
+      return createElement('div', { className: 'error', text: this.error });
     }
 
     if (items.length === 0) {
-      return '<div class="empty">No shopping items.</div>';
+      return createElement('div', { className: 'empty', text: 'No shopping items.' });
     }
 
-    return `
-      <div class="list">
-        ${items.map((item) => `
-          <div class="item-row ${item.retrieved ? 'retrieved' : ''}" data-id="${escapeHtml(item.id)}">
-            <input class="shopping-check" type="checkbox" aria-label="Toggle ${escapeHtml(item.name)}" ${item.retrieved ? 'checked' : ''}>
-            <div class="item-fields">
-              <input type="text" data-field="name" aria-label="Item name" value="${escapeHtml(item.name)}">
-            </div>
-            <div class="actions">
-              <button class="icon-button danger" type="button" title="Remove item" aria-label="Remove item" data-action="delete">${icons.trash}</button>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    `;
+    const list = createElement('div', { className: 'list' });
+    items.forEach((item) => {
+      const row = createElement('div', {
+        className: `item-row${item.retrieved ? ' retrieved' : ''}`,
+      });
+      row.dataset.id = String(item.id ?? '');
+
+      const checkbox = createElement('input', {
+        className: 'shopping-check',
+        attributes: {
+          'aria-label': 'Toggle item',
+          type: 'checkbox',
+        },
+      });
+      checkbox.checked = Boolean(item.retrieved);
+
+      const nameInput = createElement('input', {
+        attributes: {
+          'aria-label': 'Item name',
+          'data-field': 'name',
+          type: 'text',
+        },
+      });
+      nameInput.value = String(item.name ?? '');
+
+      const fields = createElement('div', { className: 'item-fields' });
+      fields.appendChild(nameInput);
+
+      const actions = createElement('div', { className: 'actions' });
+      actions.appendChild(createIconButton('trash', 'Remove item', 'delete', 'danger'));
+
+      appendChildren(row, checkbox, fields, actions);
+      list.appendChild(row);
+    });
+    return list;
   }
 
   bindEvents() {
