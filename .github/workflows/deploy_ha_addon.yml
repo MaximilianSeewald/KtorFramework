@@ -77,7 +77,7 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ github.token }}
-          commit-message: "Bump add-on version to ${{ steps.bump.outputs.new_version }} [skip ci]"
+          commit-message: "Bump add-on version to ${{ steps.bump.outputs.new_version }}"
           title: Bump add-on version to ${{ steps.bump.outputs.new_version }}
           branch: version-bump
           delete-branch: true
@@ -87,7 +87,7 @@ jobs:
           PR=${{ steps.cpr.outputs.pull-request-number }}
           gh auth status --hostname github.com
           
-          for i in {1..30}; do
+          for i in {1..90}; do
             STATE=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json mergeStateStatus -q .mergeStateStatus)
             echo "State: $STATE"
           
