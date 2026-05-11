@@ -43,6 +43,9 @@ dependencies {
     implementation("io.ktor:ktor-server-websockets:$ktorVersion")
     implementation("io.ktor:ktor-server-forwarded-header-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-call-logging:$ktorVersion")
+    implementation("io.ktor:ktor-server-openapi:$ktorVersion")
+    implementation("io.ktor:ktor-server-swagger:$ktorVersion")
+    implementation("io.ktor:ktor-server-routing-openapi:${ktorVersion}")
 
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
@@ -72,5 +75,10 @@ application {
 ktor {
     fatJar {
         archiveFileName.set("fat.jar")
+    }
+    openApi {
+        enabled = true
+        codeInferenceEnabled = true
+        onlyCommented = false
     }
 }
