@@ -1,4 +1,4 @@
-const CARD_VERSION = '1.1.14';
+const CARD_VERSION = '1.1.15';
 const TOKEN_STORAGE_KEY = 'ktor-shopping-list-token';
 const DEFAULT_ADDON_SLUG = 'ktor_app';
 const REFRESH_INTERVAL_MS = 5000;
@@ -176,6 +176,9 @@ function normalizeBaseUrl(url) {
   if (normalized.username || normalized.password) {
     throw new Error('Backend URL must not include credentials');
   }
+  if (normalized.origin !== window.location.origin) {
+    throw new Error('Backend URL must be on the same origin as Home Assistant');
+  }
   return normalized.toString();
 }
 
@@ -323,7 +326,7 @@ async function ktorRequest(card, path, options = {}) {
 
 async function fetchShoppingList(card) {
   const response = await ktorRequest(card, 'api/shoppingList');
-  return response.json();
+  return normalizeShoppingItems(await response.json());
 }
 
 async function saveShoppingItem(card, item) {
@@ -363,6 +366,41 @@ const iconPaths = {
   refresh: 'M17.7 6.3A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.47 10.86 1 1 0 1 0-1.87-.72A6 6 0 1 1 16.24 7.76L14 10h6V4l-2.3 2.3Z',
   trash: 'M9 3h6l1 2h4v2H4V5h4l1-2Zm1 6h2v9h-2V9Zm4 0h2v9h-2V9ZM7 9h2v10h6V9h2v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9Z',
 };
+
+function safeText(value, maxLength = 255) {
+  return String(value ?? '').slice(0, maxLength);
+}
+
+function safeBoolean(value) {
+  return value === true;
+}
+
+function normalizeShoppingItem(item) {
+  return {
+    amount: safeText(item?.amount),
+    id: safeText(item?.id, 128),
+    name: safeText(item?.name),
+    retrieved: safeBoolean(item?.retrieved),
+  };
+}
+
+function normalizeShoppingItems(items) {
+  return Array.isArray(items) ? items.map(normalizeShoppingItem) : [];
+}
+
+function parseShoppingItems(text) {
+  try {
+    return normalizeShoppingItems(JSON.parse(String(text || '[]')));
+  } catch (error) {
+    return [];
+  }
+}
+
+function buildShoppingListWebSocketPath(token) {
+  const params = new URLSearchParams();
+  params.set('token', safeText(token, 4096));
+  return `api/shoppingListWS?${params.toString()}`;
+}
 
 function appendChildren(parent, ...children) {
   children.forEach((child) => {
@@ -531,7 +569,7 @@ class KtorShoppingListCard extends HTMLElement {
       this.error = '';
       this.loading = this.data.length === 0;
       this.render();
-      this.data = this.sortItems(await fetchShoppingList(this));
+      this.setItems(await fetchShoppingList(this));
       await this.connectWebSocket();
     } catch (error) {
       this.backendBaseUrlPromise = undefined;
@@ -550,10 +588,10 @@ class KtorShoppingListCard extends HTMLElement {
       return;
     }
 
-    const token = await requestKtorToken(this);
-    this.socket = new WebSocket(await this.resolveBackendWebSocketUrl(`api/shoppingListWS?token=${encodeURIComponent(token)}`));
+    const webSocketUrl = await this.resolveShoppingListWebSocketUrl(await requestKtorToken(this));
+    this.socket = new WebSocket(webSocketUrl);
     this.socket.onmessage = (event) => {
-      this.data = this.sortItems(JSON.parse(event.data));
+      this.setItems(parseShoppingItems(event.data));
       this.error = '';
       this.loading = false;
       this.render();
@@ -612,7 +650,11 @@ class KtorShoppingListCard extends HTMLElement {
   }
 
   sortItems(items) {
-    return [...items].sort((a, b) => Number(a.retrieved) - Number(b.retrieved));
+    return normalizeShoppingItems(items).sort((a, b) => Number(a.retrieved) - Number(b.retrieved));
+  }
+
+  setItems(items) {
+    this.data = this.sortItems(items);
   }
 
   visibleItems() {
@@ -651,12 +693,15 @@ class KtorShoppingListCard extends HTMLElement {
     return new URL(String(path || '').replace(/^\/+/, ''), await this.resolveBackendBaseUrl()).toString();
   }
 
-  async resolveBackendWebSocketUrl(path) {
+  async resolveShoppingListWebSocketUrl(token) {
     const baseUrl = new URL(await this.resolveBackendBaseUrl());
     if (!['http:', 'https:'].includes(baseUrl.protocol) || baseUrl.username || baseUrl.password) {
       throw new Error('Backend WebSocket URL must be derived from a safe http or https URL');
     }
-    const url = new URL(String(path || '').replace(/^\/+/, ''), baseUrl);
+    if (baseUrl.origin !== window.location.origin) {
+      throw new Error('Backend WebSocket URL must stay on the Home Assistant origin');
+    }
+    const url = new URL(buildShoppingListWebSocketPath(token), baseUrl);
     url.protocol = baseUrl.protocol === 'https:' ? 'wss:' : 'ws:';
     return url.toString();
   }
@@ -674,14 +719,14 @@ class KtorShoppingListCard extends HTMLElement {
       retrieved: false,
     };
     const previous = this.data;
-    this.data = this.sortItems([...this.data, item]);
+    this.setItems([...this.data, item]);
     this.addName = '';
     this.render();
 
     try {
       await addShoppingItem(this, item);
     } catch (error) {
-      this.data = previous;
+      this.setItems(previous);
       this.error = error instanceof Error ? error.message : 'Could not add item';
       this.render();
     }
@@ -713,14 +758,14 @@ class KtorShoppingListCard extends HTMLElement {
 
   async updateItem(item) {
     const previous = this.data;
-    this.data = this.sortItems(this.data.map((entry) => entry.id === item.id ? item : entry));
+    this.setItems(this.data.map((entry) => entry.id === item.id ? item : entry));
     this.error = '';
     this.render();
 
     try {
       await saveShoppingItem(this, item);
     } catch (error) {
-      this.data = previous;
+      this.setItems(previous);
       this.error = error instanceof Error ? error.message : 'Could not update item';
       this.render();
     }
@@ -728,14 +773,14 @@ class KtorShoppingListCard extends HTMLElement {
 
   async removeItem(id) {
     const previous = this.data;
-    this.data = this.data.filter((entry) => entry.id !== id);
+    this.setItems(this.data.filter((entry) => entry.id !== id));
     this.error = '';
     this.render();
 
     try {
       await deleteShoppingItem(this, id);
     } catch (error) {
-      this.data = previous;
+      this.setItems(previous);
       this.error = error instanceof Error ? error.message : 'Could not remove item';
       this.render();
     }
@@ -806,7 +851,7 @@ class KtorShoppingListCard extends HTMLElement {
       const checkbox = createElement('input', {
         className: 'shopping-check',
         attributes: {
-          'aria-label': `Toggle ${String(item.name ?? '')}`,
+          'aria-label': 'Toggle item',
           type: 'checkbox',
         },
       });
