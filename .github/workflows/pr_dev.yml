@@ -29,6 +29,10 @@ jobs:
         run: |
           cd webapp 
           npm ci
+      - name: Install Playwright Browser
+        run: |
+          cd webapp
+          npx playwright install --with-deps chromium
       - name: Build Frontends
         run: |
           cd webapp
@@ -44,6 +48,10 @@ jobs:
         run: ./gradlew backend:test --console=plain
       - name: Deploy with Gradle
         run: ./gradlew deployGithub
+      - name: Test HA ingress integration
+        run: |
+          cd webapp
+          npm run test:ha-ingress
       - name: Report required build status
         if: always()
         run: |
