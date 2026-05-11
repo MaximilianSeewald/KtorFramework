@@ -1,14 +1,14 @@
 plugins {
-    kotlin("jvm") version "2.1.10"
-    id("io.ktor.plugin") version "3.1.1"
-    kotlin("plugin.serialization") version "2.1.10"
+    kotlin("jvm") version "2.2.20"
+    id("io.ktor.plugin") version "3.4.3"
+    kotlin("plugin.serialization") version "2.2.20"
     application
 }
 
 group = "com.loudless"
 version = "1.0-SNAPSHOT"
 
-val ktorVersion = "3.1.1"
+val ktorVersion = "3.4.3"
 val exposedVersion = "0.59.0"
 val h2Version = "2.3.232"
 val hikariVersion = "6.2.1"
@@ -43,6 +43,9 @@ dependencies {
     implementation("io.ktor:ktor-server-websockets:$ktorVersion")
     implementation("io.ktor:ktor-server-forwarded-header-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-call-logging:$ktorVersion")
+    implementation("io.ktor:ktor-server-openapi:$ktorVersion")
+    implementation("io.ktor:ktor-server-swagger:$ktorVersion")
+    implementation("io.ktor:ktor-server-routing-openapi:${ktorVersion}")
 
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
@@ -72,5 +75,10 @@ application {
 ktor {
     fatJar {
         archiveFileName.set("fat.jar")
+    }
+    openApi {
+        enabled = true
+        codeInferenceEnabled = true
+        onlyCommented = false
     }
 }

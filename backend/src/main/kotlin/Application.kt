@@ -3,7 +3,9 @@ package com.loudless
 import com.loudless.database.DatabaseManager
 import com.loudless.models.VerifySessionResponse
 import com.loudless.users.UserService
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.openapi.OpenApiInfo
 import io.ktor.server.application.Application
 import java.io.File
 import io.ktor.server.application.install
@@ -14,6 +16,8 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.auth.*
 import org.slf4j.LoggerFactory
+import io.ktor.server.plugins.swagger.*
+import io.ktor.server.routing.openapi.OpenApiDocSource
 
 private val LOGGER = LoggerFactory.getLogger("com.loudless.Application")
 
@@ -51,6 +55,18 @@ fun Application.configureBackend() {
                 SessionManager.initSafeRoutes(this)
             }
         }
+
+        swaggerUI(path = "/swagger") {
+            info = OpenApiInfo(
+                title = "My API",
+                version = "1.0"
+            )
+
+            source = OpenApiDocSource.Routing(ContentType.Application.Json) {
+                routingRoot.descendants()
+            }
+        }
+
 
         staticFiles("/", File("app/browser")) {
             default("index.html")
