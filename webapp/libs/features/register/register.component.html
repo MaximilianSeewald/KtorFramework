@@ -33,16 +33,6 @@
       </button>
     </form>
 
-    <div *ngIf="authService.isRegistered"
-         class="mt-6 p-4 rounded-xl text-sm"
-         style="background-color: #F0FBF4; color: #1C7C3C; border: 1px solid #BFE8CB;">
-      <p class="font-semibold">Registration Successful!</p>
-      <p class="mt-1">Your account has been created. You can now
-        <a routerLink="/login" (click)="authService.resetRegistrationStatus()"
-           style="color: #0071E3; text-decoration: none; font-weight: 500;">sign in here</a>.
-      </p>
-    </div>
-
     <div *ngIf="errorService.errorMessage"
          class="mt-4 p-3 rounded-xl text-sm"
          style="background-color: #FFF2F1; color: #FF3B30; border: 1px solid #FFD5D2;">

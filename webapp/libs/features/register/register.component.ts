@@ -2,7 +2,6 @@ import {Component} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {AuthService} from '@core/services/auth.service';
 import {NgIf} from '@angular/common';
-import {RouterLink} from '@angular/router';
 import {MatIconModule} from '@angular/material/icon';
 import {ErrorService} from '@core/services/error.service';
 
@@ -11,7 +10,6 @@ import {ErrorService} from '@core/services/error.service';
   imports: [
     FormsModule,
     NgIf,
-    RouterLink,
     MatIconModule,
   ],
   templateUrl: './register.component.html',

@@ -7,11 +7,6 @@ import com.loudless.users.UserService
 import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.websocket.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 
@@ -30,46 +25,12 @@ class ShoppingListManager : GenericManager<ShoppingListItem>() {
     }
 
     private fun Route.webSocketShoppingList() {
-        webSocket("/shoppingListWS") {
-            LOGGER.info("Handling shopping list websocket connection")
-            val token = call.request.queryParameters["token"]
-            val decodedJWT = JwtUtil.validateWebSocketToken(this, token) ?: return@webSocket
-            
-            val groups = UserService.getUserGroupsByQuery(decodedJWT)
-            val userName = JwtUtil.getUsername(decodedJWT)
-            
-            if (groups.isEmpty() || groups.contains("")) {
-                LOGGER.warn("Rejected shopping list websocket because user has no group")
-                return@webSocket
-            }
-            
-            var flow = MutableSharedFlow<List<ShoppingListItem>>(replay = 1)
-            if (observerList[userName] == null) {
-                observerList[userName] = flow
-            } else {
-                flow = observerList[userName]!!
-            }
-            
-            val job = launch {
-                flow.collect { items ->
-                    send(Json.encodeToString(items))
-                }
-            }
-            
-            runCatching {
-                send(Json.encodeToString(ShoppingListService.retrieveItems(groups[0])))
-                incoming.consumeEach { }
-            }.onFailure {
-                LOGGER.error("Shopping list websocket failed for user {}", userName, it)
-                observerList.remove(userName)
-                close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, it.message ?: ""))
-                job.cancel()
-            }.also {
-                observerList.remove(userName)
-                job.cancel()
-                LOGGER.info("Shopping list websocket closed for user {}", userName)
-            }
-        }
+        webSocketResource(
+            path = "/shoppingListWS",
+            resourceName = "shopping list",
+            retrieveData = { ShoppingListService.retrieveItems(it) },
+            serializeData = { Json.encodeToString(it) }
+        )
     }
 
     private fun Route.getShoppingList() {
@@ -77,10 +38,7 @@ class ShoppingListManager : GenericManager<ShoppingListItem>() {
             LOGGER.info("Handling get shopping list request")
             val groups = retrieveUserGroupsAndHandleErrors(call)
             if (groups.isEmpty()) return@get
-            call.respondText(
-                text = Json.encodeToString(ShoppingListService.retrieveItems(groups[0])),
-                contentType = ContentType.Application.Json
-            )
+            call.respond(ShoppingListService.retrieveItems(groups[0]))
             LOGGER.info("Returned shopping list for group {}", groups[0])
         }
     }
@@ -128,6 +86,11 @@ class ShoppingListManager : GenericManager<ShoppingListItem>() {
             LOGGER.info("Handling delete shopping list item request")
             val groups = retrieveUserGroupsAndHandleErrors(call)
             if (groups.isEmpty()) return@delete
+            if (call.request.queryParameters["id"].isNullOrBlank()) {
+                LOGGER.warn("Rejected delete shopping list item because id query parameter was missing")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Item id is missing"))
+                return@delete
+            }
             when (ShoppingListService.deleteItem(call, groups[0])) {
                 true -> {
                     call.respond(HttpStatusCode.OK)

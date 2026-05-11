@@ -88,7 +88,7 @@ object DatabaseManager {
 
     private fun hikari(): HikariDataSource {
         val config = HikariConfig()
-        val dbPath = when {
+        val dbPath = System.getProperty("ktor.database.path") ?: when {
             File("/data").exists() -> "/data/db"
             System.getProperty("os.name").startsWith("Windows") -> "./data/db"
             else -> "./data/db"

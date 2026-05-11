@@ -43,10 +43,27 @@ object UserService {
         val principal = call.principal<JWTPrincipal>()
         val username = principal?.getClaim("username", String::class) ?: ""
         LOGGER.info("Retrieving user information for authenticated user")
+        return findUsersByUsername(username)
+    }
+
+    fun findAuthenticatedUser(call: ApplicationCall): User? {
+        val principal = call.principal<JWTPrincipal>() ?: return null
+        val username = principal.getClaim("username", String::class) ?: return null
+        val users = findUsersByUsername(username)
+        return when (users.size) {
+            1 -> users[0]
+            else -> {
+                LOGGER.warn("Expected exactly one user for authenticated principal, found {}", users.size)
+                null
+            }
+        }
+    }
+
+    fun findUsersByUsername(username: String): List<User> {
         return transaction {
             val users = Users.selectAll().where { Users.name eq username }
                 .map { User(it[Users.id], it[Users.name], it[Users.group] ?: "") }
-            LOGGER.info("Retrieved {} user information records", users.size)
+            LOGGER.info("Retrieved {} user information records for username {}", users.size, username)
             users
         }
     }

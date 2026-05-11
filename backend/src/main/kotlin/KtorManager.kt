@@ -1,8 +1,7 @@
 package com.loudless
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
-import com.loudless.SessionManager.secretJWTKey
+import com.loudless.auth.JwtService
+import com.loudless.config.BackendConfig
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -15,6 +14,7 @@ import io.ktor.server.websocket.*
 import io.ktor.server.request.*
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
+import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
 class KtorManager {
@@ -44,32 +44,34 @@ class KtorManager {
             json()
         }
         application.install(CORS) {
-            anyHost()  // Allow requests from any origin (use with caution in production)
-            allowMethod(HttpMethod.Get)  // Allow GET method
-            allowMethod(HttpMethod.Put)  // Allow PUT method
-            allowMethod(HttpMethod.Post)  // Allow POST method
-            allowMethod(HttpMethod.Delete)  // Allow DELETE method
-            allowMethod(HttpMethod.Options)  // Make sure OPTIONS method is allowed
+            val allowedOrigins = BackendConfig.corsAllowedOrigins
+            if (allowedOrigins.isEmpty()) {
+                anyHost()
+            } else {
+                allowedOrigins.forEach { origin ->
+                    val corsOrigin = parseCorsOrigin(origin)
+                    allowHost(corsOrigin.hostWithPort, schemes = corsOrigin.schemes)
+                }
+            }
+            allowMethod(HttpMethod.Get)
+            allowMethod(HttpMethod.Put)
+            allowMethod(HttpMethod.Post)
+            allowMethod(HttpMethod.Delete)
+            allowMethod(HttpMethod.Options)
             allowHeader(HttpHeaders.ContentType)
             allowHeader(HttpHeaders.Authorization)
-            allowHeader(HttpHeaders.Accept) // Allow Content-Type header
-            allowNonSimpleContentTypes = true  // Allow non-simple content types (like JSON)
-            maxAgeInSeconds = 3600  // Allow the browser to cache the preflight response for an hour
-            allowCredentials = true  // Allow cookies or authentication information
+            allowHeader(HttpHeaders.Accept)
+            allowNonSimpleContentTypes = true
+            maxAgeInSeconds = 3600
+            allowCredentials = true
 
         }
         application.install(Authentication) {
             jwt("auth-jwt") {
-                realm = "Ktor Server"
-                verifier(
-                    JWT
-                        .require(Algorithm.HMAC256(secretJWTKey))
-                        .withAudience("ktor-app")
-                        .withIssuer("ktor-auth")
-                        .build()
-                )
+                realm = BackendConfig.jwtRealm
+                verifier(JwtService.verifier())
                 validate { credential ->
-                    if (credential.payload.audience.contains("ktor-app")) {
+                    if (credential.payload.audience.contains(BackendConfig.jwtAudience)) {
                         JWTPrincipal(credential.payload)
                     } else {
                         LOGGER.warn("Rejected JWT with invalid audience")
@@ -80,4 +82,30 @@ class KtorManager {
         }
         LOGGER.info("Ktor components installed")
     }
+}
+
+internal data class CorsOrigin(
+    val hostWithPort: String,
+    val schemes: List<String>,
+)
+
+internal fun parseCorsOrigin(origin: String): CorsOrigin {
+    val hasScheme = origin.contains("://")
+    val uriText = if (hasScheme) origin else "http://$origin"
+    val uri = try {
+        URI(uriText)
+    } catch (exception: IllegalArgumentException) {
+        throw IllegalArgumentException("Invalid CORS origin '$origin'", exception)
+    }
+
+    val host = uri.host
+        ?: throw IllegalArgumentException("Invalid CORS origin '$origin': host is required")
+    val port = if (uri.port >= 0) ":${uri.port}" else ""
+    val schemes = if (hasScheme) {
+        listOf(uri.scheme)
+    } else {
+        listOf("http", "https")
+    }
+
+    return CorsOrigin("$host$port", schemes)
 }

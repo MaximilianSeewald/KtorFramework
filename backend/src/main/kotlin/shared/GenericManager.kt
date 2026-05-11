@@ -5,6 +5,11 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import kotlinx.coroutines.flow.MutableSharedFlow
+import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
+import io.ktor.websocket.*
+import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 
 /**
@@ -51,6 +56,46 @@ abstract class GenericManager<T> {
             LOGGER.info("Emitted resource update for {} observers in group {}", observersForGroup.size, groups[0])
         } else {
             LOGGER.info("No active observers for group {}", groups[0])
+        }
+    }
+
+    protected fun Route.webSocketResource(
+        path: String,
+        resourceName: String,
+        retrieveData: (String) -> List<T>,
+        serializeData: (List<T>) -> String
+    ) {
+        webSocket(path) {
+            LOGGER.info("Handling {} websocket connection", resourceName)
+            val token = call.request.queryParameters["token"]
+            val decodedJWT = JwtUtil.validateWebSocketToken(this, token) ?: return@webSocket
+            val groups = UserService.getUserGroupsByQuery(decodedJWT)
+            val userName = JwtUtil.getUsername(decodedJWT)
+
+            if (groups.size != 1 || groups[0].isBlank()) {
+                LOGGER.warn("Rejected {} websocket because user has invalid group membership", resourceName)
+                close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Invalid group"))
+                return@webSocket
+            }
+
+            val flow = observerList.getOrPut(userName) { MutableSharedFlow(replay = 1) }
+            val job = launch {
+                flow.collect { items ->
+                    send(serializeData(items))
+                }
+            }
+
+            try {
+                send(serializeData(retrieveData(groups[0])))
+                incoming.consumeEach { }
+            } catch (e: Exception) {
+                LOGGER.error("{} websocket failed for user {}", resourceName, userName, e)
+                close(CloseReason(CloseReason.Codes.INTERNAL_ERROR, e.message ?: ""))
+            } finally {
+                observerList.remove(userName)
+                job.cancel()
+                LOGGER.info("{} websocket closed for user {}", resourceName, userName)
+            }
         }
     }
 }
