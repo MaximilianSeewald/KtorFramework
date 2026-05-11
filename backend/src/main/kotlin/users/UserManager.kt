@@ -5,11 +5,13 @@ import com.loudless.database.DatabaseManager
 import com.loudless.database.Users
 import com.loudless.homeassistant.HomeAssistantMode
 import com.loudless.models.JoinUserGroupRequest
+import com.loudless.models.LoginRequest
 import com.loudless.userGroups.UserGroupService
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
@@ -197,9 +199,9 @@ class UserManager {
                 call.respond(HttpStatusCode.Forbidden, mapOf("message" to "Password login is disabled for Home Assistant"))
                 return@post
             }
-            val parameters = call.receiveParameters()
-            val username: String = parameters["username"] ?: ""
-            val password: String = parameters["password"] ?: ""
+            val body = call.receive<LoginRequest>()
+            val username: String = body.username
+            val password: String = body.password
             val user = transaction {
                 LOGGER.info("Looking up login user {}", username)
                 val foundUser = Users
@@ -233,3 +235,4 @@ class UserManager {
         }
     }
 }
+

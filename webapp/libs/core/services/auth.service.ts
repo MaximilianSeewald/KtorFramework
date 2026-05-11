@@ -56,14 +56,10 @@ export class AuthService {
   }
 
   login(username: string, password: string) {
+    const body = { username, password };
+    const headers = new HttpHeaders().set('Content-Type', 'application/json');
 
-    const body = new URLSearchParams();
-    body.set('username', username);
-    body.set('password', password);
-
-    const headers = new HttpHeaders().set('Content-Type', 'application/x-www-form-urlencoded');
-
-    this.http.post(`${this.apiUrl}/login`, body.toString(), { headers }).subscribe(
+    this.http.post(`${this.apiUrl}/login`, body, { headers }).subscribe(
       (response: any) => {
         localStorage.setItem('token', response.token);
         this.isLoggedIn = true

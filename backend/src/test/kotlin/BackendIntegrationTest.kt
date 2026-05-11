@@ -2,6 +2,7 @@ import com.loudless.configureBackend
 import com.loudless.auth.JwtService
 import com.loudless.database.DatabaseManager
 import com.loudless.models.CreateUserGroupRequest
+import com.loudless.models.LoginRequest
 import com.loudless.models.Recipe
 import com.loudless.models.ShoppingListItem
 import io.ktor.client.HttpClient
@@ -263,8 +264,8 @@ class BackendIntegrationTest {
         password: String
     ): LoginResult {
         val response = client.post("/api/login") {
-            contentType(ContentType.Application.FormUrlEncoded)
-            setBody("username=$username&password=$password")
+            contentType(ContentType.Application.Json)
+            setBody(LoginRequest(username, password))
         }
         val token = if (response.status == HttpStatusCode.OK) {
             Json.parseToJsonElement(response.bodyAsText())
