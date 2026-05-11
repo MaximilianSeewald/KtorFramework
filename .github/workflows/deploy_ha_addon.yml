@@ -94,25 +94,21 @@ jobs:
           PR=${{ steps.cpr.outputs.pull-request-number }}
           gh auth status --hostname github.com
 
-          CHECKS_FOUND=false
-          for i in {1..30}; do
-            if gh pr checks "$PR" --repo "$GITHUB_REPOSITORY" >/tmp/pr-checks.txt 2>&1; then
-              cat /tmp/pr-checks.txt
-              CHECKS_FOUND=true
+          BUILD_CHECK_FOUND=false
+          for i in {1..60}; do
+            gh pr checks "$PR" --repo "$GITHUB_REPOSITORY" >/tmp/pr-checks.txt 2>&1 || true
+            cat /tmp/pr-checks.txt
+
+            if grep -q "^build[[:space:]]" /tmp/pr-checks.txt; then
+              BUILD_CHECK_FOUND=true
               break
             fi
 
-            cat /tmp/pr-checks.txt
-            if grep -q "no checks reported" /tmp/pr-checks.txt; then
-              sleep 10
-              continue
-            fi
-
-            exit 1
+            sleep 10
           done
 
-          if [ "$CHECKS_FOUND" != "true" ]; then
-            echo "No checks were reported for PR $PR after waiting"
+          if [ "$BUILD_CHECK_FOUND" != "true" ]; then
+            echo "Required build check was not reported for PR $PR after waiting"
             exit 1
           fi
 
