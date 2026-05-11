@@ -49,11 +49,8 @@ class KtorManager {
                 anyHost()
             } else {
                 allowedOrigins.forEach { origin ->
-                    val uri = URI(origin)
-                    val host = uri.host ?: origin
-                    val port = if (uri.port >= 0) ":${uri.port}" else ""
-                    val schemes = uri.scheme?.let { listOf(it) } ?: listOf("http", "https")
-                    allowHost("$host$port", schemes = schemes)
+                    val corsOrigin = parseCorsOrigin(origin)
+                    allowHost(corsOrigin.hostWithPort, schemes = corsOrigin.schemes)
                 }
             }
             allowMethod(HttpMethod.Get)
@@ -85,4 +82,30 @@ class KtorManager {
         }
         LOGGER.info("Ktor components installed")
     }
+}
+
+internal data class CorsOrigin(
+    val hostWithPort: String,
+    val schemes: List<String>,
+)
+
+internal fun parseCorsOrigin(origin: String): CorsOrigin {
+    val hasScheme = origin.contains("://")
+    val uriText = if (hasScheme) origin else "http://$origin"
+    val uri = try {
+        URI(uriText)
+    } catch (exception: IllegalArgumentException) {
+        throw IllegalArgumentException("Invalid CORS origin '$origin'", exception)
+    }
+
+    val host = uri.host
+        ?: throw IllegalArgumentException("Invalid CORS origin '$origin': host is required")
+    val port = if (uri.port >= 0) ":${uri.port}" else ""
+    val schemes = if (hasScheme) {
+        listOf(uri.scheme)
+    } else {
+        listOf("http", "https")
+    }
+
+    return CorsOrigin("$host$port", schemes)
 }
