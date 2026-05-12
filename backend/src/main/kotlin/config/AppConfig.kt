@@ -38,9 +38,13 @@ object AppConfigLoader {
     }
 
     private fun defaultConfigPath(): Path {
+        return discoverConfigPath(Path.of("").toAbsolutePath())
+    }
+
+    internal fun discoverConfigPath(workingDirectory: Path): Path {
         return listOf(
-            Path.of("config.properties"),
-            Path.of("..", "config.properties"),
+            workingDirectory.resolve("config.properties"),
+            workingDirectory.resolve("..").resolve("config.properties").normalize(),
         ).firstOrNull { Files.exists(it) } ?: Path.of("config.properties")
     }
 }

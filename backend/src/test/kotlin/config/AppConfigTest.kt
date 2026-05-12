@@ -34,20 +34,14 @@ class AppConfigTest {
     }
 
     @Test
-    fun `reset discovers config file one directory above working directory`() {
+    fun `discovers config file one directory above working directory`() {
         val root = Files.createTempDirectory("ktor-config-parent-test")
         val backend = root.resolve("backend").createDirectory()
         Files.writeString(root.resolve("config.properties"), "APP_ENV=development")
-        val originalUserDir = System.getProperty("user.dir")
 
-        try {
-            System.setProperty("user.dir", backend.toString())
-            AppConfigLoader.reset()
+        val configPath = AppConfigLoader.discoverConfigPath(backend)
+        val config = AppConfigLoader.load(configPath)
 
-            assertEquals("development", AppConfigLoader.load().appEnvironment)
-        } finally {
-            System.setProperty("user.dir", originalUserDir)
-            AppConfigLoader.reset()
-        }
+        assertEquals("development", config.appEnvironment)
     }
 }
