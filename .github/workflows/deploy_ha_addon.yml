@@ -92,6 +92,7 @@ jobs:
         if: steps.cpr.outputs.pull-request-number != ''
         run: |
           PR=${{ steps.cpr.outputs.pull-request-number }}
+          HEAD_SHA="$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)"
           gh auth status --hostname github.com
 
           BUILD_CHECK_FOUND=false
@@ -112,7 +113,27 @@ jobs:
             exit 1
           fi
 
-          gh pr checks "$PR" --repo "$GITHUB_REPOSITORY" --watch --interval 10
+          for i in {1..180}; do
+            BUILD_STATE="$(gh api repos/"$GITHUB_REPOSITORY"/commits/"$HEAD_SHA"/status --jq '.statuses[] | select(.context == "build") | .state' | head -n 1)"
+
+            if [ "$BUILD_STATE" = "success" ]; then
+              break
+            fi
+
+            if [ "$BUILD_STATE" = "failure" ] || [ "$BUILD_STATE" = "error" ]; then
+              echo "Required build check ended with state: $BUILD_STATE"
+              exit 1
+            fi
+
+            echo "Waiting for required build status on $HEAD_SHA; current state: ${BUILD_STATE:-missing}"
+            sleep 10
+          done
+
+          if [ "$BUILD_STATE" != "success" ]; then
+            echo "Required build check did not succeed for PR $PR after waiting"
+            exit 1
+          fi
+
           gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --squash
         env:
           GH_TOKEN: ${{ github.token }}
