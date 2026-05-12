@@ -218,16 +218,6 @@ async function callSupervisorApi(hass, endpoint, method = 'get') {
   return unwrapSupervisorResponse(await hass.callWS(request));
 }
 
-async function ensureIngressSession(hass) {
-  const response = await callSupervisorApi(hass, '/ingress/session', 'post');
-  if (!response?.session) {
-    return;
-  }
-
-  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-  document.cookie = `ingress_session=${encodeURIComponent(response.session)}; path=/; SameSite=Strict${secure}`;
-}
-
 function findAddonSlug(addons, configuredSlug) {
   const normalizedSlug = String(configuredSlug || '').trim();
   const installedAddons = Array.isArray(addons) ? addons : [];
@@ -263,11 +253,9 @@ async function resolveAddonIngressBaseUrl(hass, addonSlug) {
     try {
       const addonInfo = await callSupervisorApi(hass, endpoint);
       if (addonInfo?.ingress_entry) {
-        await ensureIngressSession(hass);
         return normalizeBaseUrl(normalizeIngressEntry(addonInfo.ingress_entry));
       }
       if (addonInfo?.ingress_url) {
-        await ensureIngressSession(hass);
         return normalizeBaseUrl(addonInfo.ingress_url);
       }
     } catch (error) {
