@@ -1,5 +1,5 @@
 name: "Ktor App"
-version: "1.1.62"
+version: "1.1.63"
 slug: "ktor_app"
 description: "Ktor backend application with Angular frontend for recipes, shopping lists, and more"
 arch:
