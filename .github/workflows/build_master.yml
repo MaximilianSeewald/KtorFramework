@@ -46,14 +46,21 @@ jobs:
             deploy/ => ../var/www/html
       - name: stop and start ktor backend
         uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17
+        env:
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
         with:
           host: 92.205.163.207
           username: ${{secrets.username}}
           password: ${{ secrets.password }}
           port: 22
+          envs: JWT_SECRET_KEY
           script: |
             set -e
             cd ../var/www/html
+            if [ -z "${JWT_SECRET_KEY:-}" ]; then
+              echo "JWT_SECRET_KEY repository secret is required"
+              exit 1
+            fi
             if [ -f ktor.pid ]; then
               old_pid="$(cat ktor.pid || true)"
               if [ -n "$old_pid" ] && ps -p "$old_pid" -o args= | grep -q 'java -jar ktor.jar'; then
@@ -63,7 +70,7 @@ jobs:
               rm -f ktor.pid
             fi
             chmod +x ktor.jar
-            nohup env KTOR_HOST=127.0.0.1 KTOR_PORT=8090 java -jar ktor.jar > ktor.log 2>&1 &
+            nohup env JWT_SECRET_KEY="$JWT_SECRET_KEY" KTOR_HOST=127.0.0.1 KTOR_PORT=8090 java -jar ktor.jar > ktor.log 2>&1 &
             echo $! > ktor.pid
             sleep 5
             if ! kill -0 "$(cat ktor.pid)" 2>/dev/null; then

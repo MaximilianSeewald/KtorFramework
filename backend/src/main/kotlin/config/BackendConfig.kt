@@ -5,6 +5,14 @@ object BackendConfig {
     const val jwtIssuer = "ktor-auth"
     const val jwtRealm = "Ktor Server"
     private const val defaultJwtTokenTtlMs = 1000000000L
+    private const val weakAddonSecret = "change-this-to-a-secure-key"
+
+    private val localDevelopmentCorsOrigins = listOf(
+        "http://localhost:4200",
+        "http://127.0.0.1:4200",
+        "http://localhost:4201",
+        "http://127.0.0.1:4201",
+    )
 
     val jwtSecret: String
         get() = System.getProperty("JWT_SECRET_KEY")
@@ -16,10 +24,33 @@ object BackendConfig {
             ?: System.getenv("JWT_TOKEN_TTL_MS")?.toLongOrNull()
             ?: defaultJwtTokenTtlMs
 
+    val appEnvironment: String
+        get() = AppConfigLoader.load().appEnvironment
+
     val corsAllowedOrigins: List<String>
-        get() = System.getenv("CORS_ALLOWED_ORIGINS")
-            ?.split(",")
-            ?.map { it.trim() }
-            ?.filter { it.isNotEmpty() }
-            ?: emptyList()
+        get() = AppConfigLoader.load().corsAllowedOrigins
+
+    val corsOriginsForRuntime: List<String>
+        get() = corsAllowedOrigins.ifEmpty {
+            if (isDevelopment) localDevelopmentCorsOrigins else emptyList()
+        }
+
+    val isDevelopment: Boolean
+        get() = appEnvironment.equals("development", ignoreCase = true)
+
+    val swaggerEnabled: Boolean
+        get() = isDevelopment
+
+    const val webSocketMaxFrameSize: Long = 1024L * 1024L
+
+    fun validateStartupSecurity() {
+        val secret = jwtSecret
+        if (!isDevelopment && isWeakJwtSecret(secret)) {
+            throw IllegalStateException("JWT_SECRET_KEY must be at least 32 characters and must not use the packaged placeholder")
+        }
+    }
+
+    fun isWeakJwtSecret(secret: String): Boolean {
+        return secret.length < 32
+    }
 }

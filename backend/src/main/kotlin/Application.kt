@@ -1,5 +1,6 @@
 package com.loudless
 
+import com.loudless.config.BackendConfig
 import com.loudless.database.DatabaseManager
 import com.loudless.models.VerifySessionResponse
 import com.loudless.users.UserService
@@ -23,6 +24,7 @@ private val LOGGER = LoggerFactory.getLogger("com.loudless.Application")
 
 fun main() {
     LOGGER.info("Starting backend application")
+    BackendConfig.validateStartupSecurity()
     DatabaseManager.init()
     val host = System.getenv("KTOR_HOST") ?: "0.0.0.0"
     val port = System.getenv("KTOR_PORT")?.toIntOrNull() ?: 8080
@@ -56,14 +58,16 @@ fun Application.configureBackend() {
             }
         }
 
-        swaggerUI(path = "/swagger") {
-            info = OpenApiInfo(
-                title = "My API",
-                version = "1.0"
-            )
+        if (BackendConfig.swaggerEnabled) {
+            swaggerUI(path = "/swagger") {
+                info = OpenApiInfo(
+                    title = "KtorFramework API",
+                    version = "1.0"
+                )
 
-            source = OpenApiDocSource.Routing(ContentType.Application.Json) {
-                routingRoot.descendants()
+                source = OpenApiDocSource.Routing(ContentType.Application.Json) {
+                    routingRoot.descendants()
+                }
             }
         }
 

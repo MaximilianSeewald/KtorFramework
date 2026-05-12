@@ -65,7 +65,7 @@ function spawnBackend(jarPath: string, port: number, backendWorkDir: string): Ch
     env: {
       ...process.env,
       HA_MODE: 'true',
-      JWT_SECRET_KEY: 'test-secret',
+      JWT_SECRET_KEY: 'ha-ingress-test-secret-with-production-length',
       KTOR_HOST: '127.0.0.1',
       KTOR_PORT: String(port),
     },

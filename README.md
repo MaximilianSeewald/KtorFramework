@@ -33,6 +33,7 @@ The add-on is configured in `addons/ktor_app/config.yaml`:
 - Panel icon: `mdi:chef-hat`
 - Data storage: enabled through the Home Assistant `/data` mount
 - Environment: `HA_MODE=true`
+- JWT secret: read from the add-on `jwt_secret` option when set, otherwise generated once and stored at `/data/jwt_secret`
 
 When `HA_MODE` is enabled, the backend creates and uses a default Home Assistant user/group:
 
@@ -180,9 +181,19 @@ JWT_SECRET_KEY         Required. Secret used for JWT signing.
 JWT_TOKEN_TTL_MS      Optional. Token lifetime in milliseconds.
 KTOR_HOST             Optional. Defaults to 0.0.0.0.
 KTOR_PORT             Optional. Defaults to 8080.
-CORS_ALLOWED_ORIGINS  Optional comma-separated origins. Defaults to any host when unset.
 HA_MODE               Optional. Set true only for Home Assistant mode.
 ```
+
+Optional `config.properties` file in the backend working directory. Start from `config.example.properties`:
+
+```properties
+APP_ENV=production
+CORS_ALLOWED_ORIGINS=https://example.com,https://www.example.com
+```
+
+Production builds of both Angular apps use relative `api` URLs, so the normal same-origin deployment does not need CORS. If `CORS_ALLOWED_ORIGINS` is omitted, production does not install CORS. If `APP_ENV=development` and no explicit CORS origins are configured, the backend allows the local Angular dev origins on ports `4200` and `4201`.
+
+Swagger UI is available only when `APP_ENV=development`.
 
 ### Local Development
 
@@ -198,6 +209,8 @@ On PowerShell:
 $env:JWT_SECRET_KEY = "dev-secret"
 .\gradlew.bat backend:run
 ```
+
+Local development can use `config.properties` with `APP_ENV=development` for local CORS and Swagger behavior. The backend looks for `config.properties` in the current working directory and one directory above it, so it works from both the repository root and `backend/`.
 
 Start the standard Angular frontend:
 

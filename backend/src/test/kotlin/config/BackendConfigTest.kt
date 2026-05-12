@@ -1,5 +1,6 @@
 package com.loudless.config
 
+import java.nio.file.Files
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,6 +11,7 @@ class BackendConfigTest {
     fun tearDown() {
         System.clearProperty("JWT_SECRET_KEY")
         System.clearProperty("JWT_TOKEN_TTL_MS")
+        AppConfigLoader.reset()
     }
 
     @Test
@@ -46,8 +48,64 @@ class BackendConfigTest {
     }
 
     @Test
-    fun `cors allowed origins defaults to permissive empty list`() {
+    fun `cors allowed origins defaults to empty list`() {
         assertEquals(emptyList(), BackendConfig.corsAllowedOrigins)
+    }
+
+    @Test
+    fun `runtime cors origins default to local Angular origins in development`() {
+        val configPath = Files.createTempFile("ktor-config-test", ".properties")
+        Files.writeString(configPath, "APP_ENV=development")
+        AppConfigLoader.configPath = configPath
+
+        assertEquals(
+            listOf(
+                "http://localhost:4200",
+                "http://127.0.0.1:4200",
+                "http://localhost:4201",
+                "http://127.0.0.1:4201",
+            ),
+            BackendConfig.corsOriginsForRuntime
+        )
+    }
+
+    @Test
+    fun `runtime cors origins prefer explicit config file origins`() {
+        val configPath = Files.createTempFile("ktor-config-test", ".properties")
+        Files.writeString(
+            configPath,
+            "APP_ENV=development\nCORS_ALLOWED_ORIGINS=https://app.example.com"
+        )
+        AppConfigLoader.configPath = configPath
+
+        assertEquals(listOf("https://app.example.com"), BackendConfig.corsOriginsForRuntime)
+    }
+
+    @Test
+    fun `runtime cors origins are empty by default in production`() {
+        AppConfigLoader.configPath = Files.createTempDirectory("ktor-config-test").resolve("missing.properties")
+
+        assertEquals(emptyList(), BackendConfig.corsOriginsForRuntime)
+    }
+
+    @Test
+    fun `startup security rejects weak production jwt secret`() {
+        AppConfigLoader.configPath = Files.createTempDirectory("ktor-config-test").resolve("missing.properties")
+        System.setProperty("JWT_SECRET_KEY", "short-secret")
+
+        assertFailsWith<IllegalStateException> {
+            BackendConfig.validateStartupSecurity()
+        }
+    }
+
+    @Test
+    fun `startup security allows weak jwt secret in development`() {
+        val configPath = Files.createTempFile("ktor-config-test", ".properties")
+        Files.writeString(configPath, "APP_ENV=development")
+        AppConfigLoader.configPath = configPath
+        System.setProperty("JWT_SECRET_KEY", "short-secret")
+
+        BackendConfig.validateStartupSecurity()
     }
 
     @Test

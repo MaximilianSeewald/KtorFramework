@@ -1,5 +1,6 @@
 package com.loudless.userGroups
 
+import com.loudless.auth.CredentialPolicy
 import com.loudless.database.DatabaseManager
 import com.loudless.homeassistant.HomeAssistantMode
 import com.loudless.models.CreateUserGroupRequest
@@ -40,6 +41,12 @@ class UserGroupManager {
                 call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User is not admin"))
                 return@put
             }
+            val passwordError = CredentialPolicy.passwordValidationMessage(editUserGroupRequest.newPassword)
+            if (passwordError != null) {
+                LOGGER.warn("Rejected user group password edit because new password did not meet policy")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to passwordError))
+                return@put
+            }
             UserGroupService.updatePassword(editUserGroupRequest.userGroupName, editUserGroupRequest.newPassword)
             call.respond(HttpStatusCode.OK)
             LOGGER.info("Updated password for user group {}", editUserGroupRequest.userGroupName)
@@ -62,6 +69,12 @@ class UserGroupManager {
             if (UserGroupService.userGroupExists(userGroupName)) {
                 LOGGER.warn("Rejected create user group because group {} already exists", userGroupName)
                 call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User group already exists"))
+                return@post
+            }
+            val passwordError = CredentialPolicy.passwordValidationMessage(createUserGroupRequest.password)
+            if (passwordError != null) {
+                LOGGER.warn("Rejected create user group because password did not meet policy")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to passwordError))
                 return@post
             }
             UserGroupService.addUserGroup(

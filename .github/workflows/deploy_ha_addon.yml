@@ -50,6 +50,7 @@ jobs:
           rm -rf addons/ktor_app/app
           mkdir -p addons/ktor_app/app
           cp -r deploy/ha-app/. addons/ktor_app/app/
+          test -f addons/ktor_app/start.sh
           test "$(find addons/ktor_app/app/browser -maxdepth 1 -name 'main-*.js' | wc -l)" -eq 1
           grep -q "Home Assistant - Shopping & Recipes" addons/ktor_app/app/browser/index.html
           ! grep -R "Maximilian Seewald" addons/ktor_app/app/browser
