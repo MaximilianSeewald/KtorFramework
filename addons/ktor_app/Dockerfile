@@ -6,10 +6,13 @@ WORKDIR /app
 
 COPY ktor.jar ktor.jar
 COPY app app
+COPY start.sh start.sh
+
+RUN chmod +x start.sh
 
 EXPOSE 8080
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
     CMD curl -f http://localhost:8080/ || exit 1
 
-CMD ["java", "-jar", "ktor.jar"]
+CMD ["./start.sh"]

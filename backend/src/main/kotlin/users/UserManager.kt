@@ -1,6 +1,7 @@
 package com.loudless.users
 
 import com.loudless.auth.AuthTokenService
+import com.loudless.auth.CredentialPolicy
 import com.loudless.database.DatabaseManager
 import com.loudless.database.Users
 import com.loudless.homeassistant.HomeAssistantMode
@@ -11,7 +12,6 @@ import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
@@ -58,6 +58,12 @@ class UserManager {
                 call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Username or password is empty"))
                 return@post
             }
+            val passwordError = CredentialPolicy.passwordValidationMessage(password)
+            if (passwordError != null) {
+                LOGGER.warn("Rejected user signup because password did not meet policy")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to passwordError))
+                return@post
+            }
             if (UserService.userExists(username)) {
                 LOGGER.warn("Rejected user signup because user {} already exists", username)
                 call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User already exists"))
@@ -97,6 +103,12 @@ class UserManager {
             if (newPassword == "") {
                 LOGGER.warn("Rejected password change for user {} because new password was empty", user.id)
                 call.respond(HttpStatusCode.BadRequest, mapOf("message" to "New password is empty"))
+                return@post
+            }
+            val passwordError = CredentialPolicy.passwordValidationMessage(newPassword)
+            if (passwordError != null) {
+                LOGGER.warn("Rejected password change for user {} because new password did not meet policy", user.id)
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to passwordError))
                 return@post
             }
             UserService.updatePassword(user.id, newPassword)

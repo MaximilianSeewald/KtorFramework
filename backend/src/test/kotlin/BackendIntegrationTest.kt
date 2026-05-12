@@ -1,5 +1,6 @@
 import com.loudless.configureBackend
 import com.loudless.auth.JwtService
+import com.loudless.config.AppConfigLoader
 import com.loudless.database.DatabaseManager
 import com.loudless.models.CreateUserGroupRequest
 import com.loudless.models.JoinUserGroupRequest
@@ -14,6 +15,7 @@ import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.options
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -38,6 +40,7 @@ import java.util.UUID
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -46,6 +49,7 @@ class BackendIntegrationTest {
     fun setUpIntegrationDatabase() {
         System.setProperty("JWT_SECRET_KEY", "test-secret")
         System.clearProperty("HA_MODE")
+        AppConfigLoader.reset()
         val databasePath = Files.createTempDirectory("ktor-framework-test").resolve("db").toString()
         System.setProperty("ktor.database.path", databasePath)
         DatabaseManager.shoppingListMap.clear()
@@ -106,6 +110,58 @@ class BackendIntegrationTest {
             bearer(missingUserToken)
         }
         assertEquals(HttpStatusCode.Unauthorized, missingUser.status)
+    }
+
+    @Test
+    fun `cors is not installed by default`() = testApplication {
+        application { configureBackend() }
+        val client = createJsonClient()
+
+        val response = client.options("/api/login") {
+            header(HttpHeaders.Origin, "https://random.example")
+            header(HttpHeaders.AccessControlRequestMethod, "POST")
+        }
+
+        assertFalse(response.headers.contains(HttpHeaders.AccessControlAllowOrigin))
+    }
+
+    @Test
+    fun `cors allows only origins configured in config file`() = testApplication {
+        val configPath = Files.createTempFile("ktor-framework-cors-test", ".properties")
+        Files.writeString(configPath, "CORS_ALLOWED_ORIGINS=https://allowed.example")
+        AppConfigLoader.configPath = configPath
+
+        application { configureBackend() }
+        val client = createJsonClient()
+
+        val allowed = client.options("/api/login") {
+            header(HttpHeaders.Origin, "https://allowed.example")
+            header(HttpHeaders.AccessControlRequestMethod, "POST")
+        }
+        assertEquals("https://allowed.example", allowed.headers[HttpHeaders.AccessControlAllowOrigin])
+
+        val blocked = client.options("/api/login") {
+            header(HttpHeaders.Origin, "https://blocked.example")
+            header(HttpHeaders.AccessControlRequestMethod, "POST")
+        }
+        assertFalse(blocked.headers.contains(HttpHeaders.AccessControlAllowOrigin))
+    }
+
+    @Test
+    fun `development config enables local Angular cors origins`() = testApplication {
+        val configPath = Files.createTempFile("ktor-framework-cors-dev-test", ".properties")
+        Files.writeString(configPath, "APP_ENV=development")
+        AppConfigLoader.configPath = configPath
+
+        application { configureBackend() }
+        val client = createJsonClient()
+
+        val response = client.options("/api/login") {
+            header(HttpHeaders.Origin, "http://localhost:4200")
+            header(HttpHeaders.AccessControlRequestMethod, "POST")
+        }
+
+        assertEquals("http://localhost:4200", response.headers[HttpHeaders.AccessControlAllowOrigin])
     }
 
     @Test
@@ -270,6 +326,27 @@ class BackendIntegrationTest {
             bearer(token)
         }
         assertEquals(HttpStatusCode.Forbidden, leaveGroup.status)
+    }
+
+    @Test
+    fun `signup and user group creation reject short passwords`() = testApplication {
+        application { configureBackend() }
+        val client = createJsonClient()
+        val username = "policy_${UUID.randomUUID()}"
+
+        val shortSignup = signup(client, username, "short")
+        assertEquals(HttpStatusCode.BadRequest, shortSignup.status)
+
+        assertEquals(HttpStatusCode.Created, signup(client, username, "long-enough").status)
+        val login = login(client, username, "long-enough")
+        val token = requireNotNull(login.token)
+
+        val shortGroupPassword = client.post("/api/usergroups") {
+            bearer(token)
+            contentType(ContentType.Application.Json)
+            setBody(CreateUserGroupRequest("policy_group_${UUID.randomUUID().toString().replace("-", "_")}", "short"))
+        }
+        assertEquals(HttpStatusCode.BadRequest, shortGroupPassword.status)
     }
 
     private fun ApplicationTestBuilder.createJsonClient() = createClient {

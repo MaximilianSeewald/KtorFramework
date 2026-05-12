@@ -25,7 +25,7 @@ class KtorManager {
         application.install(WebSockets) {
             pingPeriod = 15.seconds
             timeout = 30.seconds
-            maxFrameSize = Long.MAX_VALUE
+            maxFrameSize = BackendConfig.webSocketMaxFrameSize
             masking = false
         }
         application.install(CallLogging) {
@@ -43,28 +43,25 @@ class KtorManager {
         application.install(ContentNegotiation) {
             json()
         }
-        application.install(CORS) {
-            val allowedOrigins = BackendConfig.corsAllowedOrigins
-            if (allowedOrigins.isEmpty()) {
-                anyHost()
-            } else {
+        val allowedOrigins = BackendConfig.corsOriginsForRuntime
+        if (allowedOrigins.isNotEmpty()) {
+            application.install(CORS) {
                 allowedOrigins.forEach { origin ->
                     val corsOrigin = parseCorsOrigin(origin)
                     allowHost(corsOrigin.hostWithPort, schemes = corsOrigin.schemes)
                 }
+                allowMethod(HttpMethod.Get)
+                allowMethod(HttpMethod.Put)
+                allowMethod(HttpMethod.Post)
+                allowMethod(HttpMethod.Delete)
+                allowMethod(HttpMethod.Options)
+                allowHeader(HttpHeaders.ContentType)
+                allowHeader(HttpHeaders.Authorization)
+                allowHeader(HttpHeaders.Accept)
+                allowNonSimpleContentTypes = true
+                maxAgeInSeconds = 3600
+                allowCredentials = true
             }
-            allowMethod(HttpMethod.Get)
-            allowMethod(HttpMethod.Put)
-            allowMethod(HttpMethod.Post)
-            allowMethod(HttpMethod.Delete)
-            allowMethod(HttpMethod.Options)
-            allowHeader(HttpHeaders.ContentType)
-            allowHeader(HttpHeaders.Authorization)
-            allowHeader(HttpHeaders.Accept)
-            allowNonSimpleContentTypes = true
-            maxAgeInSeconds = 3600
-            allowCredentials = true
-
         }
         application.install(Authentication) {
             jwt("auth-jwt") {

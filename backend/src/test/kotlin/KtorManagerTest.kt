@@ -1,5 +1,6 @@
 package com.loudless
 
+import com.loudless.config.BackendConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -36,5 +37,10 @@ class KtorManagerTest {
         }
 
         assertEquals("Invalid CORS origin 'http://:4200': host is required", failure.message)
+    }
+
+    @Test
+    fun `websocket frame size is bounded`() {
+        assertEquals(1024L * 1024L, BackendConfig.webSocketMaxFrameSize)
     }
 }
