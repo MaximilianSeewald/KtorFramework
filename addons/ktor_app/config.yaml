@@ -14,11 +14,13 @@ ingress_timeout: 60
 homeassistant_api: true
 panel_icon: "mdi:chef-hat"
 panel_title: "Recipes & Shopping"
+panel_admin: false
 data: true
 network: true
 map:
   - type: homeassistant_config
     read_only: false
 environment:
-  JWT_SECRET_KEY: "change-this-to-a-secure-key"
   HA_MODE: "true"
+schema:
+  jwt_secret: "str?"
