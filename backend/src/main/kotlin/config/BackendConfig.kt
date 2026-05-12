@@ -5,7 +5,6 @@ object BackendConfig {
     const val jwtIssuer = "ktor-auth"
     const val jwtRealm = "Ktor Server"
     private const val defaultJwtTokenTtlMs = 1000000000L
-    private const val weakAddonSecret = "change-this-to-a-secure-key"
 
     private val localDevelopmentCorsOrigins = listOf(
         "http://localhost:4200",

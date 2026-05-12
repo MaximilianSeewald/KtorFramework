@@ -33,7 +33,7 @@ The add-on is configured in `addons/ktor_app/config.yaml`:
 - Panel icon: `mdi:chef-hat`
 - Data storage: enabled through the Home Assistant `/data` mount
 - Environment: `HA_MODE=true`
-- JWT secret: generated once at startup and stored at `/data/jwt_secret`
+- JWT secret: uses a real `JWT_SECRET_KEY` environment value first; otherwise generates one once and stores it at `/data/jwt_secret`
 
 When `HA_MODE` is enabled, the backend creates and uses a default Home Assistant user/group:
 

@@ -20,8 +20,5 @@ map:
   - type: homeassistant_config
     read_only: false
 environment:
+  JWT_SECRET_KEY: "change-this-to-a-secure-key"
   HA_MODE: "true"
-options:
-  jwt_secret: ""
-schema:
-  jwt_secret: "str?"
