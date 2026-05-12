@@ -86,27 +86,11 @@ describe('AuthService', () => {
     await expectAsync(second).toBeResolvedTo(true);
   });
 
-  it('uses existing Home Assistant token before requesting a new session', async () => {
+  it('requests a fresh Home Assistant session instead of verifying an existing stored token', async () => {
     environment.haAutoLogin = true;
     localStorage.setItem('token', 'existing-ha-token');
 
     const resultPromise = service.verifyToken();
-    httpMock.expectOne(`${service.apiUrl}/verify`).flush(verifyResponse);
-    httpMock.expectNone(`${service.apiUrl}/ha/session`);
-
-    await expectAsync(resultPromise).toBeResolvedTo(true);
-  });
-
-  it('falls back to Home Assistant session when existing token is invalid', async () => {
-    environment.haAutoLogin = true;
-    localStorage.setItem('token', 'invalid-ha-token');
-
-    const resultPromise = service.verifyToken();
-    httpMock.expectOne(`${service.apiUrl}/verify`).flush(
-      { message: 'Invalid session' },
-      { status: 401, statusText: 'Unauthorized' }
-    );
-    await new Promise(resolve => setTimeout(resolve, 0));
     httpMock.expectOne(`${service.apiUrl}/ha/session`).flush({ token: 'new-ha-token' });
     await new Promise(resolve => setTimeout(resolve, 0));
     const verifyNewToken = httpMock.expectOne(`${service.apiUrl}/verify`);

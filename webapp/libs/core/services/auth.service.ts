@@ -96,13 +96,16 @@ export class AuthService {
   }
 
   private async verifySession(): Promise<boolean> {
+    if (environment.haAutoLogin) {
+      if (this.isLoggedIn && localStorage.getItem('token')) {
+        return true;
+      }
+      return this.loginHomeAssistantUser();
+    }
+
     const hasToken = !!localStorage.getItem('token');
     if (hasToken && await this.verifyStoredToken()) {
       return true;
-    }
-
-    if (environment.haAutoLogin) {
-      return this.loginHomeAssistantUser();
     }
 
     this.clearSession();
