@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "outDir": "./out-tsc/ha-ingress",
+    "types": [
+      "node",
+      "@playwright/test"
+    ]
+  },
+  "include": [
+    "playwright.ha-ingress.config.ts",
+    "tests/ha-ingress/**/*.ts"
+  ]
+}
