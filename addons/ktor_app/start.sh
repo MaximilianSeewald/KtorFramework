@@ -14,10 +14,8 @@ if [ -n "$configured_secret" ] && [ "$configured_secret" != "$PLACEHOLDER_SECRET
   export JWT_SECRET_KEY="$configured_secret"
 else
   if [ ! -s "$SECRET_FILE" ]; then
-    {
-      cat /proc/sys/kernel/random/uuid
-      cat /proc/sys/kernel/random/uuid
-    } | tr -d '-\n' > "$SECRET_FILE"
+    secret="$(cat /proc/sys/kernel/random/uuid)$(cat /proc/sys/kernel/random/uuid)"
+    printf '%s' "$secret" | sed 's/-//g' > "$SECRET_FILE"
     chmod 600 "$SECRET_FILE"
   fi
   export JWT_SECRET_KEY="$(cat "$SECRET_FILE")"
