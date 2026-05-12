@@ -2,6 +2,7 @@ import com.loudless.configureBackend
 import com.loudless.auth.JwtService
 import com.loudless.database.DatabaseManager
 import com.loudless.models.CreateUserGroupRequest
+import com.loudless.models.JoinUserGroupRequest
 import com.loudless.models.LoginRequest
 import com.loudless.models.Recipe
 import com.loudless.models.ShoppingListItem
@@ -214,7 +215,7 @@ class BackendIntegrationTest {
     }
 
     @Test
-    fun `home assistant mode exposes session and blocks local registration`() = testApplication {
+    fun `home assistant mode exposes session and blocks local auth and group management`() = testApplication {
         System.setProperty("HA_MODE", "true")
         DatabaseManager.shoppingListMap.clear()
         DatabaseManager.recipeMap.clear()
@@ -240,6 +241,35 @@ class BackendIntegrationTest {
 
         val signup = signup(client, "ha_disabled_${UUID.randomUUID()}", "password")
         assertEquals(HttpStatusCode.Forbidden, signup.status)
+
+        val login = login(client, "ha-user", "home-assistant-instance-user")
+        assertEquals(HttpStatusCode.Forbidden, login.response.status)
+
+        val passwordChange = client.post("/api/user/ha-user/password") {
+            bearer(token)
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody("oldPassword=old&newPassword=new")
+        }
+        assertEquals(HttpStatusCode.Forbidden, passwordChange.status)
+
+        val createGroup = client.post("/api/usergroups") {
+            bearer(token)
+            contentType(ContentType.Application.Json)
+            setBody(CreateUserGroupRequest("ha_disabled_group", "password"))
+        }
+        assertEquals(HttpStatusCode.Forbidden, createGroup.status)
+
+        val joinGroup = client.post("/api/user/ha-user/groups") {
+            bearer(token)
+            contentType(ContentType.Application.Json)
+            setBody(JoinUserGroupRequest("ha-instance", "password"))
+        }
+        assertEquals(HttpStatusCode.Forbidden, joinGroup.status)
+
+        val leaveGroup = client.delete("/api/user/ha-user/groups/ha-instance") {
+            bearer(token)
+        }
+        assertEquals(HttpStatusCode.Forbidden, leaveGroup.status)
     }
 
     private fun ApplicationTestBuilder.createJsonClient() = createClient {
