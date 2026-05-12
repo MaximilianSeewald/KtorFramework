@@ -7,7 +7,7 @@ describe('Auth guards', () => {
   let authService: jasmine.SpyObj<AuthService>;
 
   beforeEach(() => {
-    router = jasmine.createSpyObj<Router>('Router', ['navigate']);
+    router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
     authService = jasmine.createSpyObj<AuthService>('AuthService', ['verifyToken']);
   });
 
@@ -16,7 +16,7 @@ describe('Auth guards', () => {
     const guard = new AuthGuard(router, authService);
 
     await expectAsync(guard.canActivate()).toBeResolvedTo(true);
-    expect(router.navigate).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
   it('AuthGuard redirects unauthenticated users to login', async () => {
@@ -24,7 +24,7 @@ describe('Auth guards', () => {
     const guard = new AuthGuard(router, authService);
 
     await expectAsync(guard.canActivate()).toBeResolvedTo(false);
-    expect(router.navigate).toHaveBeenCalledWith(['login']);
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/login');
   });
 
   it('NoAuthGuard redirects authenticated users to dashboard', async () => {
@@ -32,7 +32,7 @@ describe('Auth guards', () => {
     const guard = new NoAuthGuard(router, authService);
 
     await expectAsync(guard.canActivate()).toBeResolvedTo(false);
-    expect(router.navigate).toHaveBeenCalledWith(['dashboard']);
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/dashboard');
   });
 
   it('NoAuthGuard allows unauthenticated users', async () => {
@@ -40,6 +40,6 @@ describe('Auth guards', () => {
     const guard = new NoAuthGuard(router, authService);
 
     await expectAsync(guard.canActivate()).toBeResolvedTo(true);
-    expect(router.navigate).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 });

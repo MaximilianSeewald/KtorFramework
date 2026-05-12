@@ -21,7 +21,7 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     this.authService.verifyToken().then((isLoggedIn) => {
       if (isLoggedIn && this.router.url.includes('/login')) {
-        this.router.navigate(['shoppingList']);
+        this.router.navigateByUrl('/shoppingList');
       }
     })
     this.router.events.pipe(

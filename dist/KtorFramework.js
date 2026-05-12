@@ -262,13 +262,13 @@ async function resolveAddonIngressBaseUrl(hass, addonSlug) {
   for (const endpoint of endpoints) {
     try {
       const addonInfo = await callSupervisorApi(hass, endpoint);
-      if (addonInfo?.ingress_url) {
-        await ensureIngressSession(hass);
-        return normalizeBaseUrl(addonInfo.ingress_url);
-      }
       if (addonInfo?.ingress_entry) {
         await ensureIngressSession(hass);
         return normalizeBaseUrl(normalizeIngressEntry(addonInfo.ingress_entry));
+      }
+      if (addonInfo?.ingress_url) {
+        await ensureIngressSession(hass);
+        return normalizeBaseUrl(addonInfo.ingress_url);
       }
     } catch (error) {
       lastError = error;
@@ -282,7 +282,7 @@ async function resolveAddonIngressBaseUrl(hass, addonSlug) {
 
 async function requestKtorToken(card) {
   const cached = sessionStorage.getItem(card.tokenStorageKey());
-  if (cached) {
+  if (cached && card.backendUrlConfig()) {
     return cached;
   }
 

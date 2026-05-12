@@ -12,7 +12,7 @@ export class AuthGuard implements CanActivate {
   async canActivate(): Promise<boolean> {
     return this.authService.verifyToken().then((value) => {
       if(!value) {
-        this.router.navigate(['login'])
+        this.router.navigateByUrl('/login')
       }
       return value
     });
@@ -29,7 +29,7 @@ export class NoAuthGuard implements CanActivate {
   async canActivate(): Promise<boolean> {
     return this.authService.verifyToken().then((value) => {
       if(value) {
-        this.router.navigate(['dashboard'])
+        this.router.navigateByUrl('/dashboard')
       }
       return !value
     });

@@ -65,7 +65,7 @@ export class AuthService {
         this.isLoggedIn = true
         this.currentUser = null;
         this.errorService.clearError();
-        this.router.navigate(['dashboard']);
+        this.router.navigateByUrl('/dashboard');
       },
       (error) => {
         this.clearSession();
