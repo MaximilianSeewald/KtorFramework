@@ -3,13 +3,13 @@ export function resolveApiUrl(configuredUrl: string): string {
     return trimTrailingSlash(configuredUrl);
   }
 
-  return trimTrailingSlash(new URL(configuredUrl, document.baseURI).toString());
+  return trimTrailingSlash(new URL(configuredUrl, resolveRelativeBaseUrl()).toString());
 }
 
 export function resolveWebSocketUrl(configuredUrl: string, path: string): string {
   const base = isAbsoluteUrl(configuredUrl)
     ? `${trimTrailingSlash(configuredUrl)}/`
-    : new URL(`${trimTrailingSlash(configuredUrl)}/`, document.baseURI).toString();
+    : new URL(`${trimTrailingSlash(configuredUrl)}/`, resolveRelativeBaseUrl()).toString();
 
   const url = new URL(path, base);
   url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -22,4 +22,13 @@ function isAbsoluteUrl(url: string): boolean {
 
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '');
+}
+
+function resolveRelativeBaseUrl(): string {
+  const ingressMatch = window.location.pathname.match(/^(.*\/api\/hassio_ingress\/[^/]+)(?:\/.*)?$/);
+  if (ingressMatch) {
+    return `${window.location.origin}${ingressMatch[1]}/`;
+  }
+
+  return document.baseURI;
 }
