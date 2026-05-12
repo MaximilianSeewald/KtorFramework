@@ -21,7 +21,3 @@ map:
     read_only: false
 environment:
   HA_MODE: "true"
-options:
-  jwt_secret: ""
-schema:
-  jwt_secret: "str"
