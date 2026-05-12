@@ -25,6 +25,9 @@ test.describe('Home Assistant ingress integration', () => {
     });
     page.on('websocket', (webSocket) => wsRequests.push(webSocket.url()));
 
+    const rootResponse = await page.request.get(`${app.baseUrl}${app.ingressPath}`);
+    expect(rootResponse.ok()).toBeTruthy();
+
     await page.goto(`${app.baseUrl}${app.ingressPath}`);
 
     await expect(page.getByRole('heading', { name: 'Shopping List' })).toBeVisible();
