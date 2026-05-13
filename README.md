@@ -301,3 +301,65 @@ The root Gradle `deploy` task builds the standard frontend and the backend fat j
 The Ktor app serves static files from `app/browser`, so production packaging must place the Angular browser output next to the jar in that structure.
 
 For the standard web app, build output is generated under `deploy/app`. For the HA app, build output is generated under `deploy/ha-app`.
+
+## Release Procedures
+
+### Standard Web/API Release
+
+The `CI` workflow runs for pull requests, manual dispatches, and pushes to `master`. It is the only workflow that builds deployable artifacts:
+
+- `web-app-build`: standard Angular app output under `deploy/app`
+- `ktor-jar`: backend fat jar from `backend/build/libs/fat.jar`
+
+After CI succeeds on `master`, `Deploy Web Server` downloads those artifacts from the completed CI run and deploys them. The deploy workflow expects these repository variables:
+
+```text
+WEB_DEPLOY_HOST
+WEB_DEPLOY_PORT
+WEB_DEPLOY_DIR
+WEB_BACKEND_HOST
+WEB_BACKEND_PORT
+```
+
+It also expects these repository secrets:
+
+```text
+WEB_DEPLOY_USERNAME
+WEB_DEPLOY_PASSWORD
+JWT_SECRET_KEY
+```
+
+The deployment restarts the backend from the downloaded jar and checks:
+
+- `/` responds successfully.
+- `/api/verify` without a token returns `401`.
+
+### Home Assistant Add-on Release
+
+The HA add-on package is generated from successful `CI` artifacts on `master`. CI builds and validates:
+
+- `ha-app-build`
+- `ktor-jar`
+- `ha-addon-package`
+
+After CI succeeds on a human-authored `master` update, `Deploy Home Assistant Add-on` downloads the CI artifacts, copies the generated HA app and backend jar into `addons/ktor_app`, bumps `addons/ktor_app/config.yaml`, and opens or updates the `version-bump` pull request.
+
+The workflow uses the `VERSION_BUMP_TOKEN` repository secret for the generated PR. Use a fine-scoped token that can push the `version-bump` branch, open pull requests, and enable auto-merge; using a dedicated token instead of the default workflow token lets the PR receive the normal required checks.
+
+The PR has auto-merge enabled, but branch protection and required checks decide when it lands. The squash merge subject includes `[skip addon-bump]`, and the HA packaging workflow ignores CI runs for that marker so the generated version bump cannot trigger another generated version bump.
+
+### HACS Card Release
+
+The HACS Lovelace card is the tracked `dist/KtorFramework.js` file served by HACS as:
+
+```yaml
+url: /hacsfiles/KtorFramework/KtorFramework.js
+type: module
+```
+
+Release card changes separately from the HA add-on package:
+
+1. Update `dist/KtorFramework.js` in a normal pull request.
+2. Let the standard required checks run.
+3. Merge after review/checks pass.
+4. In Home Assistant, reload the HACS resource or clear frontend cache if the old card bundle is still served.
