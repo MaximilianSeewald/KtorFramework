@@ -8,6 +8,7 @@
     "build": "ng build web-app --configuration production",
     "build:ha": "ng build ha-app --configuration production --base-href ./ --deploy-url ./",
     "build:all": "npm run build && npm run build:ha",
+    "lint": "eslint .",
     "watch": "ng build web-app --watch --configuration development",
     "watch:ha": "ng build ha-app --watch --configuration development",
     "test": "ng test",
@@ -37,7 +38,9 @@
     "@angular/compiler-cli": "^19.2.0",
     "@playwright/test": "^1.60.0",
     "@types/jasmine": "~5.1.0",
+    "angular-eslint": "^19.8.1",
     "autoprefixer": "^10.4.20",
+    "eslint": "^9.0.0",
     "jasmine-core": "~5.5.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
@@ -46,7 +49,8 @@
     "karma-jasmine-html-reporter": "~2.1.0",
     "postcss": "^8.5.12",
     "tailwindcss": "^3.4.17",
-    "typescript": "~5.7.2"
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.0.0"
   },
   "overrides": {
     "tar": "^7.5.13",
