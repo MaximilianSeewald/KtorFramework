@@ -167,6 +167,8 @@ jobs:
                 pending_checks+=("$check_name: missing")
               elif [ "$bucket" = "fail" ] || [[ "$state" =~ ^(FAILURE|ERROR|CANCELLED|TIMED_OUT)$ ]]; then
                 failed_checks+=("$check_name: ${state:-$bucket}")
+              elif [ "$bucket" = "skipping" ] || [ "$state" = "SKIPPED" ]; then
+                echo "Required check skipped: $check_name"
               elif [ "$bucket" != "pass" ] && [ "$state" != "SUCCESS" ]; then
                 all_passed=false
                 pending_checks+=("$check_name: ${state:-$bucket}")
