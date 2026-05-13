@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
   statuses: write
 
 env:
@@ -44,36 +45,20 @@ jobs:
           distribution: temurin
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b
-      - name: Cache dependency-check data
-        uses: actions/cache@v4
-        with:
-          path: ~/.gradle/dependency-check-data
-          key: dependency-check-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties') }}-${{ github.run_id }}
-          restore-keys: |
-            dependency-check-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties') }}-
-            dependency-check-${{ runner.os }}-
       - name: Run Kotlin lint
         run: ./gradlew ktlintCheck --console=plain
-      - name: Require NVD API key
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: |
-          if [ -z "${NVD_API_KEY:-}" ]; then
-            echo "NVD_API_KEY repository secret is required for the OWASP Dependency-Check job."
-            echo "Create a free key at https://nvd.nist.gov/developers/request-an-api-key and save it as a GitHub Actions secret named NVD_API_KEY."
-            exit 1
-          fi
-      - name: Run dependency vulnerability scan
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: ./gradlew dependencyCheckAnalyze --console=plain
-      - name: Upload dependency-check reports
-        if: always()
-        uses: actions/upload-artifact@v4
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v4
         with:
-          name: dependency-check-reports
-          path: build/reports/dependency-check-report.*
-          if-no-files-found: warn
+          fail-on-severity: high
 
   frontend-tests:
     name: Frontend Tests
@@ -278,6 +263,7 @@ jobs:
     needs:
       - backend-tests
       - backend-static-security
+      - dependency-review
       - frontend-tests
       - frontend-static-security
       - frontend-builds
@@ -291,7 +277,7 @@ jobs:
           set -euo pipefail
           needs_json='${{ toJson(needs) }}'
 
-          if echo "$needs_json" | jq -e 'to_entries | any(.value.result != "success")' >/dev/null; then
+          if echo "$needs_json" | jq -e 'to_entries | any(.value.result != "success" and .value.result != "skipped")' >/dev/null; then
             state=failure
             description="One or more CI jobs failed"
           else

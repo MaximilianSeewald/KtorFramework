@@ -195,6 +195,7 @@ jobs:
           REQUIRED_CHECKS: |
             Backend Tests
             Backend Static And Security
+            Dependency Review
             Frontend Tests
             Frontend Static And Security
             Frontend Builds
