@@ -36,6 +36,11 @@ class UserGroupManager {
             val users = UserService.retrieveAndHandleUsers(call)
             if (users.isEmpty()) return@put
             val user = users[0]
+            UserGroupNameValidator.validationMessage(editUserGroupRequest.userGroupName)?.let {
+                LOGGER.warn("Rejected user group password edit because group name was invalid")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to it))
+                return@put
+            }
             if (!UserGroupService.checkIsAdmin(user)) {
                 LOGGER.warn("Rejected user group password edit because user {} is not admin", user.id)
                 call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User is not admin"))
@@ -66,6 +71,11 @@ class UserGroupManager {
             if (users.isEmpty()) return@post
             val userId = users[0].id
             val userGroupName = createUserGroupRequest.userGroupName
+            UserGroupNameValidator.validationMessage(userGroupName)?.let {
+                LOGGER.warn("Rejected create user group because group name was invalid")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to it))
+                return@post
+            }
             if (UserGroupService.userGroupExists(userGroupName)) {
                 LOGGER.warn("Rejected create user group because group {} already exists", userGroupName)
                 call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User group already exists"))
@@ -105,6 +115,11 @@ class UserGroupManager {
             if (userGroupName.isNullOrBlank()) {
                 LOGGER.warn("Rejected delete user group because name query parameter was missing")
                 call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User group name is missing"))
+                return@delete
+            }
+            UserGroupNameValidator.validationMessage(userGroupName)?.let {
+                LOGGER.warn("Rejected delete user group because group name was invalid")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to it))
                 return@delete
             }
             if (!UserGroupService.userGroupExists(userGroupName)) {

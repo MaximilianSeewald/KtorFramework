@@ -33,16 +33,18 @@ The add-on is configured in `addons/ktor_app/config.yaml`:
 - Panel icon: `mdi:chef-hat`
 - Data storage: enabled through the Home Assistant `/data` mount
 - Environment: `HA_MODE=true`
+- Database path: explicitly set to `/data/db`
+- Backup path: explicitly set to `/data/backups`
 - JWT secret: uses a real `JWT_SECRET_KEY` environment value first; otherwise generates one once and stores it at `/data/jwt_secret`
 
 When `HA_MODE` is enabled, the backend creates and uses a default Home Assistant user/group:
 
 - User: `ha-user`
-- Group: `ha-instance`
+- Group: `ha_instance`
 - Registration through the normal `/api/user` endpoint is blocked.
 - `/api/ha/session` issues the auto-login token used by the HA frontend.
 
-The backend stores H2 data at `/data/db` inside the add-on container. Outside Home Assistant it falls back to `./data/db`, unless `ktor.database.path` is set.
+The backend stores H2 data at `/data/db` inside the add-on container. Home Assistant full and add-on backups include the add-on `/data` directory, so the database and `/data/backups` exports are covered by normal HA backup flows.
 
 ### Installing The Add-on
 
@@ -182,6 +184,9 @@ JWT_TOKEN_TTL_MS      Optional. Token lifetime in milliseconds.
 KTOR_HOST             Optional. Defaults to 0.0.0.0.
 KTOR_PORT             Optional. Defaults to 8080.
 HA_MODE               Optional. Set true only for Home Assistant mode.
+DATABASE_PATH         Required in production. Absolute H2 file path outside the app working directory.
+DATABASE_BACKUP_PATH  Optional backup directory. Defaults next to DATABASE_PATH, or /data/backups in HA mode.
+H2_MODE               Optional H2 URL mode suffix. Leave empty; allowed explicit value is AUTO_SERVER=TRUE.
 ```
 
 Optional `config.properties` file in the backend working directory. Start from `config.example.properties`:
@@ -189,11 +194,34 @@ Optional `config.properties` file in the backend working directory. Start from `
 ```properties
 APP_ENV=production
 CORS_ALLOWED_ORIGINS=https://example.com,https://www.example.com
+DATABASE_PATH=/var/lib/ktor-framework/db
 ```
 
 Production builds of both Angular apps use relative `api` URLs, so the normal same-origin deployment does not need CORS. If `CORS_ALLOWED_ORIGINS` is omitted, production does not install CORS. If `APP_ENV=development` and no explicit CORS origins are configured, the backend allows the local Angular dev origins on ports `4200` and `4201`.
 
 Swagger UI is available only when `APP_ENV=development`.
+
+Production startup refuses to use `./data/db` or any database path under the current application working directory. This avoids accidental local writes when a deployment forgot to configure persistence. For local development, set `APP_ENV=development`; then the backend may use `./data/db` if no explicit `DATABASE_PATH` is provided. The legacy JVM property `ktor.database.path` still works as a deprecated alias for `DATABASE_PATH`.
+
+User group names become H2 table identifiers for shopping lists and recipes. New names must be 3-48 characters, start with a letter, contain only letters, digits, or underscores, must not end with `_recipe`, and must not use reserved table names.
+
+### Database Backups
+
+Create an offline H2 backup with:
+
+```bash
+DATABASE_PATH=/var/lib/ktor-framework/db DATABASE_BACKUP_PATH=/var/backups/ktor-framework ./gradlew backend:backupDatabase
+```
+
+On PowerShell:
+
+```powershell
+$env:DATABASE_PATH = "C:\ProgramData\KtorFramework\db"
+$env:DATABASE_BACKUP_PATH = "C:\ProgramData\KtorFramework\backups"
+.\gradlew.bat backend:backupDatabase
+```
+
+The command writes `ktor-framework-h2-backup-YYYYMMDD-HHMMSS.zip`. Stop the app before running an offline export unless you intentionally run H2 with a mode that supports concurrent access. In Home Assistant, exports should stay under `/data/backups` so they are included in HA backups.
 
 ### Local Development
 

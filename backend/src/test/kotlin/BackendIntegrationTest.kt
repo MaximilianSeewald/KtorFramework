@@ -2,6 +2,10 @@ import com.loudless.configureBackend
 import com.loudless.auth.JwtService
 import com.loudless.config.AppConfigLoader
 import com.loudless.database.DatabaseManager
+import com.loudless.database.Recipe as RecipeTable
+import com.loudless.database.ShoppingList
+import com.loudless.database.UserGroups
+import com.loudless.database.Users
 import com.loudless.models.CreateUserGroupRequest
 import com.loudless.models.JoinUserGroupRequest
 import com.loudless.models.LoginRequest
@@ -35,11 +39,17 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.nio.file.Files
 import java.util.UUID
+import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -49,12 +59,28 @@ class BackendIntegrationTest {
     fun setUpIntegrationDatabase() {
         System.setProperty("JWT_SECRET_KEY", "test-secret")
         System.clearProperty("HA_MODE")
+        System.clearProperty("DATABASE_PATH")
+        System.clearProperty("DATABASE_BACKUP_PATH")
+        System.clearProperty("H2_MODE")
         AppConfigLoader.reset()
         val databasePath = Files.createTempDirectory("ktor-framework-test").resolve("db").toString()
         System.setProperty("ktor.database.path", databasePath)
         DatabaseManager.shoppingListMap.clear()
         DatabaseManager.recipeMap.clear()
         DatabaseManager.init()
+    }
+
+    @AfterTest
+    fun tearDownIntegrationDatabase() {
+        DatabaseManager.close()
+        System.clearProperty("JWT_SECRET_KEY")
+        System.clearProperty("JWT_TOKEN_TTL_MS")
+        System.clearProperty("HA_MODE")
+        System.clearProperty("DATABASE_PATH")
+        System.clearProperty("DATABASE_BACKUP_PATH")
+        System.clearProperty("H2_MODE")
+        System.clearProperty("ktor.database.path")
+        AppConfigLoader.reset()
     }
 
     @Test
@@ -169,7 +195,7 @@ class BackendIntegrationTest {
         application { configureBackend() }
         val client = createJsonClient()
         val username = "shopping_${UUID.randomUUID()}"
-        val token = createUserWithGroup(client, username, "shopping_group_${UUID.randomUUID().toString().replace("-", "_")}")
+        val token = createUserWithGroup(client, username, "shopping_group_${shortId()}")
         val itemId = UUID.randomUUID().toString()
 
         val add = client.post("/api/shoppingList") {
@@ -215,7 +241,7 @@ class BackendIntegrationTest {
         application { configureBackend() }
         val client = createJsonClient()
         val username = "recipe_${UUID.randomUUID()}"
-        val token = createUserWithGroup(client, username, "recipe_group_${UUID.randomUUID().toString().replace("-", "_")}")
+        val token = createUserWithGroup(client, username, "recipe_group_${shortId()}")
         val recipeId = UUID.randomUUID().toString()
 
         val add = client.post("/api/recipe") {
@@ -254,7 +280,7 @@ class BackendIntegrationTest {
         application { configureBackend() }
         val client = createJsonClient()
         val username = "group_${UUID.randomUUID()}"
-        val groupName = "delete_group_${UUID.randomUUID().toString().replace("-", "_")}"
+        val groupName = "delete_group_${shortId()}"
         val token = createUserWithGroup(client, username, groupName)
 
         val missingName = client.delete("/api/usergroups") {
@@ -268,6 +294,77 @@ class BackendIntegrationTest {
         assertEquals(HttpStatusCode.OK, delete.status)
         assertTrue(DatabaseManager.shoppingListMap[groupName] == null)
         assertTrue(DatabaseManager.recipeMap[groupName] == null)
+    }
+
+    @Test
+    fun `invalid user group names are rejected`() = testApplication {
+        application { configureBackend() }
+        val client = createJsonClient()
+        val username = "invalid_group_${UUID.randomUUID()}"
+        assertEquals(HttpStatusCode.Created, signup(client, username, "password").status)
+        val login = login(client, username, "password")
+        val token = requireNotNull(login.token)
+
+        val createGroup = client.post("/api/usergroups") {
+            bearer(token)
+            contentType(ContentType.Application.Json)
+            setBody(CreateUserGroupRequest("bad-group", "group-password"))
+        }
+        assertEquals(HttpStatusCode.BadRequest, createGroup.status)
+
+        val joinGroup = client.post("/api/user/$username/groups") {
+            bearer(token)
+            contentType(ContentType.Application.Json)
+            setBody(JoinUserGroupRequest("bad-group", "group-password"))
+        }
+        assertEquals(HttpStatusCode.BadRequest, joinGroup.status)
+    }
+
+    @Test
+    fun `startup fails for persisted invalid group names`() {
+        transaction {
+            val userId = Users.insert {
+                it[name] = "invalid_group_owner"
+                it[hashedPassword] = DatabaseManager.hashPassword("password")
+            }[Users.id]
+            UserGroups.insert {
+                it[name] = "bad-group"
+                it[hashedPassword] = DatabaseManager.hashPassword("group-password")
+                it[adminUserId] = userId
+            }
+        }
+
+        assertFailsWith<IllegalStateException> {
+            DatabaseManager.init()
+        }
+    }
+
+    @Test
+    fun `home assistant startup migrates legacy dashed group name`() {
+        transaction {
+            val userId = Users.insert {
+                it[name] = "legacy_ha_user"
+                it[group] = "ha-instance"
+                it[hashedPassword] = DatabaseManager.hashPassword("password")
+            }[Users.id]
+            UserGroups.insert {
+                it[name] = "ha-instance"
+                it[hashedPassword] = DatabaseManager.hashPassword("group-password")
+                it[adminUserId] = userId
+            }
+            SchemaUtils.create(ShoppingList("ha-instance"), RecipeTable("ha-instance_recipe"))
+        }
+
+        System.setProperty("HA_MODE", "true")
+        DatabaseManager.init()
+
+        transaction {
+            assertTrue(UserGroups.selectAll().where { UserGroups.name eq "ha-instance" }.empty())
+            assertFalse(UserGroups.selectAll().where { UserGroups.name eq "ha_instance" }.empty())
+            assertTrue(Users.selectAll().where { Users.group eq "ha-instance" }.empty())
+        }
+        assertTrue(DatabaseManager.shoppingListMap.containsKey("ha_instance"))
+        assertTrue(DatabaseManager.recipeMap.containsKey("ha_instance"))
     }
 
     @Test
@@ -318,11 +415,11 @@ class BackendIntegrationTest {
         val joinGroup = client.post("/api/user/ha-user/groups") {
             bearer(token)
             contentType(ContentType.Application.Json)
-            setBody(JoinUserGroupRequest("ha-instance", "password"))
+            setBody(JoinUserGroupRequest("ha_instance", "password"))
         }
         assertEquals(HttpStatusCode.Forbidden, joinGroup.status)
 
-        val leaveGroup = client.delete("/api/user/ha-user/groups/ha-instance") {
+        val leaveGroup = client.delete("/api/user/ha-user/groups/ha_instance") {
             bearer(token)
         }
         assertEquals(HttpStatusCode.Forbidden, leaveGroup.status)
@@ -344,7 +441,7 @@ class BackendIntegrationTest {
         val shortGroupPassword = client.post("/api/usergroups") {
             bearer(token)
             contentType(ContentType.Application.Json)
-            setBody(CreateUserGroupRequest("policy_group_${UUID.randomUUID().toString().replace("-", "_")}", "short"))
+            setBody(CreateUserGroupRequest("policy_group_${shortId()}", "short"))
         }
         assertEquals(HttpStatusCode.BadRequest, shortGroupPassword.status)
     }
@@ -410,4 +507,6 @@ class BackendIntegrationTest {
         val response: HttpResponse,
         val token: String?
     )
+
+    private fun shortId(): String = UUID.randomUUID().toString().replace("-", "")
 }

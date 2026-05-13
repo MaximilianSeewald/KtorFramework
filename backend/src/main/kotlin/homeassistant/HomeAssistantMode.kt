@@ -2,7 +2,7 @@ package com.loudless.homeassistant
 
 object HomeAssistantMode {
     const val userName = "ha-user"
-    const val userGroupName = "ha-instance"
+    const val userGroupName = "ha_instance"
     const val password = "home-assistant-instance-user"
 
     val enabled: Boolean

@@ -15,4 +15,8 @@ else
   export JWT_SECRET_KEY="$(cat "$SECRET_FILE")"
 fi
 
-exec env JWT_SECRET_KEY="$JWT_SECRET_KEY" java -jar ktor.jar
+exec env \
+  JWT_SECRET_KEY="$JWT_SECRET_KEY" \
+  DATABASE_PATH="${DATABASE_PATH:-/data/db}" \
+  DATABASE_BACKUP_PATH="${DATABASE_BACKUP_PATH:-/data/backups}" \
+  java -jar ktor.jar

@@ -1,5 +1,5 @@
 import { createServer, IncomingMessage, request as httpRequest, ServerResponse } from 'node:http';
-import { createReadStream, existsSync, mkdtempSync, rmSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { Duplex } from 'node:stream';
@@ -28,14 +28,20 @@ export async function startHaIngressApp(): Promise<RunningHaIngressApp> {
   }
 
   const backendPort = await getFreePort();
-  const backendWorkDir = mkdtempSync(join(tmpdir(), 'ktor-ha-ingress-'));
-  const backend = spawnBackend(jarPath, backendPort, backendWorkDir);
+  const backendTempDir = mkdtempSync(join(tmpdir(), 'ktor-ha-ingress-'));
+  const backendWorkDir = join(backendTempDir, 'work');
+  const backendDataDir = join(backendTempDir, 'data');
+  const backendBackupDir = join(backendTempDir, 'backups');
+  mkdirSync(backendWorkDir);
+  mkdirSync(backendDataDir);
+  mkdirSync(backendBackupDir);
+  const backend = spawnBackend(jarPath, backendPort, backendWorkDir, backendDataDir, backendBackupDir);
 
   try {
     await waitForBackend(backendPort);
   } catch (error) {
     await stopBackend(backend);
-    await cleanupDirectory(backendWorkDir);
+    await cleanupDirectory(backendTempDir);
     throw error;
   }
 
@@ -53,14 +59,20 @@ export async function startHaIngressApp(): Promise<RunningHaIngressApp> {
     stop: async () => {
       await closeServer(server);
       await stopBackend(backend);
-      await cleanupDirectory(backendWorkDir);
+      await cleanupDirectory(backendTempDir);
     },
   };
 }
 
-function spawnBackend(jarPath: string, port: number, backendWorkDir: string): ChildProcessWithoutNullStreams {
-  const databasePath = join(backendWorkDir, 'data', 'db');
-  const backend = spawn('java', [`-Dktor.database.path=${databasePath}`, '-jar', jarPath], {
+function spawnBackend(
+  jarPath: string,
+  port: number,
+  backendWorkDir: string,
+  backendDataDir: string,
+  backendBackupDir: string,
+): ChildProcessWithoutNullStreams {
+  const databasePath = join(backendDataDir, 'db');
+  const backend = spawn('java', ['-jar', jarPath], {
     cwd: backendWorkDir,
     env: {
       ...process.env,
@@ -68,6 +80,8 @@ function spawnBackend(jarPath: string, port: number, backendWorkDir: string): Ch
       JWT_SECRET_KEY: 'ha-ingress-test-secret-with-production-length',
       KTOR_HOST: '127.0.0.1',
       KTOR_PORT: String(port),
+      DATABASE_PATH: databasePath,
+      DATABASE_BACKUP_PATH: backendBackupDir,
     },
   });
 

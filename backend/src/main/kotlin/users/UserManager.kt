@@ -8,6 +8,7 @@ import com.loudless.homeassistant.HomeAssistantMode
 import com.loudless.models.JoinUserGroupRequest
 import com.loudless.models.LoginRequest
 import com.loudless.userGroups.UserGroupService
+import com.loudless.userGroups.UserGroupNameValidator
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -132,6 +133,11 @@ class UserManager {
             val joinUserGroupRequest = call.receive<JoinUserGroupRequest>()
             val password = joinUserGroupRequest.password
             val userGroupName = joinUserGroupRequest.userGroupName
+            UserGroupNameValidator.validationMessage(userGroupName)?.let {
+                LOGGER.warn("Rejected join user group because group name was invalid")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to it))
+                return@post
+            }
             if (user.name != userFromRoute) {
                 LOGGER.warn("Rejected join user group because route user did not match authenticated user")
                 call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User does not match"))
@@ -176,6 +182,11 @@ class UserManager {
             val user = users[0]
             val userFromRoute = call.parameters["userName"]!!
             val userGroupName = call.parameters["groupName"]!!
+            UserGroupNameValidator.validationMessage(userGroupName)?.let {
+                LOGGER.warn("Rejected leave user group because group name was invalid")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to it))
+                return@delete
+            }
             if (user.name != userFromRoute) {
                 LOGGER.warn("Rejected leave user group because route user did not match authenticated user")
                 call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User does not match"))
