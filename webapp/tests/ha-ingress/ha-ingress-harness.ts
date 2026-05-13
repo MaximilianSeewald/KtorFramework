@@ -1,5 +1,5 @@
 import { createServer, IncomingMessage, request as httpRequest, ServerResponse } from 'node:http';
-import { createReadStream, existsSync, mkdtempSync, rmSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { Duplex } from 'node:stream';
@@ -28,14 +28,17 @@ export async function startHaIngressApp(): Promise<RunningHaIngressApp> {
   }
 
   const backendPort = await getFreePort();
-  const backendWorkDir = mkdtempSync(join(tmpdir(), 'ktor-ha-ingress-'));
-  const backend = spawnBackend(jarPath, backendPort, backendWorkDir);
+  const backendTempDir = mkdtempSync(join(tmpdir(), 'ktor-ha-ingress-'));
+  const backendWorkDir = join(backendTempDir, 'work');
+  const backendDataDir = join(backendTempDir, 'data');
+  mkdirSync(backendWorkDir);
+  const backend = spawnBackend(jarPath, backendPort, backendWorkDir, backendDataDir);
 
   try {
     await waitForBackend(backendPort);
   } catch (error) {
     await stopBackend(backend);
-    await cleanupDirectory(backendWorkDir);
+    await cleanupDirectory(backendTempDir);
     throw error;
   }
 
@@ -53,13 +56,18 @@ export async function startHaIngressApp(): Promise<RunningHaIngressApp> {
     stop: async () => {
       await closeServer(server);
       await stopBackend(backend);
-      await cleanupDirectory(backendWorkDir);
+      await cleanupDirectory(backendTempDir);
     },
   };
 }
 
-function spawnBackend(jarPath: string, port: number, backendWorkDir: string): ChildProcessWithoutNullStreams {
-  const databasePath = join(backendWorkDir, 'data', 'db');
+function spawnBackend(
+  jarPath: string,
+  port: number,
+  backendWorkDir: string,
+  backendDataDir: string,
+): ChildProcessWithoutNullStreams {
+  const databasePath = join(backendDataDir, 'db');
   const backend = spawn('java', [`-Dktor.database.path=${databasePath}`, '-jar', jarPath], {
     cwd: backendWorkDir,
     env: {
