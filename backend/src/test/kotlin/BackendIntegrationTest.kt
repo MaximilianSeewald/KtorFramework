@@ -2,6 +2,8 @@ import com.loudless.configureBackend
 import com.loudless.auth.JwtService
 import com.loudless.config.AppConfigLoader
 import com.loudless.database.DatabaseManager
+import com.loudless.database.Recipe as RecipeTable
+import com.loudless.database.ShoppingList
 import com.loudless.database.UserGroups
 import com.loudless.database.Users
 import com.loudless.models.CreateUserGroupRequest
@@ -37,7 +39,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.nio.file.Files
 import java.util.UUID
@@ -333,6 +337,34 @@ class BackendIntegrationTest {
         assertFailsWith<IllegalStateException> {
             DatabaseManager.init()
         }
+    }
+
+    @Test
+    fun `home assistant startup migrates legacy dashed group name`() {
+        transaction {
+            val userId = Users.insert {
+                it[name] = "legacy_ha_user"
+                it[group] = "ha-instance"
+                it[hashedPassword] = DatabaseManager.hashPassword("password")
+            }[Users.id]
+            UserGroups.insert {
+                it[name] = "ha-instance"
+                it[hashedPassword] = DatabaseManager.hashPassword("group-password")
+                it[adminUserId] = userId
+            }
+            SchemaUtils.create(ShoppingList("ha-instance"), RecipeTable("ha-instance_recipe"))
+        }
+
+        System.setProperty("HA_MODE", "true")
+        DatabaseManager.init()
+
+        transaction {
+            assertTrue(UserGroups.selectAll().where { UserGroups.name eq "ha-instance" }.empty())
+            assertFalse(UserGroups.selectAll().where { UserGroups.name eq "ha_instance" }.empty())
+            assertTrue(Users.selectAll().where { Users.group eq "ha-instance" }.empty())
+        }
+        assertTrue(DatabaseManager.shoppingListMap.containsKey("ha_instance"))
+        assertTrue(DatabaseManager.recipeMap.containsKey("ha_instance"))
     }
 
     @Test

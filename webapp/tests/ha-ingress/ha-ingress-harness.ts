@@ -31,8 +31,11 @@ export async function startHaIngressApp(): Promise<RunningHaIngressApp> {
   const backendTempDir = mkdtempSync(join(tmpdir(), 'ktor-ha-ingress-'));
   const backendWorkDir = join(backendTempDir, 'work');
   const backendDataDir = join(backendTempDir, 'data');
+  const backendBackupDir = join(backendTempDir, 'backups');
   mkdirSync(backendWorkDir);
-  const backend = spawnBackend(jarPath, backendPort, backendWorkDir, backendDataDir);
+  mkdirSync(backendDataDir);
+  mkdirSync(backendBackupDir);
+  const backend = spawnBackend(jarPath, backendPort, backendWorkDir, backendDataDir, backendBackupDir);
 
   try {
     await waitForBackend(backendPort);
@@ -66,9 +69,10 @@ function spawnBackend(
   port: number,
   backendWorkDir: string,
   backendDataDir: string,
+  backendBackupDir: string,
 ): ChildProcessWithoutNullStreams {
   const databasePath = join(backendDataDir, 'db');
-  const backend = spawn('java', [`-Dktor.database.path=${databasePath}`, '-jar', jarPath], {
+  const backend = spawn('java', ['-jar', jarPath], {
     cwd: backendWorkDir,
     env: {
       ...process.env,
@@ -76,6 +80,8 @@ function spawnBackend(
       JWT_SECRET_KEY: 'ha-ingress-test-secret-with-production-length',
       KTOR_HOST: '127.0.0.1',
       KTOR_PORT: String(port),
+      DATABASE_PATH: databasePath,
+      DATABASE_BACKUP_PATH: backendBackupDir,
     },
   });
 

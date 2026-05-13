@@ -6,11 +6,13 @@ import com.loudless.userGroups.UserGroupNameValidator
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 
 object DatabaseManager {
     private val LOGGER = LoggerFactory.getLogger(DatabaseManager::class.java)
+    private const val legacyHomeAssistantUserGroupName = "ha-instance"
 
     val shoppingListMap: MutableMap<String, ShoppingList> = mutableMapOf()
     val recipeMap: MutableMap<String, Recipe> = mutableMapOf()
@@ -35,6 +37,7 @@ object DatabaseManager {
             SchemaUtils.create(UserGroups)
             if (HomeAssistantMode.enabled) {
                 LOGGER.info("Home Assistant mode enabled; ensuring default user group")
+                migrateLegacyHomeAssistantUserGroup()
                 ensureHomeAssistantUserGroup()
             }
             var dynamicTableCount = 0
@@ -95,6 +98,68 @@ object DatabaseManager {
             it[group] = HomeAssistantMode.userGroupName
         }
         LOGGER.info("Created Home Assistant user group")
+    }
+
+    private fun Transaction.migrateLegacyHomeAssistantUserGroup() {
+        val legacyGroupExists = !UserGroups
+            .selectAll()
+            .where { UserGroups.name eq legacyHomeAssistantUserGroupName }
+            .empty()
+        if (!legacyGroupExists) {
+            return
+        }
+
+        val currentGroupExists = !UserGroups
+            .selectAll()
+            .where { UserGroups.name eq HomeAssistantMode.userGroupName }
+            .empty()
+
+        if (currentGroupExists) {
+            LOGGER.info("Removing legacy Home Assistant user group metadata")
+            UserGroups.deleteWhere { UserGroups.name eq legacyHomeAssistantUserGroupName }
+        } else {
+            LOGGER.info(
+                "Migrating legacy Home Assistant user group {} to {}",
+                legacyHomeAssistantUserGroupName,
+                HomeAssistantMode.userGroupName
+            )
+            renameTableIfPresent(legacyHomeAssistantUserGroupName, HomeAssistantMode.userGroupName)
+            renameTableIfPresent(
+                "${legacyHomeAssistantUserGroupName}_recipe",
+                "${HomeAssistantMode.userGroupName}_recipe"
+            )
+            UserGroups.update({ UserGroups.name eq legacyHomeAssistantUserGroupName }) {
+                it[name] = HomeAssistantMode.userGroupName
+            }
+        }
+
+        Users.update({ Users.group eq legacyHomeAssistantUserGroupName }) {
+            it[group] = HomeAssistantMode.userGroupName
+        }
+    }
+
+    private fun Transaction.renameTableIfPresent(oldName: String, newName: String) {
+        if (!tableExists(oldName)) {
+            return
+        }
+        if (tableExists(newName)) {
+            LOGGER.info("Skipping legacy table rename because target table {} already exists", newName)
+            return
+        }
+        exec("ALTER TABLE ${quoteIdentifier(oldName)} RENAME TO ${quoteIdentifier(newName)}")
+    }
+
+    private fun Transaction.tableExists(tableName: String): Boolean {
+        val escapedTableName = tableName.replace("'", "''")
+        return exec(
+            "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '$escapedTableName'"
+        ) { resultSet ->
+            resultSet.next() && resultSet.getInt(1) > 0
+        } ?: false
+    }
+
+    private fun quoteIdentifier(identifier: String): String {
+        return "\"${identifier.replace("\"", "\"\"")}\""
     }
 
     private fun Transaction.migrateTablesIfMissing() {
