@@ -9,7 +9,7 @@ group = "com.loudless"
 version = "1.0-SNAPSHOT"
 
 val ktorVersion = "3.4.3"
-val exposedVersion = "0.59.0"
+val exposedVersion = "1.2.0"
 val h2Version = "2.3.232"
 val hikariVersion = "6.2.1"
 val logbackVersion = "1.5.32"
