@@ -21,7 +21,31 @@ DATABASE_PATH=/data/db DATABASE_BACKUP_PATH=/data/backups java -cp ktor.jar com.
 
 The export file is named `ktor-framework-h2-backup-YYYYMMDD-HHMMSS.zip`.
 
+To restore, stop the add-on, keep a copy of the current `/data/db.mv.db`, extract the selected backup zip back into `/data`, and start the add-on again. Confirm readiness before using the UI.
+
 The built-in Home Assistant user group is `ha_instance`. Custom group names in non-HA deployments must be table-safe: 3-48 characters, start with a letter, and use only letters, digits, or underscores.
+
+## Health checks and operations
+
+The Docker healthcheck uses backend readiness:
+
+```text
+GET /health/ready
+```
+
+Readiness returns `200` only when the backend can validate its H2 connection. Liveness is also available at `/health/live` for checking whether the process is responding without dependency checks.
+
+Smoke test the add-on from inside the container or equivalent shell with:
+
+```sh
+curl -fsS http://localhost:8080/health/live
+curl -fsS http://localhost:8080/health/ready
+test "$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:8080/api/verify)" = "401"
+```
+
+Before upgrading, make sure Home Assistant has a fresh backup or create a manual export under `/data/backups`. After upgrade, start the add-on and verify `/health/ready`, then open the ingress UI. For rollback, stop the add-on, restore the previous add-on package or Home Assistant backup, restore the matching database backup if needed, and repeat the smoke tests.
+
+Each response includes `X-Request-ID`, and backend logs include the same value as `request_id` with method, path, status, and duration.
 
 ## Lovelace card through HACS
 

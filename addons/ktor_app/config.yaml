@@ -11,6 +11,8 @@ boot: auto
 ingress: true
 ingress_port: 8080
 ingress_timeout: 60
+ingress_stream: true
+hassio_api: true
 homeassistant_api: true
 panel_icon: "mdi:chef-hat"
 panel_title: "Recipes & Shopping"

@@ -5,6 +5,11 @@ object BackendConfig {
     const val jwtIssuer = "ktor-auth"
     const val jwtRealm = "Ktor Server"
     private const val defaultJwtTokenTtlMs = 1000000000L
+    private const val defaultGradeUploadMaxBytes = 1024L * 1024L
+    private const val defaultGradeUploadMaxRows = 10000
+    private const val defaultGradeUploadMaxPoints = 10000F
+    private const val defaultRateLimitWindowSeconds = 60L
+    private const val defaultRateLimitMaxRequests = 120
 
     private val localDevelopmentCorsOrigins = listOf(
         "http://localhost:4200",
@@ -41,6 +46,31 @@ object BackendConfig {
         get() = isDevelopment
 
     const val webSocketMaxFrameSize: Long = 1024L * 1024L
+
+    val gradeUploadMaxBytes: Long
+        get() = AppConfigLoader.load().gradeUploadMaxBytes
+            ?.takeIf { it > 0 }
+            ?: defaultGradeUploadMaxBytes
+
+    val gradeUploadMaxRows: Int
+        get() = AppConfigLoader.load().gradeUploadMaxRows
+            ?.takeIf { it > 0 }
+            ?: defaultGradeUploadMaxRows
+
+    val gradeUploadMaxPoints: Float
+        get() = AppConfigLoader.load().gradeUploadMaxPoints
+            ?.takeIf { it > 0 && it.isFinite() }
+            ?: defaultGradeUploadMaxPoints
+
+    val rateLimitWindowSeconds: Long
+        get() = AppConfigLoader.load().rateLimitWindowSeconds
+            ?.takeIf { it > 0 }
+            ?: defaultRateLimitWindowSeconds
+
+    val rateLimitMaxRequests: Int
+        get() = AppConfigLoader.load().rateLimitMaxRequests
+            ?.takeIf { it > 0 }
+            ?: defaultRateLimitMaxRequests
 
     fun validateStartupSecurity() {
         val secret = jwtSecret

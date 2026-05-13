@@ -218,6 +218,32 @@ async function callSupervisorApi(hass, endpoint, method = 'get') {
   return unwrapSupervisorResponse(await hass.callWS(request));
 }
 
+function ingressCookiePath(baseUrl) {
+  const pathname = new URL(baseUrl, window.location.origin).pathname;
+  const match = pathname.match(/^(.*\/api\/hassio_ingress\/)/);
+  return match?.[1] || '/api/hassio_ingress/';
+}
+
+async function refreshIngressSession(card) {
+  if (!card?._hass?.callWS) {
+    return;
+  }
+
+  const response = await callSupervisorApi(card._hass, '/ingress/session', 'post');
+  const session = response?.session;
+  if (!session) {
+    return;
+  }
+
+  const cookie = [
+    `ingress_session=${encodeURIComponent(session)}`,
+    `path=${ingressCookiePath(await card.resolveBackendBaseUrl())}`,
+    'SameSite=Strict',
+    window.location.protocol === 'https:' ? 'Secure' : '',
+  ].filter(Boolean).join('; ');
+  document.cookie = cookie;
+}
+
 function findAddonSlug(addons, configuredSlug) {
   const normalizedSlug = String(configuredSlug || '').trim();
   const installedAddons = Array.isArray(addons) ? addons : [];
@@ -272,6 +298,12 @@ async function requestKtorToken(card) {
   const cached = sessionStorage.getItem(card.tokenStorageKey());
   if (cached && card.backendUrlConfig()) {
     return cached;
+  }
+
+  try {
+    await refreshIngressSession(card);
+  } catch (error) {
+    // If Supervisor is unavailable, continue with the browser's existing ingress session.
   }
 
   const response = await fetch(await card.resolveBackendUrl('api/ha/session'), {

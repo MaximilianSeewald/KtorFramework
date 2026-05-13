@@ -11,10 +11,13 @@ import com.loudless.models.JoinUserGroupRequest
 import com.loudless.models.LoginRequest
 import com.loudless.models.Recipe
 import com.loudless.models.ShoppingListItem
+import com.loudless.shared.RateLimiter
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
@@ -24,14 +27,18 @@ import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsBytes
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.withTimeout
@@ -45,6 +52,7 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.nio.file.Files
 import java.util.UUID
+import java.util.zip.ZipInputStream
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -54,6 +62,8 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+private const val REQUEST_ID_HEADER = "X-Request-ID"
+
 class BackendIntegrationTest {
     @BeforeTest
     fun setUpIntegrationDatabase() {
@@ -62,6 +72,7 @@ class BackendIntegrationTest {
         System.clearProperty("DATABASE_PATH")
         System.clearProperty("DATABASE_BACKUP_PATH")
         System.clearProperty("H2_MODE")
+        RateLimiter.reset()
         AppConfigLoader.reset()
         val databasePath = Files.createTempDirectory("ktor-framework-test").resolve("db").toString()
         System.setProperty("ktor.database.path", databasePath)
@@ -80,6 +91,7 @@ class BackendIntegrationTest {
         System.clearProperty("DATABASE_BACKUP_PATH")
         System.clearProperty("H2_MODE")
         System.clearProperty("ktor.database.path")
+        RateLimiter.reset()
         AppConfigLoader.reset()
     }
 
@@ -188,6 +200,159 @@ class BackendIntegrationTest {
         }
 
         assertEquals("http://localhost:4200", response.headers[HttpHeaders.AccessControlAllowOrigin])
+    }
+
+    @Test
+    fun `health endpoints report liveness and readiness`() = testApplication {
+        application { configureBackend() }
+        val client = createJsonClient()
+
+        val live = client.get("/health/live")
+        assertEquals(HttpStatusCode.OK, live.status)
+        val liveBody = Json.parseToJsonElement(live.bodyAsText()).jsonObject
+        assertEquals("UP", liveBody["status"]?.jsonPrimitive?.content)
+
+        val ready = client.get("/health/ready")
+        assertEquals(HttpStatusCode.OK, ready.status)
+        val readyBody = Json.parseToJsonElement(ready.bodyAsText()).jsonObject
+        assertEquals("UP", readyBody["status"]?.jsonPrimitive?.content)
+        assertEquals(
+            "UP",
+            readyBody["checks"]?.jsonObject?.get("database")?.jsonPrimitive?.content
+        )
+    }
+
+    @Test
+    fun `readiness reports unavailable when database is closed`() = testApplication {
+        application { configureBackend() }
+        DatabaseManager.close()
+        val client = createJsonClient()
+
+        val ready = client.get("/health/ready")
+
+        assertEquals(HttpStatusCode.ServiceUnavailable, ready.status)
+        val readyBody = Json.parseToJsonElement(ready.bodyAsText()).jsonObject
+        assertEquals("DOWN", readyBody["status"]?.jsonPrimitive?.content)
+        assertEquals(
+            "DOWN",
+            readyBody["checks"]?.jsonObject?.get("database")?.jsonPrimitive?.content
+        )
+    }
+
+    @Test
+    fun `unexpected exceptions return consistent json with request id`() = testApplication {
+        application {
+            configureBackend()
+            routing {
+                get("/test/unhandled") {
+                    throw RuntimeException("boom")
+                }
+            }
+        }
+        val client = createJsonClient()
+        val requestId = "test-request-${shortId()}"
+
+        val response = client.get("/test/unhandled") {
+            header(REQUEST_ID_HEADER, requestId)
+        }
+
+        assertEquals(HttpStatusCode.InternalServerError, response.status)
+        assertEquals(requestId, response.headers[REQUEST_ID_HEADER])
+        val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+        assertEquals("Internal server error", body["message"]?.jsonPrimitive?.content)
+        assertEquals(requestId, body["requestId"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `request id response header is generated or preserved`() = testApplication {
+        application { configureBackend() }
+        val client = createJsonClient()
+
+        val generated = client.get("/health/live")
+        assertNotNull(generated.headers[REQUEST_ID_HEADER])
+
+        val inboundRequestId = "client-request-${shortId()}"
+        val preserved = client.get("/health/live") {
+            header(REQUEST_ID_HEADER, inboundRequestId)
+        }
+        assertEquals(inboundRequestId, preserved.headers[REQUEST_ID_HEADER])
+    }
+
+    @Test
+    fun `responses include Home Assistant safe production security headers`() = testApplication {
+        application { configureBackend() }
+        val client = createJsonClient()
+
+        val response = client.get("/health/live")
+
+        assertEquals("nosniff", response.headers["X-Content-Type-Options"])
+        assertEquals("same-origin", response.headers["Referrer-Policy"])
+        val csp = response.headers["Content-Security-Policy"]
+        assertNotNull(csp)
+        assertTrue(csp.contains("default-src 'self'"))
+        assertTrue(csp.contains("connect-src 'self' ws: wss:"))
+        assertFalse(response.headers.contains("X-Frame-Options"))
+        assertFalse(csp.contains("frame-ancestors"))
+    }
+
+    @Test
+    fun `grade upload stays public and returns fixed zip entries for valid csv`() = testApplication {
+        application { configureBackend() }
+        val client = createJsonClient()
+
+        val response = uploadGrades(client, "Alice;96\nBob;50\n", "100")
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(
+            ContentType.Application.Zip,
+            ContentType.parse(response.headers[HttpHeaders.ContentType]!!).withoutParameters()
+        )
+        assertEquals(listOf("grades.csv", "distribution.csv"), zipEntries(response.bodyAsBytes()))
+    }
+
+    @Test
+    fun `grade upload rejects invalid public input with bad request`() = testApplication {
+        application { configureBackend() }
+        val client = createJsonClient()
+
+        val missingFile = client.post("/api/upload") {
+            setBody(MultiPartFormDataContent(formData { append("points", "100") }))
+        }
+        assertEquals(HttpStatusCode.BadRequest, missingFile.status)
+
+        assertEquals(HttpStatusCode.BadRequest, uploadGrades(client, "Alice;96\n", "0").status)
+        assertEquals(HttpStatusCode.BadRequest, uploadGrades(client, "Alice\n", "100").status)
+        assertEquals(HttpStatusCode.BadRequest, uploadGrades(client, ";96\n", "100").status)
+        assertEquals(HttpStatusCode.BadRequest, uploadGrades(client, "Alice;-1\n", "100").status)
+    }
+
+    @Test
+    fun `grade upload rejects oversized files`() = testApplication {
+        val configPath = Files.createTempFile("ktor-grade-upload-limit-test", ".properties")
+        Files.writeString(configPath, "GRADE_UPLOAD_MAX_BYTES=8")
+        AppConfigLoader.configPath = configPath
+
+        application { configureBackend() }
+        val client = createJsonClient()
+
+        val response = uploadGrades(client, "Alice;96\n", "100")
+
+        assertEquals(HttpStatusCode.PayloadTooLarge, response.status)
+    }
+
+    @Test
+    fun `rate limiting blocks repeated public endpoint requests`() = testApplication {
+        val configPath = Files.createTempFile("ktor-rate-limit-test", ".properties")
+        Files.writeString(configPath, "RATE_LIMIT_MAX_REQUESTS=2\nRATE_LIMIT_WINDOW_SECONDS=60")
+        AppConfigLoader.configPath = configPath
+        RateLimiter.reset()
+
+        application { configureBackend() }
+        val client = createJsonClient()
+
+        assertEquals(HttpStatusCode.NotFound, client.get("/api/ha/session").status)
+        assertEquals(HttpStatusCode.NotFound, client.get("/api/ha/session").status)
+        assertEquals(HttpStatusCode.TooManyRequests, client.get("/api/ha/session").status)
     }
 
     @Test
@@ -451,6 +616,42 @@ class BackendIntegrationTest {
             json()
         }
         install(WebSockets)
+    }
+
+    private suspend fun uploadGrades(
+        client: HttpClient,
+        csv: String,
+        points: String
+    ): HttpResponse {
+        return client.post("/api/upload") {
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append("points", points)
+                        append(
+                            "file",
+                            csv.encodeToByteArray(),
+                            Headers.build {
+                                append(HttpHeaders.ContentType, "text/csv")
+                                append(HttpHeaders.ContentDisposition, "filename=\"grades.csv\"")
+                            }
+                        )
+                    }
+                )
+            )
+        }
+    }
+
+    private fun zipEntries(bytes: ByteArray): List<String> {
+        val entries = mutableListOf<String>()
+        ZipInputStream(bytes.inputStream()).use { zipInputStream ->
+            while (true) {
+                val entry = zipInputStream.nextEntry ?: break
+                entries.add(entry.name)
+                zipInputStream.closeEntry()
+            }
+        }
+        return entries
     }
 
     private suspend fun signup(

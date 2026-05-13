@@ -99,8 +99,8 @@ jobs:
               tail -n 200 ktor.log
               exit 1
             fi
-            if ! curl -fsS "http://$WEB_BACKEND_HOST:$WEB_BACKEND_PORT/" >/dev/null; then
-              echo "Ktor is running but not reachable at /"
+            if ! curl -fsS "http://$WEB_BACKEND_HOST:$WEB_BACKEND_PORT/health/ready" >/dev/null; then
+              echo "Ktor is running but not ready at /health/ready"
               tail -n 200 ktor.log
               exit 1
             fi

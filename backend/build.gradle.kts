@@ -42,6 +42,7 @@ dependencies {
     implementation("io.ktor:ktor-server-auth-jwt:$ktorVersion")
     implementation("io.ktor:ktor-server-websockets:$ktorVersion")
     implementation("io.ktor:ktor-server-forwarded-header-jvm:$ktorVersion")
+    implementation("io.ktor:ktor-server-call-id:$ktorVersion")
     implementation("io.ktor:ktor-server-call-logging:$ktorVersion")
     implementation("io.ktor:ktor-server-openapi:$ktorVersion")
     implementation("io.ktor:ktor-server-swagger:$ktorVersion")
