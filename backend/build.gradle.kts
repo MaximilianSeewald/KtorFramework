@@ -55,7 +55,7 @@ dependencies {
     implementation("com.zaxxer:HikariCP:$hikariVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("com.jsoizo:kotlin-csv-jvm:1.10.0")
     implementation("at.favre.lib:bcrypt:0.10.2")
 }
