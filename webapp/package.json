@@ -37,7 +37,7 @@
     "@angular/cli": "^19.2.0",
     "@angular/compiler-cli": "^19.2.0",
     "@playwright/test": "^1.60.0",
-    "@types/jasmine": "~5.1.0",
+    "@types/jasmine": "~6.0.0",
     "angular-eslint": "^19.8.1",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.0.0",
