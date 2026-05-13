@@ -15,6 +15,16 @@ else
   export JWT_SECRET_KEY="$(cat "$SECRET_FILE")"
 fi
 
+if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
+  curl -fsS \
+    -X POST \
+    -H "Authorization: Bearer $SUPERVISOR_TOKEN" \
+    -H "Content-Type: application/json" \
+    --data '{"ingress_panel":true}' \
+    "http://supervisor/addons/self/options" \
+    >/dev/null || true
+fi
+
 exec env \
   JWT_SECRET_KEY="$JWT_SECRET_KEY" \
   DATABASE_PATH="${DATABASE_PATH:-/data/db}" \
