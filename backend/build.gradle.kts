@@ -64,6 +64,14 @@ tasks.test {
     useJUnitPlatform()
 }
 
+tasks.register<JavaExec>("backupDatabase") {
+    group = "application"
+    description = "Create a timestamped H2 database backup using the runtime database configuration."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("com.loudless.database.DatabaseBackupCommandKt")
+    systemProperties(System.getProperties().entries.associate { it.key.toString() to it.value })
+}
+
 kotlin {
     jvmToolchain(21)
 }

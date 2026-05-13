@@ -4,6 +4,7 @@ import com.loudless.database.DatabaseManager
 import com.loudless.database.Recipe
 import com.loudless.models.Recipe as RecipeModel
 import com.loudless.models.RecipeItem
+import com.loudless.userGroups.UserGroupNameValidator
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -143,6 +144,7 @@ object RecipeService {
     }
 
     fun addRecipeList(userGroup: String) {
+        UserGroupNameValidator.requireValid(userGroup)
         LOGGER.info("Creating recipe table for group {}", userGroup)
         transaction {
             val recipe = Recipe(userGroup + "_recipe")

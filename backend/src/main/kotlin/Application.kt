@@ -8,6 +8,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.openapi.OpenApiInfo
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationStopped
 import java.io.File
 import io.ktor.server.application.install
 import io.ktor.server.engine.*
@@ -25,6 +26,9 @@ private val LOGGER = LoggerFactory.getLogger("com.loudless.Application")
 fun main() {
     LOGGER.info("Starting backend application")
     BackendConfig.validateStartupSecurity()
+    Runtime.getRuntime().addShutdownHook(Thread {
+        DatabaseManager.close()
+    })
     DatabaseManager.init()
     val host = System.getenv("KTOR_HOST") ?: "0.0.0.0"
     val port = System.getenv("KTOR_PORT")?.toIntOrNull() ?: 8080
@@ -38,6 +42,9 @@ fun main() {
 }
 
 fun Application.configureBackend() {
+    monitor.subscribe(ApplicationStopped) {
+        DatabaseManager.close()
+    }
     install(io.ktor.server.plugins.forwardedheaders.XForwardedHeaders)
     SessionManager.installComponents(this)
     routing {

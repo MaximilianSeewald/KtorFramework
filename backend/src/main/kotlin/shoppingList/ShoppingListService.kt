@@ -3,6 +3,7 @@ package com.loudless.shoppingList
 import com.loudless.database.DatabaseManager
 import com.loudless.database.ShoppingList
 import com.loudless.models.ShoppingListItem
+import com.loudless.userGroups.UserGroupNameValidator
 import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -130,6 +131,7 @@ object ShoppingListService {
     }
 
     fun addShoppingList(userGroup: String) {
+        UserGroupNameValidator.requireValid(userGroup)
         LOGGER.info("Creating shopping list table for group {}", userGroup)
         transaction {
             val shoppingList = ShoppingList(userGroup)

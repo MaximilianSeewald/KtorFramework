@@ -2,6 +2,27 @@
 
 This add-on provides a Home Assistant focused shopping list and recipe list.
 
+## Data and backups
+
+The add-on runs the backend in Home Assistant mode with explicit persistence paths:
+
+```text
+DATABASE_PATH=/data/db
+DATABASE_BACKUP_PATH=/data/backups
+```
+
+Home Assistant mounts `/data` for the add-on and includes it in normal full/add-on backups. That means the live H2 database and any manual export zips under `/data/backups` are covered by HA backup expectations.
+
+For a manual export, stop the add-on first unless you have intentionally enabled an H2 mode that supports concurrent access, then run the packaged backup command alongside the jar:
+
+```sh
+DATABASE_PATH=/data/db DATABASE_BACKUP_PATH=/data/backups java -cp ktor.jar com.loudless.database.DatabaseBackupCommandKt
+```
+
+The export file is named `ktor-framework-h2-backup-YYYYMMDD-HHMMSS.zip`.
+
+The built-in Home Assistant user group is `ha_instance`. Custom group names in non-HA deployments must be table-safe: 3-48 characters, start with a letter, and use only letters, digits, or underscores.
+
 ## Lovelace card through HACS
 
 The shopping list Lovelace card is installed through HACS as a dashboard resource from this repository.
