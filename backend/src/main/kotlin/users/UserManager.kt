@@ -7,6 +7,7 @@ import com.loudless.database.Users
 import com.loudless.homeassistant.HomeAssistantMode
 import com.loudless.models.JoinUserGroupRequest
 import com.loudless.models.LoginRequest
+import com.loudless.shared.RateLimiter
 import com.loudless.userGroups.UserGroupService
 import com.loudless.userGroups.UserGroupNameValidator
 import io.ktor.http.*
@@ -46,6 +47,7 @@ class UserManager {
     private fun Route.userSignUp() {
         post("/user") {
             LOGGER.info("Handling user signup request")
+            if (!RateLimiter.check(call, "user-signup")) return@post
             if (HomeAssistantMode.enabled) {
                 LOGGER.warn("Rejected user signup because Home Assistant mode is enabled")
                 call.respond(HttpStatusCode.Forbidden, mapOf("message" to "User registration is disabled for Home Assistant"))
@@ -153,6 +155,7 @@ class UserManager {
                 call.respond(HttpStatusCode.NotFound, mapOf("message" to "User group does not exist"))
                 return@post
             }
+            if (!RateLimiter.check(call, "group-password-check")) return@post
             if (!UserGroupService.checkPassword(userGroupName, password)) {
                 LOGGER.warn("Rejected join user group {} for user {} because password did not verify", userGroupName, user.id)
                 call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Incorrect password"))
@@ -217,6 +220,7 @@ class UserManager {
     private fun Route.login() {
         post("/login") {
             LOGGER.info("Handling login request")
+            if (!RateLimiter.check(call, "login")) return@post
             if (HomeAssistantMode.enabled) {
                 LOGGER.warn("Rejected password login because Home Assistant mode is enabled")
                 call.respond(HttpStatusCode.Forbidden, mapOf("message" to "Password login is disabled for Home Assistant"))
@@ -248,6 +252,7 @@ class UserManager {
     private fun Route.homeAssistantSession() {
         get("/ha/session") {
             LOGGER.info("Handling Home Assistant session request")
+            if (!RateLimiter.check(call, "ha-session")) return@get
             if (!HomeAssistantMode.enabled) {
                 LOGGER.warn("Rejected Home Assistant session because Home Assistant mode is disabled")
                 call.respond(HttpStatusCode.NotFound)

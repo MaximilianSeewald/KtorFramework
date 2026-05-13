@@ -2,6 +2,7 @@ package com.loudless
 
 import com.loudless.auth.JwtService
 import com.loudless.config.BackendConfig
+import com.loudless.shared.SecurityHeaders
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -49,6 +50,7 @@ class KtorManager {
         application.install(ContentNegotiation) {
             json()
         }
+        application.install(SecurityHeaders)
         application.install(StatusPages) {
             exception<Throwable> { call, cause ->
                 val requestId = call.callId ?: "unknown"

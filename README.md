@@ -173,7 +173,9 @@ The Ktor backend provides:
 - Recipe HTTP endpoints and websocket updates
 - User group creation, editing, deletion, and admin lookup
 - CSV grade upload endpoint
+- Public grade ZIP generator with bounded CSV upload validation
 - Public health checks at `/health/live` and `/health/ready`
+- HA-safe security headers and lightweight rate limiting for public-sensitive endpoints
 - Request logs with `request_id`, `method`, `path`, `status`, and `duration_ms`
 - Consistent JSON responses for unexpected server errors
 - Static Angular asset hosting from `app/browser`
@@ -197,6 +199,11 @@ JWT_TOKEN_TTL_MS     Token lifetime in milliseconds.
 CORS_ALLOWED_ORIGINS Comma-separated origins. Usually unnecessary for same-origin production.
 HA_MODE              Set true only for Home Assistant mode.
 H2_MODE              H2 URL mode suffix. Leave empty; allowed explicit value is AUTO_SERVER=TRUE.
+GRADE_UPLOAD_MAX_BYTES  Public grade upload byte limit. Defaults to 1048576.
+GRADE_UPLOAD_MAX_ROWS   Public grade upload row limit. Defaults to 10000.
+GRADE_UPLOAD_MAX_POINTS Public grade upload maximum points value. Defaults to 10000.
+RATE_LIMIT_WINDOW_SECONDS Per-client rate limit window. Defaults to 60.
+RATE_LIMIT_MAX_REQUESTS   Requests per window for public-sensitive endpoints. Defaults to 120.
 ```
 
 Optional `config.properties` file in the backend working directory. Start from `config.example.properties`:
@@ -269,6 +276,8 @@ Production checklist:
 - Point container or process health checks at `/health/ready`, not `/`.
 - Configure `CORS_ALLOWED_ORIGINS` only when the frontend is not same-origin.
 - Capture logs with the `request_id` field so failed requests can be traced.
+- Keep public grade uploads bounded with the default limits or tighter deployment-specific values.
+- Keep security headers enabled; they are intentionally compatible with Home Assistant ingress.
 - Keep rollback artifacts and backups available before each upgrade.
 
 ### Local Development

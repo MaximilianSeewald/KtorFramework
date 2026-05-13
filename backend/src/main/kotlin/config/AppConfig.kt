@@ -10,6 +10,11 @@ data class AppConfig(
     val databasePath: String? = null,
     val databaseBackupPath: String? = null,
     val h2Mode: String = "",
+    val gradeUploadMaxBytes: Long? = null,
+    val gradeUploadMaxRows: Int? = null,
+    val gradeUploadMaxPoints: Float? = null,
+    val rateLimitWindowSeconds: Long? = null,
+    val rateLimitMaxRequests: Int? = null,
 )
 
 object AppConfigLoader {
@@ -44,6 +49,21 @@ object AppConfigLoader {
                 ?.trim()
                 ?.ifEmpty { null }
                 ?: "",
+            gradeUploadMaxBytes = runtimeValue(properties, "GRADE_UPLOAD_MAX_BYTES")
+                ?.trim()
+                ?.toLongOrNull(),
+            gradeUploadMaxRows = runtimeValue(properties, "GRADE_UPLOAD_MAX_ROWS")
+                ?.trim()
+                ?.toIntOrNull(),
+            gradeUploadMaxPoints = runtimeValue(properties, "GRADE_UPLOAD_MAX_POINTS")
+                ?.trim()
+                ?.toFloatOrNull(),
+            rateLimitWindowSeconds = runtimeValue(properties, "RATE_LIMIT_WINDOW_SECONDS")
+                ?.trim()
+                ?.toLongOrNull(),
+            rateLimitMaxRequests = runtimeValue(properties, "RATE_LIMIT_MAX_REQUESTS")
+                ?.trim()
+                ?.toIntOrNull(),
         )
     }
 
