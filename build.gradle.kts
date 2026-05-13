@@ -12,6 +12,9 @@ dependencyCheck {
     failBuildOnCVSS = 7.0F
     formats = listOf("HTML", "JUNIT", "SARIF")
     scanProjects = listOf(":backend")
+    data {
+        directory = "${System.getProperty("user.home")}/.gradle/dependency-check-data"
+    }
     nvd {
         System.getenv("NVD_API_KEY")?.takeIf { it.isNotBlank() }?.let {
             apiKey = it

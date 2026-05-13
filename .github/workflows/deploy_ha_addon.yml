@@ -201,3 +201,4 @@ jobs:
             Backend Package
             HA Ingress Playwright
             Packaging Validation
+            build

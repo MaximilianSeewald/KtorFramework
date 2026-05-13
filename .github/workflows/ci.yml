@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 env:
   NODE_VERSION: 22.13.1
@@ -47,11 +48,21 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.gradle/dependency-check-data
-          key: dependency-check-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties') }}
+          key: dependency-check-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties') }}-${{ github.run_id }}
           restore-keys: |
+            dependency-check-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties') }}-
             dependency-check-${{ runner.os }}-
       - name: Run Kotlin lint
         run: ./gradlew ktlintCheck --console=plain
+      - name: Require NVD API key
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: |
+          if [ -z "${NVD_API_KEY:-}" ]; then
+            echo "NVD_API_KEY repository secret is required for the OWASP Dependency-Check job."
+            echo "Create a free key at https://nvd.nist.gov/developers/request-an-api-key and save it as a GitHub Actions secret named NVD_API_KEY."
+            exit 1
+          fi
       - name: Run dependency vulnerability scan
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
@@ -184,9 +195,16 @@ jobs:
       - name: Install dependencies
         working-directory: webapp
         run: npm ci
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('webapp/package-lock.json') }}
       - name: Install Playwright browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         working-directory: webapp
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Download HA app artifact
         uses: actions/download-artifact@v4
         with:
@@ -253,3 +271,43 @@ jobs:
             addons/ktor_app/DOCS.md
             addons/ktor_app/start.sh
           if-no-files-found: error
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    needs:
+      - backend-tests
+      - backend-static-security
+      - frontend-tests
+      - frontend-static-security
+      - frontend-builds
+      - backend-package
+      - ha-ingress-playwright
+      - packaging-validation
+    if: always()
+    steps:
+      - name: Report required build status
+        run: |
+          set -euo pipefail
+          needs_json='${{ toJson(needs) }}'
+
+          if echo "$needs_json" | jq -e 'to_entries | any(.value.result != "success")' >/dev/null; then
+            state=failure
+            description="One or more CI jobs failed"
+          else
+            state=success
+            description="All CI jobs completed successfully"
+          fi
+
+          gh api repos/"$GITHUB_REPOSITORY"/statuses/"$GITHUB_SHA" \
+            --field state="$state" \
+            --field context="build" \
+            --field description="$description" \
+            --field target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+          if [ "$state" != "success" ]; then
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
