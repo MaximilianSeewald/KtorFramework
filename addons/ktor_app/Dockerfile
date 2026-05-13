@@ -13,6 +13,6 @@ RUN chmod +x start.sh
 EXPOSE 8080
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8080/ || exit 1
+    CMD curl -f http://localhost:8080/health/ready || exit 1
 
 CMD ["./start.sh"]

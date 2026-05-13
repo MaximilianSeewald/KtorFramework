@@ -68,6 +68,22 @@ object DatabaseManager {
         recipeMap.clear()
     }
 
+    fun isReady(): Boolean {
+        val currentDataSource = dataSource ?: return false
+        if (currentDataSource.isClosed) {
+            return false
+        }
+
+        return try {
+            currentDataSource.connection.use { connection ->
+                connection.isValid(1)
+            }
+        } catch (exception: Exception) {
+            LOGGER.warn("Database readiness check failed", exception)
+            false
+        }
+    }
+
     private fun ensureHomeAssistantUserGroup() {
         LOGGER.info("Ensuring Home Assistant user and group records")
         val userId = Users

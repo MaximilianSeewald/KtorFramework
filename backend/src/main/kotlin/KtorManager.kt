@@ -7,15 +7,28 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
+import io.ktor.server.plugins.callid.*
 import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.websocket.*
 import io.ktor.server.request.*
+import io.ktor.server.response.*
+import kotlinx.serialization.Serializable
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
 import java.net.URI
+import java.util.UUID
 import kotlin.time.Duration.Companion.seconds
+
+private const val REQUEST_ID_HEADER = "X-Request-ID"
+
+@Serializable
+private data class ErrorResponse(
+    val message: String,
+    val requestId: String,
+)
 
 class KtorManager {
     private val LOGGER = LoggerFactory.getLogger(KtorManager::class.java)
@@ -28,6 +41,33 @@ class KtorManager {
             maxFrameSize = BackendConfig.webSocketMaxFrameSize
             masking = false
         }
+        application.install(CallId) {
+            header(REQUEST_ID_HEADER)
+            generate { UUID.randomUUID().toString() }
+            replyToHeader(REQUEST_ID_HEADER)
+        }
+        application.install(ContentNegotiation) {
+            json()
+        }
+        application.install(StatusPages) {
+            exception<Throwable> { call, cause ->
+                val requestId = call.callId ?: "unknown"
+                LOGGER.error(
+                    "Unhandled request exception request_id={} method={} path={}",
+                    requestId,
+                    call.request.httpMethod.value,
+                    call.request.path(),
+                    cause
+                )
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ErrorResponse(
+                        message = "Internal server error",
+                        requestId = requestId
+                    )
+                )
+            }
+        }
         application.install(CallLogging) {
             level = Level.INFO
             disableDefaultColors()
@@ -37,11 +77,9 @@ class KtorManager {
                 val method = call.request.httpMethod.value
                 val path = call.request.path()
                 val duration = call.processingTimeMillis()
-                "$method $path -> $status in ${duration}ms"
+                val requestId = call.callId ?: "unknown"
+                "request_id=$requestId method=$method path=$path status=$status duration_ms=$duration"
             }
-        }
-        application.install(ContentNegotiation) {
-            json()
         }
         val allowedOrigins = BackendConfig.corsOriginsForRuntime
         if (allowedOrigins.isNotEmpty()) {

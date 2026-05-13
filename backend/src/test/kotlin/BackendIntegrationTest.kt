@@ -32,6 +32,8 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.withTimeout
@@ -53,6 +55,8 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+
+private const val REQUEST_ID_HEADER = "X-Request-ID"
 
 class BackendIntegrationTest {
     @BeforeTest
@@ -188,6 +192,82 @@ class BackendIntegrationTest {
         }
 
         assertEquals("http://localhost:4200", response.headers[HttpHeaders.AccessControlAllowOrigin])
+    }
+
+    @Test
+    fun `health endpoints report liveness and readiness`() = testApplication {
+        application { configureBackend() }
+        val client = createJsonClient()
+
+        val live = client.get("/health/live")
+        assertEquals(HttpStatusCode.OK, live.status)
+        val liveBody = Json.parseToJsonElement(live.bodyAsText()).jsonObject
+        assertEquals("UP", liveBody["status"]?.jsonPrimitive?.content)
+
+        val ready = client.get("/health/ready")
+        assertEquals(HttpStatusCode.OK, ready.status)
+        val readyBody = Json.parseToJsonElement(ready.bodyAsText()).jsonObject
+        assertEquals("UP", readyBody["status"]?.jsonPrimitive?.content)
+        assertEquals(
+            "UP",
+            readyBody["checks"]?.jsonObject?.get("database")?.jsonPrimitive?.content
+        )
+    }
+
+    @Test
+    fun `readiness reports unavailable when database is closed`() = testApplication {
+        application { configureBackend() }
+        DatabaseManager.close()
+        val client = createJsonClient()
+
+        val ready = client.get("/health/ready")
+
+        assertEquals(HttpStatusCode.ServiceUnavailable, ready.status)
+        val readyBody = Json.parseToJsonElement(ready.bodyAsText()).jsonObject
+        assertEquals("DOWN", readyBody["status"]?.jsonPrimitive?.content)
+        assertEquals(
+            "DOWN",
+            readyBody["checks"]?.jsonObject?.get("database")?.jsonPrimitive?.content
+        )
+    }
+
+    @Test
+    fun `unexpected exceptions return consistent json with request id`() = testApplication {
+        application {
+            configureBackend()
+            routing {
+                get("/test/unhandled") {
+                    throw RuntimeException("boom")
+                }
+            }
+        }
+        val client = createJsonClient()
+        val requestId = "test-request-${shortId()}"
+
+        val response = client.get("/test/unhandled") {
+            header(REQUEST_ID_HEADER, requestId)
+        }
+
+        assertEquals(HttpStatusCode.InternalServerError, response.status)
+        assertEquals(requestId, response.headers[REQUEST_ID_HEADER])
+        val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+        assertEquals("Internal server error", body["message"]?.jsonPrimitive?.content)
+        assertEquals(requestId, body["requestId"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `request id response header is generated or preserved`() = testApplication {
+        application { configureBackend() }
+        val client = createJsonClient()
+
+        val generated = client.get("/health/live")
+        assertNotNull(generated.headers[REQUEST_ID_HEADER])
+
+        val inboundRequestId = "client-request-${shortId()}"
+        val preserved = client.get("/health/live") {
+            header(REQUEST_ID_HEADER, inboundRequestId)
+        }
+        assertEquals(inboundRequestId, preserved.headers[REQUEST_ID_HEADER])
     }
 
     @Test

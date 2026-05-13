@@ -173,20 +173,30 @@ The Ktor backend provides:
 - Recipe HTTP endpoints and websocket updates
 - User group creation, editing, deletion, and admin lookup
 - CSV grade upload endpoint
+- Public health checks at `/health/live` and `/health/ready`
+- Request logs with `request_id`, `method`, `path`, `status`, and `duration_ms`
+- Consistent JSON responses for unexpected server errors
 - Static Angular asset hosting from `app/browser`
 - H2 persistence through Exposed and HikariCP
 
-Important runtime settings:
+Required runtime settings:
 
 ```text
-JWT_SECRET_KEY         Required. Secret used for JWT signing.
-JWT_TOKEN_TTL_MS      Optional. Token lifetime in milliseconds.
-KTOR_HOST             Optional. Defaults to 0.0.0.0.
-KTOR_PORT             Optional. Defaults to 8080.
-HA_MODE               Optional. Set true only for Home Assistant mode.
-DATABASE_PATH         Required in production. Absolute H2 file path outside the app working directory.
-DATABASE_BACKUP_PATH  Optional backup directory. Defaults next to DATABASE_PATH, or /data/backups in HA mode.
-H2_MODE               Optional H2 URL mode suffix. Leave empty; allowed explicit value is AUTO_SERVER=TRUE.
+JWT_SECRET_KEY  Secret used for JWT signing. Production rejects weak secrets.
+DATABASE_PATH   Absolute H2 file path outside the app working directory when APP_ENV=production.
+```
+
+Optional runtime settings:
+
+```text
+APP_ENV               Defaults to production. Use development only for local work.
+KTOR_HOST            Defaults to 0.0.0.0.
+KTOR_PORT            Defaults to 8080.
+DATABASE_BACKUP_PATH Defaults next to DATABASE_PATH, or /data/backups in HA mode.
+JWT_TOKEN_TTL_MS     Token lifetime in milliseconds.
+CORS_ALLOWED_ORIGINS Comma-separated origins. Usually unnecessary for same-origin production.
+HA_MODE              Set true only for Home Assistant mode.
+H2_MODE              H2 URL mode suffix. Leave empty; allowed explicit value is AUTO_SERVER=TRUE.
 ```
 
 Optional `config.properties` file in the backend working directory. Start from `config.example.properties`:
@@ -222,6 +232,44 @@ $env:DATABASE_BACKUP_PATH = "C:\ProgramData\KtorFramework\backups"
 ```
 
 The command writes `ktor-framework-h2-backup-YYYYMMDD-HHMMSS.zip`. Stop the app before running an offline export unless you intentionally run H2 with a mode that supports concurrent access. In Home Assistant, exports should stay under `/data/backups` so they are included in HA backups.
+
+Restore from a backup by stopping the backend, keeping a copy of the current `.mv.db` file, extracting the backup zip to the database directory, and starting the backend again. Verify `/health/ready` before allowing traffic back to the instance.
+
+### Health Checks And Smoke Tests
+
+The backend exposes unauthenticated operational checks:
+
+```text
+GET /health/live   Process liveness only.
+GET /health/ready  Readiness, including database connectivity.
+```
+
+For local smoke testing, start the backend and run:
+
+```bash
+curl -fsS http://localhost:8080/health/live
+curl -fsS http://localhost:8080/health/ready
+test "$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:8080/api/verify)" = "401"
+curl -fsS http://localhost:8080/ >/dev/null
+```
+
+Every response includes `X-Request-ID`. Provide this header from a proxy if one already exists; otherwise the backend generates it and logs it as `request_id`.
+
+### Operations Runbook
+
+Before upgrading, create a database backup, keep the currently running `ktor.jar` and `app/` assets available for rollback, deploy the new jar/assets, restart the backend, and verify `/health/ready` plus `/api/verify` returning `401` without a token.
+
+For rollback, stop the backend, restore the previous jar/assets, restore the matching database backup if the failed release changed persisted data or schema, restart, then repeat the smoke tests. Keep at least one known-good release artifact and one recent database backup outside the deploy directory.
+
+Production checklist:
+
+- Use a strong `JWT_SECRET_KEY` and do not use development defaults.
+- Set `DATABASE_PATH` to an absolute persistent path outside the application directory.
+- Set or confirm `DATABASE_BACKUP_PATH`, and test both backup and restore.
+- Point container or process health checks at `/health/ready`, not `/`.
+- Configure `CORS_ALLOWED_ORIGINS` only when the frontend is not same-origin.
+- Capture logs with the `request_id` field so failed requests can be traced.
+- Keep rollback artifacts and backups available before each upgrade.
 
 ### Local Development
 
@@ -331,7 +379,7 @@ JWT_SECRET_KEY
 
 The deployment restarts the backend from the downloaded jar and checks:
 
-- `/` responds successfully.
+- `/health/ready` responds successfully.
 - `/api/verify` without a token returns `401`.
 
 ### Home Assistant Add-on Release
