@@ -1,0 +1,42 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/webapp"
+    schedule:
+      interval: "weekly"
+    groups:
+      angular:
+        patterns:
+          - "@angular*"
+          - "angular-eslint"
+      frontend-tooling:
+        patterns:
+          - "eslint*"
+          - "typescript-eslint"
+          - "typescript"
+          - "karma*"
+          - "jasmine*"
+          - "@playwright*"
+
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      kotlin-ktor:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "io.ktor*"
+      gradle-tooling:
+        patterns:
+          - "org.jlleitschuh.gradle.ktlint"
+          - "org.owasp.dependencycheck"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

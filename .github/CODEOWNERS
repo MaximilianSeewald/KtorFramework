@@ -1,0 +1,6 @@
+* @MaximilianSeewald
+
+# Version-bump automation updates these files and should still be able to auto-merge.
+/addons/ktor_app/config.yaml
+/addons/ktor_app/ktor.jar
+/addons/ktor_app/app/
