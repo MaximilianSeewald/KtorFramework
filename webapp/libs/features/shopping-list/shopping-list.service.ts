@@ -62,6 +62,13 @@ export class ShoppingListService {
   }
 
   /**
+   * Add every item from a recipe to the shopping list
+   */
+  addRecipe(recipeId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/recipe/${encodeURIComponent(recipeId)}/shoppingList`, {});
+  }
+
+  /**
    * Delete an item from the shopping list
    */
   deleteItem(id: string): Observable<any> {

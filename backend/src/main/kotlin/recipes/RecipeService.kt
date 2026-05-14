@@ -4,6 +4,7 @@ import com.loudless.database.DatabaseManager
 import com.loudless.database.Recipe
 import com.loudless.models.Recipe as RecipeModel
 import com.loudless.models.RecipeItem
+import com.loudless.shoppingList.ShoppingListService
 import com.loudless.userGroups.UserGroupNameValidator
 import io.ktor.http.*
 import io.ktor.server.request.*
@@ -18,6 +19,11 @@ import java.util.*
 
 object RecipeService {
     private val LOGGER = LoggerFactory.getLogger(RecipeService::class.java)
+
+    sealed class AddRecipeToShoppingListResult {
+        data class Success(val added: Int) : AddRecipeToShoppingListResult()
+        data class Failure(val message: String) : AddRecipeToShoppingListResult()
+    }
 
     fun retrieveRecipes(userGroup: String): List<RecipeModel> {
         LOGGER.info("Retrieving recipes for group {}", userGroup)
@@ -141,6 +147,32 @@ object RecipeService {
                 }
             }
         }
+    }
+
+    fun addRecipeToShoppingList(recipeIdText: String, groupName: String): AddRecipeToShoppingListResult {
+        LOGGER.info("Adding recipe {} to shopping list for group {}", recipeIdText, groupName)
+        val recipeTable = DatabaseManager.recipeMap[groupName]
+            ?: return AddRecipeToShoppingListResult.Failure("No recipe list found for this user")
+        val recipeId = parseUuid(recipeIdText)
+            ?: return AddRecipeToShoppingListResult.Failure("Recipe id is invalid")
+
+        val recipeItems = transaction {
+            recipeTable
+                .selectAll()
+                .where { recipeTable.id eq recipeId }
+                .map { parseItems(it[recipeTable.items]) }
+                .singleOrNull()
+        } ?: return AddRecipeToShoppingListResult.Failure("Recipe id does not exist")
+
+        if (recipeItems.isEmpty()) {
+            LOGGER.warn("Rejected adding recipe {} to shopping list because it has no items", recipeIdText)
+            return AddRecipeToShoppingListResult.Failure("Recipe has no items")
+        }
+
+        val added = ShoppingListService.addRecipeItems(recipeItems, groupName)
+            ?: return AddRecipeToShoppingListResult.Failure("No shopping list found for this user")
+
+        return AddRecipeToShoppingListResult.Success(added)
     }
 
     fun addRecipeList(userGroup: String) {

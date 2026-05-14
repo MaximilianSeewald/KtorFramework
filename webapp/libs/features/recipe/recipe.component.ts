@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { NgForOf, NgIf } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { RecipeService } from './recipe.service';
+import { ShoppingListService } from '@features/shopping-list/shopping-list.service';
 import { ErrorService } from '@core/services/error.service';
 import { Recipe, RecipeExtended, RecipeItem } from '@core/models/recipe.model';
 
@@ -19,9 +20,12 @@ export class RecipeComponent implements OnInit, OnDestroy {
   newItemName = '';
   newItemValue = '';
   selectedRecipeIndex: number | null = null;
+  successMessage = '';
+  private successMessageTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private recipeService: RecipeService,
+    private shoppingListService: ShoppingListService,
     public errorService: ErrorService
   ) {}
 
@@ -34,6 +38,9 @@ export class RecipeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.recipeService.closeWebSocket();
+    if (this.successMessageTimeout) {
+      clearTimeout(this.successMessageTimeout);
+    }
   }
 
   addRecipe() {
@@ -62,6 +69,43 @@ export class RecipeComponent implements OnInit, OnDestroy {
         this.errorService.setError(error.error?.message || 'Failed to delete recipe.');
       }
     );
+  }
+
+  addRecipeToShoppingList(recipe: RecipeExtended) {
+    if (!recipe.items.length) {
+      this.errorService.setError('Recipe has no items.');
+      return;
+    }
+
+    this.shoppingListService.addRecipe(recipe.id).subscribe(
+      () => {
+        this.errorService.clearError();
+        this.showSuccessMessage(`Added ${recipe.name} to your shopping list.`);
+      },
+      (error) => {
+        this.clearSuccessMessage();
+        this.errorService.setError(error.error?.message || 'Failed to add recipe to shopping list.');
+      }
+    );
+  }
+
+  private showSuccessMessage(message: string) {
+    this.successMessage = message;
+    if (this.successMessageTimeout) {
+      clearTimeout(this.successMessageTimeout);
+    }
+    this.successMessageTimeout = setTimeout(() => {
+      this.successMessage = '';
+      this.successMessageTimeout = null;
+    }, 1500);
+  }
+
+  private clearSuccessMessage() {
+    this.successMessage = '';
+    if (this.successMessageTimeout) {
+      clearTimeout(this.successMessageTimeout);
+      this.successMessageTimeout = null;
+    }
   }
 
   selectRecipe(index: number) {

@@ -61,6 +61,14 @@
 
         <div class="flex gap-1.5 ml-4" (click)="$event.stopPropagation()">
           <button
+            (click)="addRecipeToShoppingList(recipe)"
+            class="px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1 apple-btn"
+            style="background-color: #EBF3FF; color: #0071E3; border: 1px solid #BBD7FF;"
+          >
+            <mat-icon style="font-size: 14px; width: 14px; height: 14px;">add_shopping_cart</mat-icon>
+            Add to List
+          </button>
+          <button
             (click)="toggleEditRecipe(recipe)"
             class="px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1 apple-btn"
             style="background-color: #F5F5F7; color: #1D1D1F; border: 1px solid #D2D2D7;"
@@ -171,6 +179,12 @@
        class="mt-4 p-3 rounded-xl text-sm"
        style="background-color: #FFF2F1; color: #FF3B30; border: 1px solid #FFD5D2;">
     {{ errorService.errorMessage }}
+  </div>
+
+  <div *ngIf="successMessage"
+       class="mt-4 p-3 rounded-xl text-sm"
+       style="background-color: #F0FFF4; color: #1B7F3A; border: 1px solid #BFE8CB;">
+    {{ successMessage }}
   </div>
 
 </div>

@@ -10,6 +10,7 @@ import com.loudless.models.CreateUserGroupRequest
 import com.loudless.models.JoinUserGroupRequest
 import com.loudless.models.LoginRequest
 import com.loudless.models.Recipe
+import com.loudless.models.RecipeItem
 import com.loudless.models.ShoppingListItem
 import com.loudless.shared.RateLimiter
 import io.ktor.client.HttpClient
@@ -42,6 +43,7 @@ import io.ktor.server.routing.routing
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
@@ -438,6 +440,105 @@ class BackendIntegrationTest {
             bearer(token)
         }
         assertEquals(HttpStatusCode.OK, delete.status)
+    }
+
+    @Test
+    fun `recipe can be added to shopping list with all items`() = testApplication {
+        application { configureBackend() }
+        val client = createJsonClient()
+        val username = "recipe_shopping_${UUID.randomUUID()}"
+        val token = createUserWithGroup(client, username, "rs_group_${shortId()}")
+        val recipeId = UUID.randomUUID().toString()
+
+        val addRecipe = client.post("/api/recipe") {
+            bearer(token)
+            contentType(ContentType.Application.Json)
+            setBody(
+                Recipe(
+                    recipeId,
+                    "Pancakes",
+                    listOf(
+                        RecipeItem("Flour", "500g"),
+                        RecipeItem("Milk", "1l")
+                    )
+                )
+            )
+        }
+        assertEquals(HttpStatusCode.OK, addRecipe.status)
+
+        val addToShoppingList = client.post("/api/recipe/$recipeId/shoppingList") {
+            bearer(token)
+        }
+        assertEquals(HttpStatusCode.OK, addToShoppingList.status)
+
+        val shoppingList = client.get("/api/shoppingList") {
+            bearer(token)
+        }
+        assertEquals(HttpStatusCode.OK, shoppingList.status)
+        val items = Json.decodeFromString<List<ShoppingListItem>>(shoppingList.bodyAsText())
+
+        assertEquals(2, items.size)
+        assertTrue(items.any { it.name == "Flour" && it.amount == "500g" && !it.retrieved })
+        assertTrue(items.any { it.name == "Milk" && it.amount == "1l" && !it.retrieved })
+    }
+
+    @Test
+    fun `adding recipe to shopping list creates separate duplicate rows`() = testApplication {
+        application { configureBackend() }
+        val client = createJsonClient()
+        val username = "recipe_duplicate_${UUID.randomUUID()}"
+        val token = createUserWithGroup(client, username, "rd_group_${shortId()}")
+        val recipeId = UUID.randomUUID().toString()
+
+        val addRecipe = client.post("/api/recipe") {
+            bearer(token)
+            contentType(ContentType.Application.Json)
+            setBody(Recipe(recipeId, "Toast", listOf(RecipeItem("Bread", "2 slices"))))
+        }
+        assertEquals(HttpStatusCode.OK, addRecipe.status)
+
+        repeat(2) {
+            val addToShoppingList = client.post("/api/recipe/$recipeId/shoppingList") {
+                bearer(token)
+            }
+            assertEquals(HttpStatusCode.OK, addToShoppingList.status)
+        }
+
+        val shoppingList = client.get("/api/shoppingList") {
+            bearer(token)
+        }
+        assertEquals(HttpStatusCode.OK, shoppingList.status)
+        val items = Json.decodeFromString<List<ShoppingListItem>>(shoppingList.bodyAsText())
+
+        assertEquals(2, items.size)
+        assertEquals(2, items.count { it.name == "Bread" && it.amount == "2 slices" && !it.retrieved })
+        assertEquals(2, items.map { it.id }.toSet().size)
+    }
+
+    @Test
+    fun `adding invalid or empty recipe to shopping list is rejected`() = testApplication {
+        application { configureBackend() }
+        val client = createJsonClient()
+        val username = "recipe_rejected_${UUID.randomUUID()}"
+        val token = createUserWithGroup(client, username, "rr_group_${shortId()}")
+        val emptyRecipeId = UUID.randomUUID().toString()
+
+        val invalidId = client.post("/api/recipe/not-a-uuid/shoppingList") {
+            bearer(token)
+        }
+        assertEquals(HttpStatusCode.BadRequest, invalidId.status)
+
+        val addEmptyRecipe = client.post("/api/recipe") {
+            bearer(token)
+            contentType(ContentType.Application.Json)
+            setBody(Recipe(emptyRecipeId, "Empty", emptyList()))
+        }
+        assertEquals(HttpStatusCode.OK, addEmptyRecipe.status)
+
+        val emptyRecipe = client.post("/api/recipe/$emptyRecipeId/shoppingList") {
+            bearer(token)
+        }
+        assertEquals(HttpStatusCode.BadRequest, emptyRecipe.status)
     }
 
     @Test

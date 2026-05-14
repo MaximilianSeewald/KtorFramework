@@ -14,7 +14,7 @@ object SessionManager {
 
     private val ktorManager = KtorManager()
     private val shoppingListManager = ShoppingListManager()
-    private val recipeManager = RecipeManager()
+    private val recipeManager = RecipeManager(shoppingListManager)
     private val gradeManager = GradeManager()
     private val userManager = UserManager()
     private val userGroupManager = UserGroupManager()

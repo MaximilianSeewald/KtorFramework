@@ -2,6 +2,7 @@ package com.loudless.shoppingList
 
 import com.loudless.database.DatabaseManager
 import com.loudless.database.ShoppingList
+import com.loudless.models.RecipeItem
 import com.loudless.models.ShoppingListItem
 import com.loudless.userGroups.UserGroupNameValidator
 import io.ktor.http.*
@@ -61,6 +62,28 @@ object ShoppingListService {
                 LOGGER.warn("Did not add shopping list item {} for group {} because it already exists", updateData.id, groupName)
                 false
             }
+        }
+    }
+
+    fun addRecipeItems(itemsToAdd: List<RecipeItem>, groupName: String): Int? {
+        LOGGER.info("Adding {} recipe items to shopping list for group {}", itemsToAdd.size, groupName)
+        val shoppingListTable = DatabaseManager.shoppingListMap[groupName]
+        if (shoppingListTable == null) {
+            LOGGER.warn("Cannot add recipe items because group {} has no shopping list", groupName)
+            return null
+        }
+
+        return transaction {
+            itemsToAdd.forEach { item ->
+                shoppingListTable.insert {
+                    it[id] = UUID.randomUUID()
+                    it[name] = item.name
+                    it[amount] = item.value
+                    it[retrieved] = false
+                }
+            }
+            LOGGER.info("Added {} recipe items to shopping list for group {}", itemsToAdd.size, groupName)
+            itemsToAdd.size
         }
     }
 
