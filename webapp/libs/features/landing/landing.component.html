@@ -1,60 +1,107 @@
-<!-- Hero Section -->
-<section class="text-center px-6" style="padding-top: 100px; padding-bottom: 100px; background: linear-gradient(180deg, #1D1D1F 0%, #2C2C2E 100%);">
-  <p class="text-xs font-semibold tracking-widest uppercase mb-4" style="color: #0071E3;">Personal Space</p>
-  <h1 class="text-5xl font-semibold text-white tracking-tight leading-tight" style="font-size: clamp(2.5rem, 6vw, 4rem);">
-    Welcome to my<br>personal Space.
-  </h1>
-  <p class="mt-5 text-lg max-w-xl mx-auto" style="color: #86868B;">
-    Software Engineer for more than 10 years, building great experiences.
-  </p>
-</section>
-
-<!-- Features -->
-<section class="max-w-5xl mx-auto px-6 py-20">
-  <h2 class="text-3xl font-semibold text-center tracking-tight" style="color: #1D1D1F;">What's available</h2>
-  <p class="text-center mt-2 text-sm" style="color: #6E6E73;">A collection of tools to make your life easier.</p>
-  <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-
-    <div class="p-8 rounded-2xl border transition-shadow hover:shadow-md"
-         style="background-color: #FFFFFF; border-color: #E8E8ED; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
-      <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
-           style="background-color: #EBF3FF;">
-        <mat-icon style="color: #0071E3;">calculate</mat-icon>
-      </div>
-      <h3 class="text-base font-semibold" style="color: #1D1D1F;">Grade Calculator</h3>
-      <p class="mt-2 text-sm leading-relaxed" style="color: #6E6E73;">
-        Submit your points and names as a .csv sheet and get the results instantly.
+<main class="portfolio-shell">
+  <section class="intro-section" aria-labelledby="intro-title">
+    <div class="intro-copy">
+      <p class="eyebrow">Personal Portfolio</p>
+      <h1 id="intro-title">Maximilian Seewald</h1>
+      <p class="intro-text">
+        I am a software developer who likes turning complex ideas into clear, useful systems, from reliable backend services to interfaces that feel calm and practical.
       </p>
-      <button routerLink="/calculator"
-              class="mt-6 text-sm font-medium px-5 py-2 rounded-full apple-btn"
-              style="background-color: #0071E3; color: #FFFFFF;">
-        Open Calculator
-      </button>
-    </div>
-
-    <div class="p-8 rounded-2xl border transition-shadow hover:shadow-md"
-         style="background-color: #FFFFFF; border-color: #E8E8ED; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
-      <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
-           style="background-color: #EBF3FF;">
-        <mat-icon style="color: #0071E3;">shopping_cart</mat-icon>
+      <div class="intro-actions">
+        <a class="primary-action" href="https://www.xing.com/profile/Maximilian_Seewald064447" target="_blank" rel="noopener noreferrer">
+          <mat-icon aria-hidden="true">badge</mat-icon>
+          Xing Profile
+        </a>
+        <a class="secondary-action" href="https://github.com/MaximilianSeewald" target="_blank" rel="noopener noreferrer">
+          <mat-icon aria-hidden="true">code</mat-icon>
+          GitHub Profile
+        </a>
       </div>
-      <h3 class="text-base font-semibold" style="color: #1D1D1F;">Shopping List App</h3>
-      <p class="mt-2 text-sm leading-relaxed" style="color: #6E6E73;">
-        Share your shopping list with friends and manage it from anywhere you want.
+    </div>
+  </section>
+
+  <div class="section-transition" aria-hidden="true"></div>
+
+  <section class="hero-section" aria-labelledby="profile-title">
+    <div class="hero-copy">
+      <p class="eyebrow">Profile Snapshot</p>
+      <h2 id="profile-title">How I think about building software.</h2>
+      <p class="hero-text">
+        My work sits between engineering discipline, product thinking, and curiosity about intelligent systems.
       </p>
     </div>
-
-    <div class="p-8 rounded-2xl border transition-shadow hover:shadow-md"
-         style="background-color: #FFFFFF; border-color: #E8E8ED; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
-      <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
-           style="background-color: #EBF3FF;">
-        <mat-icon style="color: #0071E3;">home</mat-icon>
+    <div class="hero-panel" aria-label="Portfolio snapshot">
+      <div class="panel-header">
+        <span></span>
+        <span></span>
+        <span></span>
       </div>
-      <h3 class="text-base font-semibold" style="color: #1D1D1F;">Home Assistant</h3>
-      <p class="mt-2 text-sm leading-relaxed" style="color: #6E6E73;">
-        Integrate your Home Assistant apps and communicate over this platform.
-      </p>
+      <div class="signal-grid">
+        <div>
+          <strong>Engineering</strong>
+          <span>I care about software that is understandable, maintainable, and useful beyond the first demo</span>
+        </div>
+        <div>
+          <strong>Adaptive Systems</strong>
+          <span>I enjoy exploring where data, machine learning, and real product problems meet</span>
+        </div>
+        <div>
+          <strong>Delivery</strong>
+          <span>I like working in teams where ownership, communication, and steady progress matter</span>
+        </div>
+        <div>
+          <strong>Perspective</strong>
+          <span>My media informatics background helps me think about both systems and the people using them</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-transition" aria-hidden="true"></div>
+
+  <section class="work-section" aria-labelledby="work-title">
+    <div class="section-heading">
+      <p class="eyebrow">Selected Work</p>
+      <h2 id="work-title">A few things I have built, explored, or shaped along the way.</h2>
     </div>
 
-  </div>
-</section>
+    <div class="project-grid">
+      <article class="project-card accent-blue">
+        <div class="icon-frame">
+          <mat-icon aria-hidden="true">calculate</mat-icon>
+        </div>
+        <h3>Grade Calculator</h3>
+        <p>
+          A small tool built around a real recurring need: take exported point data, keep the process simple, and get readable grade results without extra friction.
+        </p>
+        <a class="text-link" routerLink="/calculator">Launch calculator</a>
+      </article>
+
+      <article class="project-card accent-green">
+        <div class="icon-frame">
+          <mat-icon aria-hidden="true">speed</mat-icon>
+        </div>
+        <h3>Adaptive Latency Research</h3>
+        <p>
+          Part of my master work, focused on how systems can respond more intelligently when latency and changing conditions become part of the problem.
+        </p>
+        <a class="text-link" href="https://github.com/MaximilianSeewald/master-adaptive-latency" target="_blank" rel="noopener noreferrer">
+          View research repo
+        </a>
+      </article>
+
+      <article class="project-card accent-coral">
+        <div class="icon-frame">
+          <mat-icon aria-hidden="true">home</mat-icon>
+        </div>
+        <h3>Home Assistant Add-on</h3>
+        <p>
+          A personal playground for connecting backend work, web UI, and Home Assistant into something useful for everyday automation experiments.
+        </p>
+        <a class="repo-button" href="https://github.com/MaximilianSeewald/KtorFramework" target="_blank" rel="noopener noreferrer">
+          <mat-icon aria-hidden="true">open_in_new</mat-icon>
+          Open repository
+        </a>
+      </article>
+    </div>
+  </section>
+</main>
