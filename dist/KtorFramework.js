@@ -180,7 +180,13 @@ function normalizeBaseUrl(url) {
 
 function normalizeIngressEntry(entry) {
   const normalizedEntry = String(entry || '').trim().replace(/^\/+|\/+$/g, '');
-  return normalizedEntry ? `/api/hassio_ingress/${normalizedEntry}/` : '';
+  if (!normalizedEntry) {
+    return '';
+  }
+
+  return normalizedEntry.startsWith('api/hassio_ingress/')
+    ? `/${normalizedEntry}/`
+    : `/api/hassio_ingress/${normalizedEntry}/`;
 }
 
 function inferIngressBaseUrl() {
