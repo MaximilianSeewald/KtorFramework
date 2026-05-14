@@ -85,7 +85,14 @@ const cardStyles = `
     .add-row {
       background: var(--secondary-background-color);
       border-radius: 8px;
+      box-sizing: border-box;
+      flex-wrap: nowrap;
       padding: 8px;
+      width: 100%;
+    }
+
+    .add-row input[type="text"] {
+      flex: 1 1 auto;
     }
 
     .list {
@@ -94,8 +101,7 @@ const cardStyles = `
       gap: 8px;
       max-height: min(50vh, 420px);
       overflow-y: auto;
-      padding-right: 2px;
-      scrollbar-gutter: stable;
+      padding-right: 0;
     }
 
     .item-row {
@@ -155,16 +161,6 @@ const cardStyles = `
       color: var(--error-color);
     }
 
-    @media (max-width: 420px) {
-      .add-row {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .add-row .icon-button {
-        align-self: flex-end;
-      }
-    }
   </style>
 `;
 
