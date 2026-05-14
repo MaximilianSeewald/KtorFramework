@@ -1,6 +1,14 @@
-* @MaximilianSeewald
+# Generated add-on package files are intentionally not code-owned so the
+# version-bump PR can auto-merge after required checks pass.
 
-# Version-bump automation updates these files and should still be able to auto-merge.
-/addons/ktor_app/config.yaml
-/addons/ktor_app/ktor.jar
-/addons/ktor_app/app/
+/.github/ @MaximilianSeewald
+/backend/ @MaximilianSeewald
+/webapp/ @MaximilianSeewald
+/dist/ @MaximilianSeewald
+/addons/ktor_app/DOCS.md @MaximilianSeewald
+/addons/ktor_app/Dockerfile @MaximilianSeewald
+/addons/ktor_app/start.sh @MaximilianSeewald
+/README.md @MaximilianSeewald
+/build.gradle.kts @MaximilianSeewald
+/settings.gradle.kts @MaximilianSeewald
+/repository.yaml @MaximilianSeewald

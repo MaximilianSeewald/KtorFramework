@@ -10,6 +10,8 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.math.ceil
 
+class GradeUploadValidationException(message: String) : IllegalArgumentException(message)
+
 object GradeService {
     private val LOGGER = LoggerFactory.getLogger(GradeService::class.java)
 
@@ -19,24 +21,45 @@ object GradeService {
     private const val FOUR = 0.5
     private const val FIVE = 0.25
 
-    fun readFileAndWriteToStream(array: ByteArray, points: String?, outputStream: ByteArrayOutputStream) {
+    fun readFileAndWriteToStream(
+        array: ByteArray,
+        maxPoints: Float,
+        maxRows: Int,
+        outputStream: ByteArrayOutputStream
+    ) {
         LOGGER.info("Processing grade CSV upload")
         val rows = csvReader().readAll(ByteArrayInputStream(array))
-        val floatedPoints = points?.toFloat() ?: 0f
-        val students = mutableListOf<Student>()
-        rows.forEach {
-            val score = it[1].toFloatOrNull() ?: 0f
-            val student = Student(it[0], score, calcPoints(floatedPoints, score))
-            students.add(student)
+        if (rows.isEmpty()) {
+            throw GradeUploadValidationException("CSV file is empty")
         }
+        if (rows.size > maxRows) {
+            throw GradeUploadValidationException("CSV file contains more than $maxRows rows")
+        }
+
+        val students = rows.mapIndexed { index, row ->
+            val rowNumber = index + 1
+            if (row.size < 2) {
+                throw GradeUploadValidationException("Row $rowNumber must contain a name and score")
+            }
+            val name = row[0].trim()
+            if (name.isEmpty()) {
+                throw GradeUploadValidationException("Row $rowNumber contains an empty student name")
+            }
+            val score = row[1].trim().toFloatOrNull()
+            if (score == null || !score.isFinite() || score < 0) {
+                throw GradeUploadValidationException("Row $rowNumber contains an invalid score")
+            }
+            Student(name, score, calcPoints(maxPoints, score))
+        }
+
         val studentData = students.map { listOf(it.name, it.points, it.grade) }
         val gradeCsv = ByteArrayOutputStream()
         csvWriter().writeAll(studentData, gradeCsv)
 
         val gradeToStudentCSV = ByteArrayOutputStream()
-        createSecondCSV(students,floatedPoints,gradeToStudentCSV)
+        createSecondCSV(students, maxPoints, gradeToStudentCSV)
 
-        createZIP(outputStream,gradeCsv,gradeToStudentCSV)
+        createZIP(outputStream, gradeCsv, gradeToStudentCSV)
         LOGGER.info("Processed grade CSV with {} rows", students.size)
     }
 
@@ -60,11 +83,11 @@ object GradeService {
         val threePoints = ceil(maxPoints * THREE) - 0.5f
         val fourPoints = ceil(maxPoints * FOUR) - 0.5f
         val fivePoints = ceil(maxPoints * FIVE) - 0.5f
-        if(points >= onePoints) { return 1 }
-        if(points >= twoPoints) { return 2 }
-        if(points >= threePoints) { return 3 }
-        if(points >= fourPoints) { return 4 }
-        if(points >= fivePoints) { return 5 }
+        if (points >= onePoints) { return 1 }
+        if (points >= twoPoints) { return 2 }
+        if (points >= threePoints) { return 3 }
+        if (points >= fourPoints) { return 4 }
+        if (points >= fivePoints) { return 5 }
         return 6
     }
 

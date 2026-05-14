@@ -1,84 +1,40 @@
 name: Deploy Web Server
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - CI
     branches:
       - master
+    types:
+      - completed
 
 permissions:
+  actions: read
   contents: read
 
-env:
-  NODE_VERSION: 22.13.1
-  JAVA_VERSION: "21"
-
 jobs:
-  build-web-app:
-    name: Build Web App
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: webapp/package-lock.json
-      - name: Install dependencies
-        working-directory: webapp
-        run: npm ci
-      - name: Build web frontend
-        working-directory: webapp
-        run: npm run build
-      - name: Upload web app artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-app-build
-          path: deploy/app
-          if-no-files-found: error
-
-  build-backend-jar:
-    name: Build Backend Jar
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: temurin
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@94baf225fe0a508e581a564467443d0e2379123b
-      - name: Build backend jar
-        run: ./gradlew backend:buildFatJar --console=plain
-      - name: Upload backend jar
-        uses: actions/upload-artifact@v4
-        with:
-          name: ktor-jar
-          path: backend/build/libs/fat.jar
-          if-no-files-found: error
-
   deploy-web-server:
     name: Deploy Web Server
     runs-on: ubuntu-latest
-    needs:
-      - build-web-app
-      - build-backend-jar
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      !contains(github.event.workflow_run.head_commit.message, '[skip addon-bump]')
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
       - name: Download web app artifact
         uses: actions/download-artifact@v4
         with:
           name: web-app-build
           path: deploy/app
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
       - name: Download backend jar
         uses: actions/download-artifact@v4
         with:
           name: ktor-jar
           path: deploy
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
       - name: Prepare deploy directory
         run: |
           set -euo pipefail
@@ -88,29 +44,44 @@ jobs:
       - name: SFTP upload
         uses: Dylan700/sftp-upload-action@50ed7273493353a60dace713957c36b02dd87bec
         with:
-          server: 92.205.163.207
-          username: ${{ secrets.username }}
-          password: ${{ secrets.password }}
-          port: 22
+          server: ${{ vars.WEB_DEPLOY_HOST }}
+          username: ${{ secrets.WEB_DEPLOY_USERNAME }}
+          password: ${{ secrets.WEB_DEPLOY_PASSWORD }}
+          port: ${{ vars.WEB_DEPLOY_PORT }}
           uploads: |
-            deploy/ => ../var/www/html
+            deploy/ => ${{ vars.WEB_DEPLOY_DIR }}
       - name: Stop and start Ktor backend
         uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17
         env:
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          WEB_DEPLOY_DIR: ${{ vars.WEB_DEPLOY_DIR }}
+          WEB_BACKEND_HOST: ${{ vars.WEB_BACKEND_HOST }}
+          WEB_BACKEND_PORT: ${{ vars.WEB_BACKEND_PORT }}
         with:
-          host: 92.205.163.207
-          username: ${{ secrets.username }}
-          password: ${{ secrets.password }}
-          port: 22
-          envs: JWT_SECRET_KEY
+          host: ${{ vars.WEB_DEPLOY_HOST }}
+          username: ${{ secrets.WEB_DEPLOY_USERNAME }}
+          password: ${{ secrets.WEB_DEPLOY_PASSWORD }}
+          port: ${{ vars.WEB_DEPLOY_PORT }}
+          envs: JWT_SECRET_KEY,WEB_DEPLOY_DIR,WEB_BACKEND_HOST,WEB_BACKEND_PORT
           script: |
             set -e
-            cd ../var/www/html
             if [ -z "${JWT_SECRET_KEY:-}" ]; then
               echo "JWT_SECRET_KEY repository secret is required"
               exit 1
             fi
+            if [ -z "${WEB_DEPLOY_DIR:-}" ]; then
+              echo "WEB_DEPLOY_DIR repository variable is required"
+              exit 1
+            fi
+            if [ -z "${WEB_BACKEND_HOST:-}" ]; then
+              echo "WEB_BACKEND_HOST repository variable is required"
+              exit 1
+            fi
+            if [ -z "${WEB_BACKEND_PORT:-}" ]; then
+              echo "WEB_BACKEND_PORT repository variable is required"
+              exit 1
+            fi
+            cd "$WEB_DEPLOY_DIR"
             if [ -f ktor.pid ]; then
               old_pid="$(cat ktor.pid || true)"
               if [ -n "$old_pid" ] && ps -p "$old_pid" -o args= | grep -q 'java -jar ktor.jar'; then
@@ -120,7 +91,7 @@ jobs:
               rm -f ktor.pid
             fi
             chmod +x ktor.jar
-            nohup env JWT_SECRET_KEY="$JWT_SECRET_KEY" KTOR_HOST=127.0.0.1 KTOR_PORT=8090 java -jar ktor.jar > ktor.log 2>&1 &
+            nohup env JWT_SECRET_KEY="$JWT_SECRET_KEY" KTOR_HOST="$WEB_BACKEND_HOST" KTOR_PORT="$WEB_BACKEND_PORT" java -jar ktor.jar > ktor.log 2>&1 &
             echo $! > ktor.pid
             sleep 5
             if ! kill -0 "$(cat ktor.pid)" 2>/dev/null; then
@@ -128,8 +99,14 @@ jobs:
               tail -n 200 ktor.log
               exit 1
             fi
-            if ! curl -fsS http://127.0.0.1:8090/ >/dev/null; then
-              echo "Ktor is running but not reachable on localhost:8090"
+            if ! curl -fsS "http://$WEB_BACKEND_HOST:$WEB_BACKEND_PORT/health/ready" >/dev/null; then
+              echo "Ktor is running but not ready at /health/ready"
+              tail -n 200 ktor.log
+              exit 1
+            fi
+            verify_status="$(curl -sS -o /dev/null -w '%{http_code}' "http://$WEB_BACKEND_HOST:$WEB_BACKEND_PORT/api/verify")"
+            if [ "$verify_status" != "401" ]; then
+              echo "/api/verify without a token returned $verify_status instead of 401"
               tail -n 200 ktor.log
               exit 1
             fi

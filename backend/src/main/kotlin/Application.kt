@@ -17,11 +17,23 @@ import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.auth.*
+import kotlinx.serialization.Serializable
 import org.slf4j.LoggerFactory
 import io.ktor.server.plugins.swagger.*
 import io.ktor.server.routing.openapi.OpenApiDocSource
 
 private val LOGGER = LoggerFactory.getLogger("com.loudless.Application")
+
+@Serializable
+private data class HealthResponse(
+    val status: String,
+    val checks: HealthChecks? = null,
+)
+
+@Serializable
+private data class HealthChecks(
+    val database: String,
+)
 
 fun main() {
     LOGGER.info("Starting backend application")
@@ -48,6 +60,20 @@ fun Application.configureBackend() {
     install(io.ktor.server.plugins.forwardedheaders.XForwardedHeaders)
     SessionManager.installComponents(this)
     routing {
+        get("/health/live") {
+            call.respond(HttpStatusCode.OK, HealthResponse(status = "UP"))
+        }
+
+        get("/health/ready") {
+            val databaseReady = DatabaseManager.isReady()
+            val status = if (databaseReady) HttpStatusCode.OK else HttpStatusCode.ServiceUnavailable
+            val body = HealthResponse(
+                status = if (databaseReady) "UP" else "DOWN",
+                checks = HealthChecks(database = if (databaseReady) "UP" else "DOWN")
+            )
+            call.respond(status, body)
+        }
+
         route("/api") {
             SessionManager.initRouting(this)
             authenticate("auth-jwt") {
