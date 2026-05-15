@@ -37,9 +37,6 @@ class AppConfigTest {
             DATABASE_PATH=./data/db
             DATABASE_BACKUP_PATH=./data/backups
             H2_MODE=AUTO_SERVER=TRUE
-            GRADE_UPLOAD_MAX_BYTES=2048
-            GRADE_UPLOAD_MAX_ROWS=50
-            GRADE_UPLOAD_MAX_POINTS=120
             RATE_LIMIT_WINDOW_SECONDS=30
             RATE_LIMIT_MAX_REQUESTS=10
             """.trimIndent()
@@ -52,9 +49,6 @@ class AppConfigTest {
         assertEquals("./data/db", config.databasePath)
         assertEquals("./data/backups", config.databaseBackupPath)
         assertEquals("AUTO_SERVER=TRUE", config.h2Mode)
-        assertEquals(2048L, config.gradeUploadMaxBytes)
-        assertEquals(50, config.gradeUploadMaxRows)
-        assertEquals(120F, config.gradeUploadMaxPoints)
         assertEquals(30L, config.rateLimitWindowSeconds)
         assertEquals(10, config.rateLimitMaxRequests)
     }

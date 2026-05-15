@@ -17,8 +17,6 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocket
-import io.ktor.client.request.forms.MultiPartFormDataContent
-import io.ktor.client.request.forms.formData
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
@@ -28,10 +26,8 @@ import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
-import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
@@ -43,7 +39,6 @@ import io.ktor.server.routing.routing
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
@@ -54,7 +49,6 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.nio.file.Files
 import java.util.UUID
-import java.util.zip.ZipInputStream
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -295,51 +289,6 @@ class BackendIntegrationTest {
         assertTrue(csp.contains("connect-src 'self' ws: wss:"))
         assertFalse(response.headers.contains("X-Frame-Options"))
         assertFalse(csp.contains("frame-ancestors"))
-    }
-
-    @Test
-    fun `grade upload stays public and returns fixed zip entries for valid csv`() = testApplication {
-        application { configureBackend() }
-        val client = createJsonClient()
-
-        val response = uploadGrades(client, "Alice;96\nBob;50\n", "100")
-
-        assertEquals(HttpStatusCode.OK, response.status)
-        assertEquals(
-            ContentType.Application.Zip,
-            ContentType.parse(response.headers[HttpHeaders.ContentType]!!).withoutParameters()
-        )
-        assertEquals(listOf("grades.csv", "distribution.csv"), zipEntries(response.bodyAsBytes()))
-    }
-
-    @Test
-    fun `grade upload rejects invalid public input with bad request`() = testApplication {
-        application { configureBackend() }
-        val client = createJsonClient()
-
-        val missingFile = client.post("/api/upload") {
-            setBody(MultiPartFormDataContent(formData { append("points", "100") }))
-        }
-        assertEquals(HttpStatusCode.BadRequest, missingFile.status)
-
-        assertEquals(HttpStatusCode.BadRequest, uploadGrades(client, "Alice;96\n", "0").status)
-        assertEquals(HttpStatusCode.BadRequest, uploadGrades(client, "Alice\n", "100").status)
-        assertEquals(HttpStatusCode.BadRequest, uploadGrades(client, ";96\n", "100").status)
-        assertEquals(HttpStatusCode.BadRequest, uploadGrades(client, "Alice;-1\n", "100").status)
-    }
-
-    @Test
-    fun `grade upload rejects oversized files`() = testApplication {
-        val configPath = Files.createTempFile("ktor-grade-upload-limit-test", ".properties")
-        Files.writeString(configPath, "GRADE_UPLOAD_MAX_BYTES=8")
-        AppConfigLoader.configPath = configPath
-
-        application { configureBackend() }
-        val client = createJsonClient()
-
-        val response = uploadGrades(client, "Alice;96\n", "100")
-
-        assertEquals(HttpStatusCode.PayloadTooLarge, response.status)
     }
 
     @Test
@@ -717,42 +666,6 @@ class BackendIntegrationTest {
             json()
         }
         install(WebSockets)
-    }
-
-    private suspend fun uploadGrades(
-        client: HttpClient,
-        csv: String,
-        points: String
-    ): HttpResponse {
-        return client.post("/api/upload") {
-            setBody(
-                MultiPartFormDataContent(
-                    formData {
-                        append("points", points)
-                        append(
-                            "file",
-                            csv.encodeToByteArray(),
-                            Headers.build {
-                                append(HttpHeaders.ContentType, "text/csv")
-                                append(HttpHeaders.ContentDisposition, "filename=\"grades.csv\"")
-                            }
-                        )
-                    }
-                )
-            )
-        }
-    }
-
-    private fun zipEntries(bytes: ByteArray): List<String> {
-        val entries = mutableListOf<String>()
-        ZipInputStream(bytes.inputStream()).use { zipInputStream ->
-            while (true) {
-                val entry = zipInputStream.nextEntry ?: break
-                entries.add(entry.name)
-                zipInputStream.closeEntry()
-            }
-        }
-        return entries
     }
 
     private suspend fun signup(

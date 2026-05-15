@@ -12,7 +12,6 @@ export const routes: Routes = [
   { path: 'recipe', loadComponent: () => import('@features/recipe/recipe.component').then(m => m.RecipeComponent), canActivate: [AuthGuard] },
 
   { path: 'user', loadComponent: () => import('@features/userinfo/userinfo.component').then(m => m.UserinfoComponent), canActivate: [AuthGuard] },
-  { path: 'calculator', loadComponent: () => import('@features/calculator/calculator.component').then(m => m.CalculatorComponent) },
 
   { path: '**', redirectTo: 'dashboard' }
 ];

@@ -2,7 +2,6 @@
 export * from './services/auth.service';
 export * from './services/error.service';
 export * from './services/user.service';
-export * from './services/calculator.service';
 export * from './guards/auth.guard';
 export * from './http/auth.interceptor';
 export * from './models/user.model';
