@@ -1,6 +1,5 @@
 package com.loudless
 
-import com.loudless.grades.GradeManager
 import com.loudless.recipes.RecipeManager
 import com.loudless.shoppingList.ShoppingListManager
 import com.loudless.userGroups.UserGroupManager
@@ -15,13 +14,11 @@ object SessionManager {
     private val ktorManager = KtorManager()
     private val shoppingListManager = ShoppingListManager()
     private val recipeManager = RecipeManager(shoppingListManager)
-    private val gradeManager = GradeManager()
     private val userManager = UserManager()
     private val userGroupManager = UserGroupManager()
 
     fun initRouting(routing: Route) {
         LOGGER.info("Initializing public API routes")
-        gradeManager.initRouting(routing)
         userManager.initRouting(routing)
         shoppingListManager.initQueryRoutes(routing)
         recipeManager.initQueryRoutes(routing)
