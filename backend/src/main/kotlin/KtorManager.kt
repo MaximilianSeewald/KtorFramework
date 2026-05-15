@@ -50,7 +50,9 @@ class KtorManager {
         application.install(ContentNegotiation) {
             json()
         }
-        application.install(SecurityHeaders)
+        if (!BackendConfig.swaggerEnabled){
+            application.install(SecurityHeaders)
+        }
         application.install(StatusPages) {
             exception<Throwable> { call, cause ->
                 val requestId = call.callId ?: "unknown"
