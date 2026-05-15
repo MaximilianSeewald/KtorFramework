@@ -2,6 +2,7 @@ package com.loudless.recipes
 
 import com.loudless.models.Recipe
 import com.loudless.shared.GenericManager
+import com.loudless.shoppingList.ShoppingListManager
 import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -9,13 +10,16 @@ import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 
 
-class RecipeManager : GenericManager<Recipe>() {
+class RecipeManager(
+    private val shoppingListManager: ShoppingListManager
+) : GenericManager<Recipe>() {
     private val LOGGER = LoggerFactory.getLogger(RecipeManager::class.java)
 
     fun initRoutes(route: Route) {
         route.getRecipes()
         route.putRecipes()
         route.postRecipes()
+        route.postRecipeToShoppingList()
         route.deleteRecipes()
     }
 
@@ -58,6 +62,32 @@ class RecipeManager : GenericManager<Recipe>() {
                 }
             }
             emitUpdate(groups) { RecipeService.retrieveRecipes(it) }
+        }
+    }
+
+    private fun Route.postRecipeToShoppingList() {
+        post("/recipe/{id}/shoppingList") {
+            LOGGER.info("Handling add recipe to shopping list request")
+            val groups = retrieveUserGroupsAndHandleErrors(call)
+            if (groups.isEmpty()) return@post
+            val recipeId = call.parameters["id"]
+            if (recipeId.isNullOrBlank()) {
+                LOGGER.warn("Rejected add recipe to shopping list because id path parameter was missing")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Recipe id is missing"))
+                return@post
+            }
+
+            when (val result = RecipeService.addRecipeToShoppingList(recipeId, groups[0])) {
+                is RecipeService.AddRecipeToShoppingListResult.Success -> {
+                    call.respond(HttpStatusCode.OK, mapOf("added" to result.added))
+                    shoppingListManager.emitShoppingListUpdate(groups)
+                    LOGGER.info("Added recipe {} to shopping list for group {}", recipeId, groups[0])
+                }
+                is RecipeService.AddRecipeToShoppingListResult.Failure -> {
+                    LOGGER.warn("Rejected add recipe {} to shopping list for group {}: {}", recipeId, groups[0], result.message)
+                    call.respond(HttpStatusCode.BadRequest, mapOf("message" to result.message))
+                }
+            }
         }
     }
 

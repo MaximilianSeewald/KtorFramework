@@ -2,8 +2,6 @@ package com.loudless.shoppingList
 
 import com.loudless.models.ShoppingListItem
 import com.loudless.shared.GenericManager
-import com.loudless.shared.JwtUtil
-import com.loudless.users.UserService
 import io.ktor.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -22,6 +20,10 @@ class ShoppingListManager : GenericManager<ShoppingListItem>() {
 
     fun initQueryRoutes(route: Route) {
         route.webSocketShoppingList()
+    }
+
+    fun emitShoppingListUpdate(groups: List<String>) {
+        emitUpdate(groups) { ShoppingListService.retrieveItems(it) }
     }
 
     private fun Route.webSocketShoppingList() {
