@@ -57,7 +57,6 @@ export class ShoppingListService {
       amount: '',
       retrieved: false
     };
-    this.setShoppingList([...this.shoppingListSubject.value, newItem]);
     return this.http.post(`${this.apiUrl}/shoppingList`, newItem);
   }
 
@@ -108,4 +107,3 @@ export class ShoppingListService {
     });
   }
 }
-

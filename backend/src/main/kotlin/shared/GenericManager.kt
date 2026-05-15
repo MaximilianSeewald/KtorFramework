@@ -24,9 +24,14 @@ abstract class GenericManager<T> {
         LOGGER.info("Retrieving user groups for group-based request")
         val groups = UserService.getUserGroupsByPrincipal(call)
         return when {
+            groups == null -> {
+                LOGGER.warn("Rejected group-based request because username not found")
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User not found"))
+                emptyList()
+            }
             groups.isEmpty() -> {
                 LOGGER.warn("Rejected group-based request because no user group was found")
-                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "No user found with this username"))
+                call.respond(HttpStatusCode.BadRequest, mapOf("message" to "User is not a member of any group. Create or join a group first."))
                 emptyList()
             }
             groups.size > 1 -> {
@@ -72,7 +77,7 @@ abstract class GenericManager<T> {
             val groups = UserService.getUserGroupsByQuery(decodedJWT)
             val userName = JwtUtil.getUsername(decodedJWT)
 
-            if (groups.size != 1 || groups[0].isBlank()) {
+            if (groups == null || groups.size != 1 || groups[0].isBlank()) {
                 LOGGER.warn("Rejected {} websocket because user has invalid group membership", resourceName)
                 close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Invalid group"))
                 return@webSocket

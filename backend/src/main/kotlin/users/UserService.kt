@@ -16,27 +16,33 @@ import org.slf4j.LoggerFactory
 object UserService {
     private val LOGGER = LoggerFactory.getLogger(UserService::class.java)
 
-    fun getUserGroupsByPrincipal(call: ApplicationCall): List<String> {
-        val principal = call.principal<JWTPrincipal>()
-        val username = principal?.getClaim("username", String::class) ?: ""
-        LOGGER.info("Retrieving user group for authenticated user")
+    private fun getUserGroupsByUsername(username: String): List<String>? {
         return transaction {
             val groups = Users.selectAll().where { Users.name eq username }
                 .map { it[Users.group] ?: "" }
-            LOGGER.info("Retrieved {} user group records for authenticated user", groups.size)
-            groups
+            if (groups.isEmpty()) {
+                null
+            } else {
+                groups.filter { it.isNotBlank() }
+            }
         }
     }
 
-    fun getUserGroupsByQuery(decodedJWT: DecodedJWT): List<String> {
+    fun getUserGroupsByPrincipal(call: ApplicationCall): List<String>? {
+        val principal = call.principal<JWTPrincipal>()
+        val username = principal?.getClaim("username", String::class) ?: ""
+        LOGGER.info("Retrieving user group for authenticated user")
+        val groups = getUserGroupsByUsername(username)
+        LOGGER.info("Retrieved {} user group records for authenticated user", groups?.size ?: 0)
+        return groups
+    }
+
+    fun getUserGroupsByQuery(decodedJWT: DecodedJWT): List<String>? {
         val username = decodedJWT.getClaim("username").asString()
         LOGGER.info("Retrieving user group for websocket user")
-        return transaction {
-            val groups = Users.selectAll().where { Users.name eq username }
-                .map { it[Users.group] ?: "" }
-            LOGGER.info("Retrieved {} user group records for websocket user", groups.size)
-            groups
-        }
+        val groups = getUserGroupsByUsername(username)
+        LOGGER.info("Retrieved {} user group records for websocket user", groups?.size ?: 0)
+        return groups
     }
 
     private fun getUserInformationByPrincipal(call: ApplicationCall): List<User> {

@@ -276,6 +276,10 @@ class BackendIntegrationTest {
 
     @Test
     fun `responses include Home Assistant safe production security headers`() = testApplication {
+        val configPath = Files.createTempFile("ktor-framework-cors-test", ".properties")
+        Files.writeString(configPath, "APP_ENV=production")
+        AppConfigLoader.configPath = configPath
+
         application { configureBackend() }
         val client = createJsonClient()
 
