@@ -31,7 +31,7 @@ export class ShoppingListComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.shoppingListService.loadItems().subscribe({
       next: (list) => this.shoppingListService.setShoppingList(list),
-      error: () => this.errorService.setError('Failed to load shopping list.')
+      error: (error) => this.errorService.setError(error.error?.message || 'Failed to load shopping list.')
     });
     this.shoppingListService.initWebSocket();
     this.shoppingListService.shoppingList$.subscribe((list) => {
