@@ -139,15 +139,14 @@ For an add-on package, `addons/ktor_app` must contain:
 - `Dockerfile`
 - `config.yaml`
 
-## Standard Web App And API
+## Shopping Web App And API
 
-The standard app is the regular Angular/Ktor deployment. It keeps local auth flows enabled and includes the broader route set.
+The shopping app is the regular Angular/Ktor deployment for web apps. It keeps local auth flows enabled and serves the shopping and recipe demo outside Home Assistant.
 
-### Standard Web Features
+### Shopping Web Features
 
 The `web-app` Angular application includes routes for:
 
-- Landing page
 - Login and registration
 - Password change
 - Shopping list dashboard
