@@ -50,6 +50,10 @@ export class ShoppingListComponent implements OnInit, OnDestroy {
     }
     this.shoppingListService.addItem(this.newItemName).subscribe(
       () => {
+        this.shoppingListService.loadItems().subscribe({
+          next: (list) => this.shoppingListService.setShoppingList(list),
+          error: () => this.errorService.setError('Failed to refresh shopping list.')
+        });
         this.errorService.clearError();
         this.newItemName = '';
       },
@@ -111,4 +115,3 @@ export class ShoppingListComponent implements OnInit, OnDestroy {
     );
   }
 }
-
