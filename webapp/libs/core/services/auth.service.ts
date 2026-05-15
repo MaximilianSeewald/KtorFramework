@@ -50,7 +50,7 @@ export class AuthService {
     }
   }
 
-  logout(redirectTo: string[] = ['landing']) {
+  logout(redirectTo: string[] = ['login']) {
     this.clearSession();
     this.router.navigate(redirectTo);
   }
